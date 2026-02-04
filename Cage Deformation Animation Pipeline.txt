@@ -1,0 +1,306 @@
+# Cage Deformation Animation Pipeline — Project Document
+
+## Vision
+
+A rigless, boneless animation system where any 3D mesh can be animated via cage deformation. No skeletons, no rigging, no weight painting, no retargeting. Motion becomes a geometry problem, not a rigging problem.
+
+```
+MOTION SOURCES (any of these)
+├── Procedural (sine waves)
+├── Text → AI Video → Pose Extraction
+├── Real Video → 2D Pose → 3D Lift
+├── Mocap data (Mixamo/CMU)
+└── AI motion generation (HY-Motion, SayMotion)
+         ↓
+    Raw 3D Anchors (noisy, camera-relative)
+         ↓
+    Facing Resolution (velocity → foot phase → shoulder fallback)
+         ↓
+    SVD Canonicalization (remove rotation/translation/scale)
+         ↓
+    Topological motion anchors discovered from the mesh
+         ↓
+    Cage Drivers (anchors → cage vertex targets)
+         ↓
+    MVC/Proximity Deformation
+         ↓
+    Any Mesh
+```
+
+## Core Architecture
+
+### Why Cages Beat Bones
+
+| Aspect | Skeletons | Cage System |
+|--------|-----------|-------------|
+| Structure | Imposed onto mesh | Derived FROM mesh |
+| Topology | Must match bone hierarchy | Topology agnostic |
+| Binding | Manual weight painting | Automatic (proximity/MVC) |
+| Joint quality | Pinching/candy-wrapper artifacts | Volumetric, volume-preserving |
+| Retargeting | Bone name/hierarchy matching hell | Motion fields transfer directly |
+| Creatures | Need new rig per body type | Works on any shape |
+| AI-friendly | Discrete joint rotations | Continuous control space |
+
+### Pipeline Steps
+
+1. **Cage Generation**: Decimate source mesh via `fast_simplification` (multi-pass) → inflate along vertex normals
+2. **Binding**: Each mesh vertex gets 6 nearest cage vertices with inverse-distance weights (future: MVC weights)
+3. **Region Classification**: Classify cage vertices into body parts by spatial position (head, arms, legs, torso, etc.)
+4. **Animation**: Move cage vertices per frame (procedural, or from motion source)
+5. **Deformation**: Mesh vertices follow weighted cage displacement
+6. **SVD Compression**: Reduce motion from N*3 floats/frame to k latent dims
+
+---
+
+## What's Been Built (Working)
+
+### ✅ Cage Generation from GLB
+- Input: Any GLB mesh (tested with 59,615 vert Trellis output)
+- Multi-pass decimation via `fast_simplification` bottoms out at ~935 cage verts for this mesh
+- Inflation: `cage.vertices += cage.vertex_normals * 0.012`
+- Ratio: 935 cage verts controlling 59,615 mesh verts (1:64)
+
+### ✅ Proximity-Based Binding
+```python
+from scipy.spatial import cKDTree
+tree = cKDTree(cage.vertices)
+dists, indices = tree.query(mesh_vertex, k=6)
+weights = 1.0 / (dists + 1e-8)
+weights = weights / weights.sum()
+```
+
+### ✅ Three.js Viewer with Original GLB
+- Custom inline GLB parser (no CDN dependency issues)
+- Handles `EXT_texture_webp` extension (Trellis uses WebP textures)
+- GLB base64-encoded and embedded in HTML for self-contained demos
+- Orbit controls, cage wireframe toggle, cage point visualization
+- Frame interpolation for smooth playback
+
+### ✅ Procedural Walk Animation
+- Sine-wave driven cage vertex motion per classified region
+- Left/right leg alternation, arm counter-swing, torso sway, hip bob
+
+### ✅ SVD Motion Compression (Kabsch + PCA)
+- **Kabsch alignment**: SVD on covariance matrix recovers rigid transform between any two anchor sets (retargeting primitive). Perfect recovery with scale normalization.
+- **Motion PCA**: Walk cycle on 935-vert cage compresses to **3 latent dimensions** (2,805 → 3 floats/frame, 935× compression, 0.0 reconstruction error)
+- Interactive viewer with 3 modes: Raw frames, SVD-reconstructed, Manual latent control (3 sliders driving entire animation)
+
+### ✅ Python Libraries Installed
+```
+trimesh, fast_simplification, scipy, numpy, Pillow
+```
+
+---
+
+## Known Issues / What's Broken
+
+### 🔴 Region Classification Thresholds (CRITICAL)
+The uploaded GLB mesh has proportions that break the current spatial classification:
+
+**Mesh anatomy (Y-normalized, 0=feet, 1=top of head):**
+```
+ny 0.00: feet — width 0.276
+ny 0.10: lower legs — width 0.224
+ny 0.20: upper legs — width 0.213
+ny 0.30: upper legs — width 0.202
+ny 0.40: hips/crotch — width 0.194
+ny 0.50: waist — width 0.193
+ny 0.60: lower torso — width 0.187
+ny 0.70: ARMS (T-pose) — width 1.001 (full mesh width!)
+ny 0.80: upper torso — width 0.131
+ny 0.90: head — width 0.188
+ny 1.00: top head — width 0.077
+```
+
+**Current broken classification results:**
+```
+head: 117    ← OK
+neck: 226    ← WAY TOO MANY (most are actually arms/shoulders)
+torso: 115   ← OK but includes some arm root
+hips: 133    ← too many (includes upper leg verts near center)
+l_arm: 91    ← OK
+r_arm: 104   ← OK
+l_upper_leg: 1  ← BROKEN (should be 30-50+)
+r_upper_leg: 1  ← BROKEN (should be 30-50+)
+l_lower_leg: 91 ← probably OK
+r_lower_leg: 56 ← probably OK
+```
+
+**Root causes:**
+1. Legs are very narrow (width ~0.2) and close together. The cx threshold of ±0.03-0.06 for leg L/R split dumps most center-adjacent leg verts into "hips"
+2. The "neck" band (ny 0.72-0.85) is too wide — it catches the upper arm/shoulder area
+3. Arms at ny~0.70 have width 1.0 (T-pose), but torso at same height is only ~0.19 wide. Need better arm_cx_threshold based on torso width measurement
+
+**Fix approach (partially implemented, session crashed):**
+- Measure actual torso width at chest height (~ny 0.50-0.55)
+- Set arm_cx_threshold = torso_half_width * 1.1
+- For legs: split L/R by sign of (x - cx_mid), even vertices right at center
+- Separate "feet" region (ny < 0.03)
+- Tighten neck band, properly classify shoulders
+
+### 🟡 Animation Amplitude
+Current walk animation has very subtle motion. Needs stronger stride/lift values once regions are fixed. Suggested values for visible motion:
+```python
+stride = h * 0.12    # was 0.07
+lift_h = h * 0.05    # was 0.025
+arm_sw = h * 0.08    # was 0.05
+```
+
+---
+
+## What's Not Built Yet
+
+### MVC Weights (Mean Value Coordinates)
+Current proximity binding works but MVC would give smoother deformation at joints. MVC computes weights based on the cage's surface geometry, not just distance. More mathematically correct for volumetric deformation. Pure math, no external deps needed.
+
+### Semantic Anchor System
+Instead of classifying cage regions by spatial position, define semantic anchors (head, hands, feet, pelvis, shoulders) and have motion sources drive those anchors, which then influence nearby cage vertices with proper falloff. This decouples motion representation from cage topology.
+
+### Facing Resolution
+When motion has no forward translation, need to derive facing from:
+1. Root velocity (when moving)
+2. Foot phase symmetry (walking in place)
+3. Shoulder/hip axis (static fallback)
+
+### Video → Pose → Cage Pipeline
+- 2D pose: MediaPipe, OpenPose, MoveNet
+- 3D lift: VideoPose3D, VIBE, diffusion-based lifters
+- Anchor extraction → canonicalization → cage driving
+
+### Motion Canonicalization (SVD)
+Remove global rotation/translation/scale from any motion source using SVD/Kabsch to create mesh-independent canonical motion space.
+
+### Motion Stabilization (SVD low-rank projection)
+Project noisy video-derived anchors onto learned motion subspace to kill jitter without lag.
+
+### Universal Cage Template
+NOT a single humanoid cage — cage is always generated FROM each specific mesh. The "universal" part is the pipeline, not the cage itself. Each mesh gets its own fitted cage via decimation + inflation.
+
+---
+
+## SVD in the Pipeline (4 Uses)
+
+### 1. Kabsch Alignment (Retargeting Primitive) — ✅ PROVEN
+```python
+def kabsch(A, B):
+    cA, cB = A.mean(0), B.mean(0)
+    H = (A - cA).T @ (B - cB)
+    U, S, Vt = np.linalg.svd(H)
+    d = np.linalg.det(Vt.T @ U.T)
+    R = Vt.T @ np.diag([1, 1, np.sign(d)]) @ U.T
+    t = cB - R @ cA
+    return R, t
+```
+Finds best rigid transform between two anchor sets. Core of retargeting.
+
+### 2. Motion Canonicalization — NOT BUILT
+SVD/PCA on anchor clouds to remove global rotation/translation/scale. Creates orientation-invariant motion representation.
+
+### 3. Motion Stabilization — NOT BUILT
+Low-rank SVD projection to denoise video-derived anchors. Project onto physically plausible motion subspace.
+
+### 4. Motion Compression / Embedding — ✅ PROVEN
+```
+935 cage verts × 3 = 2,805 floats/frame
+SVD → 3 latent dims (for procedural walk)
+935× compression, 0.0 error
+Real mocap → expect 20-40 latent dims
+```
+Enables: AI training on low-dim latent, animation streaming, motion interpolation/blending.
+
+---
+
+## File References
+
+### Input
+- `/mnt/user-data/uploads/mesh.glb` — Trellis-generated humanoid mesh (3.2MB, 59,615 verts, WebP texture, T-pose)
+
+### Output Demos (from previous sessions)
+- `cage_walk.html` — Procedural humanoid (not GLB), 154 cage → 333 mesh verts, proven concept
+- `cage_glb_viewer.html` — Original GLB loaded directly, 935 cage, procedural walk (subtle due to region bug)
+- `svd_cage_pipeline.html` — SVD compression demo, 3 modes (raw/SVD/latent control), latent trajectory graph
+- `cage_v3.html`, `mvc_cage.html` — Various iterations with different approaches
+
+### Code Patterns
+
+**GLB Loading in Three.js (inline parser, no CDN deps):**
+```javascript
+function parseGLB(buf) {
+    const dv = new DataView(buf);
+    const jLen = dv.getUint32(12, true);
+    const gltf = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 20, jLen)));
+    const bOff = 20 + jLen;
+    const bin = buf.slice(bOff + 8, bOff + 8 + dv.getUint32(bOff, true));
+    return { gltf, bin };
+}
+// Handle EXT_texture_webp: check gltf.textures[0].extensions.EXT_texture_webp.source
+```
+
+**Cage Generation (Python):**
+```python
+import trimesh, fast_simplification
+mesh = trimesh.load('mesh.glb', force='mesh')
+v, f = mesh.vertices.astype(np.float64), mesh.faces
+for i in range(5):
+    target = max(0.5, 1.0 - (200 / len(f)))
+    v, f = fast_simplification.simplify(v, f, target_reduction=target)
+    if len(f) <= 500: break
+cage = trimesh.Trimesh(vertices=v, faces=f, process=True)
+cage.vertices += cage.vertex_normals * 0.012  # inflate
+```
+
+**Deformation (JavaScript, runtime):**
+```javascript
+// Pre-computed: bindIdx[i*6+k], bindWgt[i*6+k] for each mesh vert
+const deltas = new Float32Array(cageVerts.length * 3);
+for (let i = 0; i < cageVerts.length; i++) {
+    deltas[i*3]   = cageFrame[i][0] - cageRest[i][0];
+    deltas[i*3+1] = cageFrame[i][1] - cageRest[i][1];
+    deltas[i*3+2] = cageFrame[i][2] - cageRest[i][2];
+}
+for (let i = 0; i < numMeshVerts; i++) {
+    let dx=0, dy=0, dz=0;
+    for (let k=0; k<6; k++) {
+        const ci = bindIdx[i*6+k], w = bindWgt[i*6+k];
+        dx += w*deltas[ci*3]; dy += w*deltas[ci*3+1]; dz += w*deltas[ci*3+2];
+    }
+    pos[i*3] = origPos[i*3]+dx;
+    pos[i*3+1] = origPos[i*3+1]+dy;
+    pos[i*3+2] = origPos[i*3+2]+dz;
+}
+```
+
+**SVD Reconstruction (JavaScript):**
+```javascript
+function svdReconstruct(latentVec, basis, cageRest, numVerts) {
+    const k = latentVec.length, n3 = numVerts * 3;
+    const result = new Float32Array(n3);
+    for (let d = 0; d < k; d++) {
+        const w = latentVec[d];
+        for (let j = 0; j < n3; j++) result[j] += w * basis[d][j];
+    }
+    return cageRest.map((r, i) => [
+        r[0] + result[i*3], r[1] + result[i*3+1], r[2] + result[i*3+2]
+    ]);
+}
+```
+
+---
+
+## Immediate Next Steps (Priority Order)
+
+1. **Fix region classification** — Use torso width measurement, proper leg L/R split, tighter neck band
+2. **Increase animation amplitude** — Stronger stride/lift/swing values
+3. **Rebuild viewer** — With fixed regions + stronger animation, verify walk looks correct on GLB
+4. **MVC weights** — Replace proximity binding with Mean Value Coordinates for better joint deformation
+5. **Semantic anchors** — Decouple motion from spatial classification
+6. **Motion canonicalization** — Implement Kabsch-based normalization for motion reuse
+
+---
+
+## Philosophical Notes
+
+- **Cage derived from mesh, not imposed**: A universal humanoid cage is just bones with extra steps. The cage must be generated FROM each specific mesh surface.
+- **Motion as geometry**: Animation is not about bone rotations — it's about spatial displacement fields applied to volumetric control structures.
+- **SVD reveals truth**: Motion dimensionality is much lower than vertex count. A walk cycle is 3 numbers. Complex motion is 20-40 numbers. This is the path to AI-learnable, streamable, retargetable motion.
+- **Video is just another motion source**: The perception pipeline (2D pose → 3D lift → canonicalize → cage drive) is modular. Any motion source feeds the same cage system.
