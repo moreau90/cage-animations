@@ -1,144 +1,107 @@
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Cage Walk</title>
 <style>
-body{margin:0;background:#1a1a2e;overflow:hidden;font-family:system-ui;color:#ddd}
-#ui{position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.75);padding:14px;border-radius:10px;font-size:13px}
-#ui label{display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer}
-#bottom{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);padding:10px 20px;border-radius:10px}
+body{margin:0;background:#1a1a2e;}
+#ui{position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.75);padding:14px;border-radius:10px;font-size:13px;color:#ddd}
 </style>
 </head><body>
 <div id="ui">
-  <label><input type="checkbox" id="showMesh" checked> Mesh</label>
-  <label><input type="checkbox" id="enableAnim" checked> Animation</label>
+  <label><input type="checkbox" id="anim" checked> Animation</label>
+  <div>Frame: <span id="fr">0</span></div>
 </div>
-<div id="bottom">Frame: <span id="info">0</span> | Speed: <input type="range" id="spd" min="0" max="3" step="0.1" value="1" style="width:100px"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
+// COPIED EXACTLY FROM WORKING test_view.html
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a1a2e);
+
 const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.01, 100);
 const renderer = new THREE.WebGLRenderer({antialias: true});
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
+
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 scene.add(new THREE.DirectionalLight(0xffffff, 0.8)).position.set(2,3,2);
 
-let meshObj, meshGeo, origPos, D = null;
-let frame = 0, speed = 1, animEnabled = true;
+scene.add(new THREE.AxesHelper(1));
+scene.add(new THREE.GridHelper(2, 10));
 
-// Load mesh first
+// Animation variables
+let meshGeo, origPos, D = null, frame = 0;
+
 const loader = new THREE.GLTFLoader();
 loader.load('mesh.glb', function(gltf) {
     gltf.scene.traverse(child => {
         if (child.isMesh) {
-            meshObj = child;
-            meshGeo = child.geometry;
-            origPos = meshGeo.attributes.position.array.slice();
             child.material.metalness = 0;
             child.material.roughness = 0.7;
+            meshGeo = child.geometry;
+            origPos = meshGeo.attributes.position.array.slice();
         }
     });
     scene.add(gltf.scene);
     
-    // Camera setup - IDENTICAL to working test_view.html
-    // HARDCODED CAMERA - mesh is at Y=-0.5 to 0.5
+    // EXACT SAME CAMERA CODE AS test_view.html
+    const box = new THREE.Box3().setFromObject(gltf.scene);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
     
-    
-    
-    camera.position.set(0, 0, 2);
-    controls.target.set(0, 0, 0);
+    camera.position.set(center.x, center.y + 0.3, center.z + maxDim * 1.5);
+    controls.target.copy(center);
     controls.update();
     
-    console.log("Mesh loaded, camera set");
+    console.log("Camera at:", camera.position);
+    console.log("Target:", controls.target);
     
-    // Load cage data
-    fetch('cage_data.json').then(r => r.json()).then(data => {
-        D = data;
-        console.log("Cage data:", D.cv.length, "verts");
-        
-        // Validate bindings
-        let maxIdx = 0;
-        for (let i = 0; i < D.bi.length; i++) {
-            for (let k = 0; k < D.bi[i].length; k++) {
-                if (D.bi[i][k] > maxIdx) maxIdx = D.bi[i][k];
-            }
-        }
-        console.log("Max binding index:", maxIdx, "Cage verts:", D.cv.length);
-        if (maxIdx >= D.cv.length) {
-            console.error("BINDING INDEX OUT OF RANGE!");
-        }
-    });
-    
-    animate();
+    // Load cage data AFTER mesh is set up
+    fetch('cage_data.json').then(r=>r.json()).then(d=>{D=d; console.log("Cage loaded");});
 });
-
-function updateMesh(t) {
-    if (!meshGeo || !origPos || !D || !animEnabled) return;
-    
-    const f0 = Math.floor(t) % D.nf;
-    const f1 = (f0+1) % D.nf;
-    const alpha = t - Math.floor(t);
-    
-    // Compute cage deltas
-    const deltas = new Float32Array(D.cv.length * 3);
-    for (let i = 0; i < D.cv.length; i++) {
-        deltas[i*3]   = (D.ck[f0][i][0]*(1-alpha)+D.ck[f1][i][0]*alpha) - D.cv[i][0];
-        deltas[i*3+1] = (D.ck[f0][i][1]*(1-alpha)+D.ck[f1][i][1]*alpha) - D.cv[i][1];
-        deltas[i*3+2] = (D.ck[f0][i][2]*(1-alpha)+D.ck[f1][i][2]*alpha) - D.cv[i][2];
-    }
-    
-    // Apply to mesh
-    const pos = meshGeo.attributes.position.array;
-    const numVerts = origPos.length / 3;
-    
-    for (let i = 0; i < numVerts; i++) {
-        let dx=0, dy=0, dz=0;
-        const bi = D.bi[i];
-        const bw = D.bw[i];
-        if (!bi || !bw) continue;
-        
-        for (let k = 0; k < bi.length; k++) { 
-            const ci = bi[k];
-            const w = bw[k];
-            if (ci >= D.cv.length) continue; // Skip invalid
-            dx += w * deltas[ci*3]; 
-            dy += w * deltas[ci*3+1]; 
-            dz += w * deltas[ci*3+2]; 
-        }
-        pos[i*3]   = origPos[i*3] + dx; 
-        pos[i*3+1] = origPos[i*3+1] + dy; 
-        pos[i*3+2] = origPos[i*3+2] + dz;
-    }
-    
-    meshGeo.attributes.position.needsUpdate = true;
-    meshGeo.computeVertexNormals();
-}
-
-document.getElementById('showMesh').onchange = e => { if(meshObj) meshObj.visible = e.target.checked; };
-document.getElementById('enableAnim').onchange = e => { 
-    animEnabled = e.target.checked;
-    if (!animEnabled && meshGeo && origPos) {
-        // Reset to original positions
-        const pos = meshGeo.attributes.position.array;
-        for (let i = 0; i < origPos.length; i++) pos[i] = origPos[i];
-        meshGeo.attributes.position.needsUpdate = true;
-        meshGeo.computeVertexNormals();
-    }
-};
-document.getElementById('spd').oninput = e => speed = parseFloat(e.target.value);
-window.onresize = () => { camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); };
 
 function animate() {
     requestAnimationFrame(animate);
-    frame += speed * 0.5;
-    updateMesh(frame);
+    
+    // Only deform if animation enabled and data ready
+    if (document.getElementById('anim').checked && meshGeo && origPos && D) {
+        frame += 0.5;
+        const f0 = Math.floor(frame) % D.nf;
+        const f1 = (f0+1) % D.nf;
+        const a = frame - Math.floor(frame);
+        
+        const pos = meshGeo.attributes.position.array;
+        for (let i = 0; i < origPos.length/3; i++) {
+            let dx=0, dy=0, dz=0;
+            for (let k=0; k<6; k++) {
+                const ci = D.bi[i][k], w = D.bw[i][k];
+                const cvx = D.cv[ci][0], cvy = D.cv[ci][1], cvz = D.cv[ci][2];
+                const kx = D.ck[f0][ci][0]*(1-a) + D.ck[f1][ci][0]*a;
+                const ky = D.ck[f0][ci][1]*(1-a) + D.ck[f1][ci][1]*a;
+                const kz = D.ck[f0][ci][2]*(1-a) + D.ck[f1][ci][2]*a;
+                dx += w*(kx-cvx);
+                dy += w*(ky-cvy);
+                dz += w*(kz-cvz);
+            }
+            pos[i*3] = origPos[i*3] + dx;
+            pos[i*3+1] = origPos[i*3+1] + dy;
+            pos[i*3+2] = origPos[i*3+2] + dz;
+        }
+        meshGeo.attributes.position.needsUpdate = true;
+        document.getElementById('fr').textContent = f0;
+    }
+    
     controls.update();
-    document.getElementById('info').textContent = (frame % (D ? D.nf : 30)).toFixed(1);
     renderer.render(scene, camera);
 }
+animate();
+
+window.onresize = () => {
+    camera.aspect = innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+};
 </script>
 </body></html>
