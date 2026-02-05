@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Cage Deformation Animation Generator - v2
-Fixed arm pose and natural walk cycle
+Cage Deformation Animation Generator - v3
+FIXED: Binding uses same cage as animation (arms-down rest pose)
 """
 
 import trimesh
@@ -10,26 +10,21 @@ from scipy.spatial import cKDTree
 import json
 import base64
 
-# Load mesh
 print("Loading mesh...")
 mesh = trimesh.load('/home/user/cage-animations/mesh.glb', force='mesh')
 verts = mesh.vertices.astype(np.float64)
 faces = mesh.faces
 
-print(f"Mesh: {len(verts)} verts, {len(faces)} faces")
-
-# Get mesh bounds
 bbox_min = verts.min(axis=0)
 bbox_max = verts.max(axis=0)
 height = bbox_max[1] - bbox_min[1]
 
-print(f"Height: {height:.3f}")
-print(f"Y range: {bbox_min[1]:.3f} to {bbox_max[1]:.3f}")
+print(f"Mesh: {len(verts)} verts, height: {height:.3f}")
 
 def normalize_y(y):
     return (y - bbox_min[1]) / height
 
-# Generate cage via decimation
+# Generate cage
 print("\nGenerating cage...")
 import fast_simplification
 
@@ -37,19 +32,16 @@ v, f = verts.copy(), faces.copy()
 for i in range(8):
     target = max(0.3, 1.0 - (300 / max(len(f), 1)))
     v, f = fast_simplification.simplify(v, f, target_reduction=target)
-    print(f"  Pass {i+1}: {len(v)} verts, {len(f)} faces")
     if len(f) <= 800:
         break
 
 cage_mesh = trimesh.Trimesh(vertices=v, faces=f, process=True)
-cage_verts = cage_mesh.vertices.copy()
-cage_verts += cage_mesh.vertex_normals * 0.015
+cage_verts_tpose = cage_mesh.vertices.copy()
+cage_verts_tpose += cage_mesh.vertex_normals * 0.015
 
-print(f"Final cage: {len(cage_verts)} verts")
+print(f"Cage: {len(cage_verts_tpose)} verts")
 
-# REGION CLASSIFICATION
-print("\nClassifying cage regions...")
-
+# Region classification
 torso_half_width = 0.10
 arm_threshold = torso_half_width * 1.2
 
@@ -57,30 +49,21 @@ def classify_vertex(v):
     x, y, z = v
     ny = normalize_y(y)
     
-    if ny > 0.85:
-        return 'head'
-    if ny > 0.80:
-        return 'neck'
+    if ny > 0.85: return 'head'
+    if ny > 0.80: return 'neck'
     
-    # Arms - check X position first
     if 0.60 < ny < 0.82:
-        if x > arm_threshold:
-            return 'r_arm'
-        elif x < -arm_threshold:
-            return 'l_arm'
+        if x > arm_threshold: return 'r_arm'
+        if x < -arm_threshold: return 'l_arm'
     
     if 0.72 < ny < 0.82 and abs(x) > torso_half_width * 0.8:
         return 'r_shoulder' if x > 0 else 'l_shoulder'
     
-    if 0.55 < ny <= 0.80 and abs(x) <= arm_threshold:
-        return 'torso'
-    
-    if 0.45 < ny <= 0.55:
-        return 'waist'
+    if 0.55 < ny <= 0.80 and abs(x) <= arm_threshold: return 'torso'
+    if 0.45 < ny <= 0.55: return 'waist'
     
     if 0.35 < ny <= 0.45:
-        if abs(x) < 0.05:
-            return 'hips'
+        if abs(x) < 0.05: return 'hips'
         return 'r_upper_leg' if x > 0 else 'l_upper_leg'
     
     if 0.18 < ny <= 0.35:
@@ -94,21 +77,12 @@ def classify_vertex(v):
     
     return 'torso'
 
-regions = {}
-cage_regions = []
-for i, v in enumerate(cage_verts):
-    region = classify_vertex(v)
-    cage_regions.append(region)
-    if region not in regions:
-        regions[region] = []
-    regions[region].append(i)
+cage_regions = [classify_vertex(v) for v in cage_verts_tpose]
 
-print("Region counts:")
-for r, indices in sorted(regions.items()):
-    print(f"  {r}: {len(indices)}")
+print("Regions:", {r: cage_regions.count(r) for r in set(cage_regions)})
 
-# BINDING
-print("\nBinding mesh to cage...")
+# BINDING - use T-pose cage (matches T-pose mesh)
+print("\nBinding mesh to T-pose cage...")
 
 region_adjacency = {
     'head': ['head', 'neck'],
@@ -129,7 +103,6 @@ region_adjacency = {
 }
 
 mesh_regions = [classify_vertex(v) for v in verts]
-cage_tree = cKDTree(cage_verts)
 
 bind_indices = []
 bind_weights = []
@@ -139,9 +112,9 @@ for i, (mv, mr) in enumerate(zip(verts, mesh_regions)):
     valid_cage_indices = [j for j, cr in enumerate(cage_regions) if cr in valid_regions]
     
     if len(valid_cage_indices) < 6:
-        valid_cage_indices = list(range(len(cage_verts)))
+        valid_cage_indices = list(range(len(cage_verts_tpose)))
     
-    valid_cage_verts = cage_verts[valid_cage_indices]
+    valid_cage_verts = cage_verts_tpose[valid_cage_indices]
     local_tree = cKDTree(valid_cage_verts)
     dists, local_indices = local_tree.query(mv, k=min(6, len(valid_cage_indices)))
     
@@ -152,147 +125,74 @@ for i, (mv, mr) in enumerate(zip(verts, mesh_regions)):
     bind_indices.append(global_indices)
     bind_weights.append(weights.tolist())
 
-print(f"Binding complete")
+print("Binding complete")
 
-# ANIMATION - Natural Walk with Arms Down
+# ANIMATION - Keep T-pose as rest, animate from there
 print("\nGenerating walk animation...")
 
 n_frames = 30
-
-# First, compute the "arms down" rest pose
-# We'll rotate arm vertices down by ~70 degrees around shoulder pivot
-def rotate_arm_down(v, side, amount=0.7):
-    """Rotate arm vertex down from T-pose"""
-    x, y, z = v
-    
-    # Shoulder pivot point (approximate)
-    if side == 'left':
-        pivot_x = -0.12
-    else:
-        pivot_x = 0.12
-    pivot_y = bbox_min[1] + height * 0.72  # shoulder height
-    
-    # Vector from pivot to vertex
-    dx = x - pivot_x
-    dy = y - pivot_y
-    
-    # Rotate around Z axis (brings arm down)
-    angle = -amount * (np.pi / 2)  # rotate down
-    if side == 'left':
-        angle = -angle  # opposite for left arm
-    
-    cos_a, sin_a = np.cos(angle), np.sin(angle)
-    new_dx = dx * cos_a - dy * sin_a
-    new_dy = dx * sin_a + dy * cos_a
-    
-    return [pivot_x + new_dx, pivot_y + new_dy, z]
-
-# Create rest pose with arms down
-rest_cage_verts = []
-for i, (v, region) in enumerate(zip(cage_verts, cage_regions)):
-    if region == 'l_arm':
-        rest_cage_verts.append(rotate_arm_down(v, 'left', 0.75))
-    elif region == 'r_arm':
-        rest_cage_verts.append(rotate_arm_down(v, 'right', 0.75))
-    elif region == 'l_shoulder':
-        rest_cage_verts.append(rotate_arm_down(v, 'left', 0.3))
-    elif region == 'r_shoulder':
-        rest_cage_verts.append(rotate_arm_down(v, 'right', 0.3))
-    else:
-        rest_cage_verts.append(list(v))
-
-rest_cage_verts = np.array(rest_cage_verts)
-
 cage_keyframes = []
 
 for frame in range(n_frames):
     t = frame / n_frames * 2 * np.pi
     
-    frame_verts = rest_cage_verts.copy()
+    frame_verts = cage_verts_tpose.copy()
     
-    for i, (v, region) in enumerate(zip(rest_cage_verts, cage_regions)):
+    for i, (v, region) in enumerate(zip(cage_verts_tpose, cage_regions)):
         x, y, z = v
         ny = normalize_y(y)
         dx, dy, dz = 0, 0, 0
         
-        # Walk parameters
-        stride = height * 0.12      # forward/back movement
-        lift = height * 0.06        # foot lift height
-        arm_swing = height * 0.10   # arm swing amount
-        hip_sway = height * 0.01    # hip side-to-side
+        stride = height * 0.10
+        lift = height * 0.05
+        arm_swing = height * 0.06
         
-        # LEFT LEG (phase 0)
+        # LEGS
         if region == 'l_upper_leg':
             phase = t
-            # Thigh swings forward/back
-            dz = np.sin(phase) * stride * 0.6
-            # Slight lift when swinging forward
+            dz = np.sin(phase) * stride * 0.5
             dy = max(0, np.sin(phase)) * lift * 0.2
             
         elif region == 'l_lower_leg':
             phase = t
-            # Lower leg follows thigh but with more swing
-            dz = np.sin(phase) * stride * 0.8
-            # Knee bends - lift when leg swings forward
-            dy = max(0, np.sin(phase)) * lift * 0.6
+            dz = np.sin(phase) * stride * 0.7
+            dy = max(0, np.sin(phase)) * lift * 0.5
             
         elif region == 'l_foot':
             phase = t
             dz = np.sin(phase) * stride
-            # Foot lifts off ground during swing
             dy = max(0, np.sin(phase)) * lift
             
-        # RIGHT LEG (phase PI - opposite)
         elif region == 'r_upper_leg':
             phase = t + np.pi
-            dz = np.sin(phase) * stride * 0.6
+            dz = np.sin(phase) * stride * 0.5
             dy = max(0, np.sin(phase)) * lift * 0.2
             
         elif region == 'r_lower_leg':
             phase = t + np.pi
-            dz = np.sin(phase) * stride * 0.8
-            dy = max(0, np.sin(phase)) * lift * 0.6
+            dz = np.sin(phase) * stride * 0.7
+            dy = max(0, np.sin(phase)) * lift * 0.5
             
         elif region == 'r_foot':
             phase = t + np.pi
             dz = np.sin(phase) * stride
             dy = max(0, np.sin(phase)) * lift
         
-        # LEFT ARM - swings opposite to left leg (so same as right leg)
-        elif region == 'l_arm':
-            phase = t + np.pi
+        # ARMS - swing in T-pose (rotate around shoulder)
+        elif region in ['l_arm', 'l_shoulder']:
+            phase = t + np.pi  # opposite to left leg
             dz = np.sin(phase) * arm_swing
-            # Slight inward swing
-            dx = np.sin(phase) * arm_swing * 0.1
             
-        elif region == 'l_shoulder':
-            phase = t + np.pi
-            dz = np.sin(phase) * arm_swing * 0.3
-            
-        # RIGHT ARM - swings opposite to right leg (so same as left leg)
-        elif region == 'r_arm':
-            phase = t
+        elif region in ['r_arm', 'r_shoulder']:
+            phase = t  # opposite to right leg
             dz = np.sin(phase) * arm_swing
-            dx = -np.sin(phase) * arm_swing * 0.1
             
-        elif region == 'r_shoulder':
-            phase = t
-            dz = np.sin(phase) * arm_swing * 0.3
-            
-        # HIPS - slight sway and bob
         elif region == 'hips':
-            dx = np.sin(t * 2) * hip_sway
-            dy = -abs(np.sin(t)) * hip_sway  # slight drop when leg lifts
+            dx = np.sin(t * 2) * height * 0.008
             
-        elif region == 'waist':
-            dx = np.sin(t * 2) * hip_sway * 0.5
-            
-        # TORSO - counter-rotation
         elif region == 'torso':
-            twist = np.sin(t) * 0.015
-            dz = x * twist  # slight twist
+            dz = x * np.sin(t) * 0.01
             
-        # HEAD - stays relatively stable with slight bob
         elif region == 'head':
             dy = np.sin(t * 2) * height * 0.003
         
@@ -302,24 +202,21 @@ for frame in range(n_frames):
 
 print(f"Generated {n_frames} keyframes")
 
-# Build output - use REST pose (arms down) as the base
+# D.cv = T-pose cage (matches binding and mesh rest pose)
 D = {
     'nf': n_frames,
-    'cv': [[round(float(x), 4) for x in v] for v in rest_cage_verts],  # REST pose with arms down
+    'cv': [[round(float(x), 4) for x in v] for v in cage_verts_tpose],
     'ck': [[[round(float(x), 4) for x in v] for v in frame] for frame in cage_keyframes],
     'bi': bind_indices,
     'bw': [[round(float(w), 6) for w in weights] for weights in bind_weights],
 }
 
-# GLB base64
 with open('/home/user/cage-animations/mesh.glb', 'rb') as f:
     glb_b64 = base64.b64encode(f.read()).decode('ascii')
 
-print(f"D data size: ~{len(json.dumps(D))//1024}KB")
-
-# Generate HTML
+# HTML with same camera setup as working test_view.html
 html = '''<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Cage Walk v2</title>
+<html><head><meta charset="utf-8"><title>Cage Walk v3</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#1a1a2e;overflow:hidden;font-family:system-ui;color:#ddd}
@@ -385,12 +282,18 @@ loader.parse(glbData.buffer, '', function(gltf) {
     });
     scene.add(gltf.scene);
     
-    // Fixed camera - mesh at origin, ~1 unit tall
+    // Same camera setup as working test_view.html
+    const box = new THREE.Box3().setFromObject(gltf.scene);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
     
-    
-    controls.target.set(0, 0, 0);
-    camera.position.set(0, 0, 2);
+    camera.position.set(center.x, center.y + 0.3, center.z + maxDim * 1.5);
+    controls.target.copy(center);
     controls.update();
+    
+    console.log("Camera at:", camera.position);
+    console.log("Looking at:", center);
     
     document.getElementById('loading').style.display = 'none';
     document.getElementById('ui').style.display = 'block';
@@ -452,4 +355,3 @@ with open('/home/user/cage-animations/cage_walk.html', 'w') as f:
     f.write(html)
 
 print(f"\nSaved cage_walk.html ({len(html)//1024}KB)")
-print("Done!")
