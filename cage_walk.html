@@ -86,7 +86,7 @@ loader.load('mesh.glb', function(gltf) {
     
     fetch('cage_data.json').then(r=>r.json()).then(d=>{
         D = d;
-        console.log("Cage loaded:", D.cv.length, "verts,", D.nf, "frames");
+        console.log("Cage loaded:", D.cv.length, "verts,", D.nf, "frames, version:", D.version);
         console.log("Cage vert 0 rest:", D.cv[0]);
         console.log("Cage vert 0 frame0:", D.ck[0][0]);
         console.log("Delta:", D.ck[0][0][0]-D.cv[0][0], D.ck[0][0][1]-D.cv[0][1], D.ck[0][0][2]-D.cv[0][2]);
