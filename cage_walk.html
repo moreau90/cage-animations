@@ -13,20 +13,13 @@ body{margin:0;background:#1a1a2e;}
   <label><input type="checkbox" id="anim" checked> Animation</label>
   <label><input type="checkbox" id="showRegions"> Show Regions</label>
   <div>Frame: <span id="fr">0</span></div>
+  <div id="debug" style="font-size:10px;margin-top:8px;max-height:100px;overflow:auto"></div>
   <div id="legend" style="display:none">
     <div><span style="background:#ff0000"></span> Head</div>
-    <div><span style="background:#ff8800"></span> Neck</div>
-    <div><span style="background:#ffff00"></span> Torso</div>
-    <div><span style="background:#88ff00"></span> Waist</div>
-    <div><span style="background:#00ff00"></span> Hips</div>
     <div><span style="background:#00ffff"></span> L Arm</div>
     <div><span style="background:#0088ff"></span> R Arm</div>
-    <div><span style="background:#0000ff"></span> L Upper Leg</div>
-    <div><span style="background:#8800ff"></span> R Upper Leg</div>
-    <div><span style="background:#ff00ff"></span> L Lower Leg</div>
-    <div><span style="background:#ff0088"></span> R Lower Leg</div>
-    <div><span style="background:#ffffff"></span> L Foot</div>
-    <div><span style="background:#888888"></span> R Foot</div>
+    <div><span style="background:#0000ff"></span> L Leg</div>
+    <div><span style="background:#8800ff"></span> R Leg</div>
   </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -54,8 +47,8 @@ scene.add(new THREE.DirectionalLight(0xffffff, 0.8)).position.set(2,3,2);
 
 let meshGeo, origPos, D = null, frame = 0;
 let regionPoints = null;
+let debugOnce = true;
 
-// Classify cage vertex region (same logic as Python)
 function classifyVertex(x, y, z, minY, height) {
     const n = (y - minY) / height;
     if (n > 0.85) return 'head';
@@ -78,6 +71,8 @@ loader.load('mesh.glb', function(gltf) {
             child.material.roughness = 0.7;
             meshGeo = child.geometry;
             origPos = meshGeo.attributes.position.array.slice();
+            console.log("Mesh loaded, verts:", origPos.length/3);
+            console.log("Sample arm vert 6 origPos:", origPos[18], origPos[19], origPos[20]);
         }
     });
     scene.add(gltf.scene);
@@ -89,36 +84,29 @@ loader.load('mesh.glb', function(gltf) {
     controls.target.copy(center);
     controls.update();
     
-    // Load cage data
     fetch('cage_data.json').then(r=>r.json()).then(d=>{
         D = d;
-        console.log("Cage loaded:", D.cv.length, "verts");
+        console.log("Cage loaded:", D.cv.length, "verts,", D.nf, "frames");
+        console.log("Cage vert 0 rest:", D.cv[0]);
+        console.log("Cage vert 0 frame0:", D.ck[0][0]);
+        console.log("Delta:", D.ck[0][0][0]-D.cv[0][0], D.ck[0][0][1]-D.cv[0][1], D.ck[0][0][2]-D.cv[0][2]);
         
-        // Create region-colored points
+        // Create region points
         const minY = Math.min(...D.cv.map(v => v[1]));
         const maxY = Math.max(...D.cv.map(v => v[1]));
         const height = maxY - minY;
         
         const ptGeo = new THREE.BufferGeometry();
-        const positions = [];
-        const colors = [];
-        
+        const positions = [], colors = [];
         for (let i = 0; i < D.cv.length; i++) {
             const [x, y, z] = D.cv[i];
             positions.push(x, y, z);
-            
-            const region = classifyVertex(x, y, z, minY, height);
-            const color = new THREE.Color(REGION_COLORS[region] || 0xffffff);
+            const color = new THREE.Color(REGION_COLORS[classifyVertex(x, y, z, minY, height)] || 0xffffff);
             colors.push(color.r, color.g, color.b);
         }
-        
         ptGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
         ptGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-        
-        regionPoints = new THREE.Points(ptGeo, new THREE.PointsMaterial({
-            size: 0.025,
-            vertexColors: true
-        }));
+        regionPoints = new THREE.Points(ptGeo, new THREE.PointsMaterial({size: 0.025, vertexColors: true}));
         regionPoints.visible = false;
         scene.add(regionPoints);
     });
@@ -132,6 +120,7 @@ function updateMesh(t) {
     const a = t - Math.floor(t);
     
     const pos = meshGeo.attributes.position.array;
+    
     for (let i = 0; i < origPos.length/3; i++) {
         let dx=0, dy=0, dz=0;
         for (let k=0; k<6; k++) {
@@ -147,10 +136,22 @@ function updateMesh(t) {
         pos[i*3] = origPos[i*3] + dx;
         pos[i*3+1] = origPos[i*3+1] + dy;
         pos[i*3+2] = origPos[i*3+2] + dz;
+        
+        // Debug first arm vertex
+        if (i === 6 && debugOnce) {
+            console.log("Vert 6 deformation:");
+            console.log("  origPos:", origPos[18], origPos[19], origPos[20]);
+            console.log("  delta:", dx, dy, dz);
+            console.log("  newPos:", pos[18], pos[19], pos[20]);
+            document.getElementById('debug').innerHTML = 
+                `Vert6: orig(${origPos[18].toFixed(3)},${origPos[19].toFixed(3)},${origPos[20].toFixed(3)})<br>` +
+                `delta(${dx.toFixed(3)},${dy.toFixed(3)},${dz.toFixed(3)})<br>` +
+                `new(${pos[18].toFixed(3)},${pos[19].toFixed(3)},${pos[20].toFixed(3)})`;
+            debugOnce = false;
+        }
     }
     meshGeo.attributes.position.needsUpdate = true;
     
-    // Update region points positions
     if (regionPoints && regionPoints.visible) {
         const rpos = regionPoints.geometry.attributes.position.array;
         for (let i = 0; i < D.cv.length; i++) {
@@ -171,13 +172,12 @@ document.getElementById('anim').onchange = e => {
         for (let i = 0; i < origPos.length; i++) pos[i] = origPos[i];
         meshGeo.attributes.position.needsUpdate = true;
     }
+    debugOnce = true;
 };
-
 document.getElementById('showRegions').onchange = e => {
     if (regionPoints) regionPoints.visible = e.target.checked;
     document.getElementById('legend').style.display = e.target.checked ? 'block' : 'none';
 };
-
 window.onresize = () => { camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); };
 
 function animate() {
