@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Test View</title>
+<style>body{margin:0;background:#1a1a2e;}</style>
+</head><body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2e);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.01, 100);
+const renderer = new THREE.WebGLRenderer({antialias: true});
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+scene.add(new THREE.DirectionalLight(0xffffff, 0.8)).position.set(2,3,2);
+
+// Add axes helper to see origin
+scene.add(new THREE.AxesHelper(1));
+
+// Add grid
+scene.add(new THREE.GridHelper(2, 10));
+
+const loader = new THREE.GLTFLoader();
+loader.load('mesh.glb', function(gltf) {
+    gltf.scene.traverse(child => {
+        if (child.isMesh) {
+            child.material.metalness = 0;
+            child.material.roughness = 0.7;
+        }
+    });
+    scene.add(gltf.scene);
+    
+    // Log bounds
+    const box = new THREE.Box3().setFromObject(gltf.scene);
+    console.log("MIN:", box.min);
+    console.log("MAX:", box.max);
+    console.log("CENTER:", box.getCenter(new THREE.Vector3()));
+    
+    // Fit camera to object
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    
+    camera.position.set(center.x, center.y + 0.3, center.z + maxDim * 1.5);
+    controls.target.copy(center);
+    controls.update();
+    
+    console.log("Camera at:", camera.position);
+    console.log("Looking at:", controls.target);
+});
+
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+}
+animate();
+
+window.onresize = () => {
+    camera.aspect = innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+};
+</script>
+</body></html>
