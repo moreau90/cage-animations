@@ -45,12 +45,12 @@ loader.load('mesh.glb', function(gltf) {
     scene.add(gltf.scene);
     
     // Camera setup - IDENTICAL to working test_view.html
-    const box = new THREE.Box3().setFromObject(gltf.scene);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    camera.position.set(center.x, center.y + 0.3, center.z + maxDim * 1.5);
-    controls.target.copy(center);
+    // HARDCODED CAMERA - mesh is at Y=-0.5 to 0.5
+    
+    
+    
+    camera.position.set(0, 0, 2);
+    controls.target.set(0, 0, 0);
     controls.update();
     
     console.log("Mesh loaded, camera set");
