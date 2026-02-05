@@ -4,35 +4,19 @@
 body{margin:0;background:#1a1a2e;}
 #ui{position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.75);padding:14px;border-radius:10px;font-size:13px;color:#ddd}
 #ui label{display:block;margin:4px 0;cursor:pointer}
-#legend{margin-top:10px;font-size:11px}
-#legend div{display:flex;align-items:center;gap:6px;margin:2px 0}
-#legend span{display:inline-block;width:12px;height:12px;border-radius:2px}
 </style>
 </head><body>
 <div id="ui">
   <label><input type="checkbox" id="anim" checked> Animation</label>
   <label><input type="checkbox" id="showRegions"> Show Regions</label>
   <div>Frame: <span id="fr">0</span></div>
-  <div id="debug" style="font-size:10px;margin-top:8px;max-height:100px;overflow:auto"></div>
-  <div id="legend" style="display:none">
-    <div><span style="background:#ff0000"></span> Head</div>
-    <div><span style="background:#00ffff"></span> L Arm</div>
-    <div><span style="background:#0088ff"></span> R Arm</div>
-    <div><span style="background:#0000ff"></span> L Leg</div>
-    <div><span style="background:#8800ff"></span> R Leg</div>
-  </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-const REGION_COLORS = {
-    head: 0xff0000, neck: 0xff8800, torso: 0xffff00, waist: 0x88ff00, hips: 0x00ff00,
-    l_arm: 0x00ffff, r_arm: 0x0088ff,
-    l_upper_leg: 0x0000ff, r_upper_leg: 0x8800ff,
-    l_lower_leg: 0xff00ff, r_lower_leg: 0xff0088,
-    l_foot: 0xffffff, r_foot: 0x888888
-};
+// Region IDs: 5=l_arm, 6=r_arm
+const L_ARM = 5, R_ARM = 6;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a1a2e);
@@ -47,20 +31,11 @@ scene.add(new THREE.DirectionalLight(0xffffff, 0.8)).position.set(2,3,2);
 
 let meshGeo, origPos, D = null, frame = 0;
 let regionPoints = null;
-let debugOnce = true;
 
-function classifyVertex(x, y, z, minY, height) {
-    const n = (y - minY) / height;
-    if (n > 0.85) return 'head';
-    if (n > 0.8) return 'neck';
-    if (n > 0.6 && n < 0.82 && Math.abs(x) > 0.12) return x > 0 ? 'r_arm' : 'l_arm';
-    if (n > 0.55 && n <= 0.8 && Math.abs(x) <= 0.12) return 'torso';
-    if (n > 0.45 && n <= 0.55) return 'waist';
-    if (n > 0.35 && n <= 0.45) return Math.abs(x) < 0.05 ? 'hips' : (x > 0 ? 'r_upper_leg' : 'l_upper_leg');
-    if (n > 0.18 && n <= 0.35) return x > 0 ? 'r_upper_leg' : 'l_upper_leg';
-    if (n > 0.05 && n <= 0.18) return x > 0 ? 'r_lower_leg' : 'l_lower_leg';
-    if (n <= 0.05) return x > 0 ? 'r_foot' : 'l_foot';
-    return 'torso';
+function rotateAroundZ(x, y, pivotX, pivotY, angle) {
+    const dx = x - pivotX, dy = y - pivotY;
+    const c = Math.cos(angle), s = Math.sin(angle);
+    return [pivotX + dx*c - dy*s, pivotY + dx*s + dy*c];
 }
 
 const loader = new THREE.GLTFLoader();
@@ -71,8 +46,6 @@ loader.load('mesh.glb', function(gltf) {
             child.material.roughness = 0.7;
             meshGeo = child.geometry;
             origPos = meshGeo.attributes.position.array.slice();
-            console.log("Mesh loaded, verts:", origPos.length/3);
-            console.log("Sample arm vert 6 origPos:", origPos[18], origPos[19], origPos[20]);
         }
     });
     scene.add(gltf.scene);
@@ -86,29 +59,7 @@ loader.load('mesh.glb', function(gltf) {
     
     fetch('cage_data.json').then(r=>r.json()).then(d=>{
         D = d;
-        console.log("Cage loaded:", D.cv.length, "verts,", D.nf, "frames, version:", D.version);
-        console.log("Cage vert 0 rest:", D.cv[0]);
-        console.log("Cage vert 0 frame0:", D.ck[0][0]);
-        console.log("Delta:", D.ck[0][0][0]-D.cv[0][0], D.ck[0][0][1]-D.cv[0][1], D.ck[0][0][2]-D.cv[0][2]);
-        
-        // Create region points
-        const minY = Math.min(...D.cv.map(v => v[1]));
-        const maxY = Math.max(...D.cv.map(v => v[1]));
-        const height = maxY - minY;
-        
-        const ptGeo = new THREE.BufferGeometry();
-        const positions = [], colors = [];
-        for (let i = 0; i < D.cv.length; i++) {
-            const [x, y, z] = D.cv[i];
-            positions.push(x, y, z);
-            const color = new THREE.Color(REGION_COLORS[classifyVertex(x, y, z, minY, height)] || 0xffffff);
-            colors.push(color.r, color.g, color.b);
-        }
-        ptGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-        ptGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-        regionPoints = new THREE.Points(ptGeo, new THREE.PointsMaterial({size: 0.025, vertexColors: true}));
-        regionPoints.visible = false;
-        scene.add(regionPoints);
+        console.log("Loaded:", D.cv.length, "cage verts,", D.mr.length, "mesh regions");
     });
 });
 
@@ -118,52 +69,61 @@ function updateMesh(t) {
     const f0 = Math.floor(t) % D.nf;
     const f1 = (f0+1) % D.nf;
     const a = t - Math.floor(t);
+    const phase = (t / D.nf) * Math.PI * 2;
     
     const pos = meshGeo.attributes.position.array;
+    const numVerts = origPos.length / 3;
     
-    for (let i = 0; i < origPos.length/3; i++) {
-        let dx=0, dy=0, dz=0;
-        for (let k=0; k<6; k++) {
-            const ci = D.bi[i][k], w = D.bw[i][k];
-            const cvx = D.cv[ci][0], cvy = D.cv[ci][1], cvz = D.cv[ci][2];
-            const kx = D.ck[f0][ci][0]*(1-a) + D.ck[f1][ci][0]*a;
-            const ky = D.ck[f0][ci][1]*(1-a) + D.ck[f1][ci][1]*a;
-            const kz = D.ck[f0][ci][2]*(1-a) + D.ck[f1][ci][2]*a;
-            dx += w*(kx-cvx);
-            dy += w*(ky-cvy);
-            dz += w*(kz-cvz);
-        }
-        pos[i*3] = origPos[i*3] + dx;
-        pos[i*3+1] = origPos[i*3+1] + dy;
-        pos[i*3+2] = origPos[i*3+2] + dz;
+    // Arm rotation parameters
+    const armAngle = 1.2; // ~70 degrees down
+    const armSwing = 0.15;
+    const lShoulderX = D.joints.l_shoulder[0];
+    const lShoulderY = D.joints.l_shoulder[1];
+    const rShoulderX = D.joints.r_shoulder[0];
+    const rShoulderY = D.joints.r_shoulder[1];
+    
+    for (let i = 0; i < numVerts; i++) {
+        const region = D.mr[i];
+        let ox = origPos[i*3], oy = origPos[i*3+1], oz = origPos[i*3+2];
         
-        // Debug first arm vertex
-        if (i === 6 && debugOnce) {
-            console.log("Vert 6 deformation:");
-            console.log("  origPos:", origPos[18], origPos[19], origPos[20]);
-            console.log("  delta:", dx, dy, dz);
-            console.log("  newPos:", pos[18], pos[19], pos[20]);
-            document.getElementById('debug').innerHTML = 
-                `Vert6: orig(${origPos[18].toFixed(3)},${origPos[19].toFixed(3)},${origPos[20].toFixed(3)})<br>` +
-                `delta(${dx.toFixed(3)},${dy.toFixed(3)},${dz.toFixed(3)})<br>` +
-                `new(${pos[18].toFixed(3)},${pos[19].toFixed(3)},${pos[20].toFixed(3)})`;
-            debugOnce = false;
+        // Apply arm rotation DIRECTLY to mesh vertices
+        if (region === L_ARM) {
+            // Rotate left arm down around shoulder (Z axis rotation)
+            const [nx, ny] = rotateAroundZ(ox, oy, lShoulderX, lShoulderY, armAngle);
+            ox = nx; oy = ny;
+            // Add swing
+            oz += Math.sin(phase + Math.PI) * armSwing;
+        } else if (region === R_ARM) {
+            // Rotate right arm down
+            const [nx, ny] = rotateAroundZ(ox, oy, rShoulderX, rShoulderY, -armAngle);
+            ox = nx; oy = ny;
+            oz += Math.sin(phase) * armSwing;
+        }
+        
+        // Apply cage deformation for non-arm regions
+        if (region !== L_ARM && region !== R_ARM) {
+            let dx=0, dy=0, dz=0;
+            for (let k=0; k<6; k++) {
+                const ci = D.bi[i][k], w = D.bw[i][k];
+                const cvx = D.cv[ci][0], cvy = D.cv[ci][1], cvz = D.cv[ci][2];
+                const kx = D.ck[f0][ci][0]*(1-a) + D.ck[f1][ci][0]*a;
+                const ky = D.ck[f0][ci][1]*(1-a) + D.ck[f1][ci][1]*a;
+                const kz = D.ck[f0][ci][2]*(1-a) + D.ck[f1][ci][2]*a;
+                dx += w*(kx-cvx);
+                dy += w*(ky-cvy);
+                dz += w*(kz-cvz);
+            }
+            pos[i*3] = ox + dx;
+            pos[i*3+1] = oy + dy;
+            pos[i*3+2] = oz + dz;
+        } else {
+            pos[i*3] = ox;
+            pos[i*3+1] = oy;
+            pos[i*3+2] = oz;
         }
     }
     meshGeo.attributes.position.needsUpdate = true;
-    
-    if (regionPoints && regionPoints.visible) {
-        const rpos = regionPoints.geometry.attributes.position.array;
-        for (let i = 0; i < D.cv.length; i++) {
-            const kx = D.ck[f0][i][0]*(1-a) + D.ck[f1][i][0]*a;
-            const ky = D.ck[f0][i][1]*(1-a) + D.ck[f1][i][1]*a;
-            const kz = D.ck[f0][i][2]*(1-a) + D.ck[f1][i][2]*a;
-            rpos[i*3] = kx;
-            rpos[i*3+1] = ky;
-            rpos[i*3+2] = kz;
-        }
-        regionPoints.geometry.attributes.position.needsUpdate = true;
-    }
+    meshGeo.computeVertexNormals();
 }
 
 document.getElementById('anim').onchange = e => {
@@ -172,12 +132,8 @@ document.getElementById('anim').onchange = e => {
         for (let i = 0; i < origPos.length; i++) pos[i] = origPos[i];
         meshGeo.attributes.position.needsUpdate = true;
     }
-    debugOnce = true;
 };
-document.getElementById('showRegions').onchange = e => {
-    if (regionPoints) regionPoints.visible = e.target.checked;
-    document.getElementById('legend').style.display = e.target.checked ? 'block' : 'none';
-};
+
 window.onresize = () => { camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); };
 
 function animate() {
