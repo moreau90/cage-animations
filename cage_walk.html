@@ -3,35 +3,72 @@
 <style>
 body{margin:0;background:#1a1a2e;}
 #ui{position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.75);padding:14px;border-radius:10px;font-size:13px;color:#ddd}
+#ui label{display:block;margin:4px 0;cursor:pointer}
+#legend{margin-top:10px;font-size:11px}
+#legend div{display:flex;align-items:center;gap:6px;margin:2px 0}
+#legend span{display:inline-block;width:12px;height:12px;border-radius:2px}
 </style>
 </head><body>
 <div id="ui">
   <label><input type="checkbox" id="anim" checked> Animation</label>
+  <label><input type="checkbox" id="showRegions"> Show Regions</label>
   <div>Frame: <span id="fr">0</span></div>
+  <div id="legend" style="display:none">
+    <div><span style="background:#ff0000"></span> Head</div>
+    <div><span style="background:#ff8800"></span> Neck</div>
+    <div><span style="background:#ffff00"></span> Torso</div>
+    <div><span style="background:#88ff00"></span> Waist</div>
+    <div><span style="background:#00ff00"></span> Hips</div>
+    <div><span style="background:#00ffff"></span> L Arm</div>
+    <div><span style="background:#0088ff"></span> R Arm</div>
+    <div><span style="background:#0000ff"></span> L Upper Leg</div>
+    <div><span style="background:#8800ff"></span> R Upper Leg</div>
+    <div><span style="background:#ff00ff"></span> L Lower Leg</div>
+    <div><span style="background:#ff0088"></span> R Lower Leg</div>
+    <div><span style="background:#ffffff"></span> L Foot</div>
+    <div><span style="background:#888888"></span> R Foot</div>
+  </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-// COPIED EXACTLY FROM WORKING test_view.html
+const REGION_COLORS = {
+    head: 0xff0000, neck: 0xff8800, torso: 0xffff00, waist: 0x88ff00, hips: 0x00ff00,
+    l_arm: 0x00ffff, r_arm: 0x0088ff,
+    l_upper_leg: 0x0000ff, r_upper_leg: 0x8800ff,
+    l_lower_leg: 0xff00ff, r_lower_leg: 0xff0088,
+    l_foot: 0xffffff, r_foot: 0x888888
+};
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a1a2e);
-
 const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.01, 100);
 const renderer = new THREE.WebGLRenderer({antialias: true});
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
-
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 scene.add(new THREE.DirectionalLight(0xffffff, 0.8)).position.set(2,3,2);
 
-scene.add(new THREE.AxesHelper(1));
-scene.add(new THREE.GridHelper(2, 10));
-
-// Animation variables
 let meshGeo, origPos, D = null, frame = 0;
+let regionPoints = null;
+
+// Classify cage vertex region (same logic as Python)
+function classifyVertex(x, y, z, minY, height) {
+    const n = (y - minY) / height;
+    if (n > 0.85) return 'head';
+    if (n > 0.8) return 'neck';
+    if (n > 0.6 && n < 0.82 && Math.abs(x) > 0.12) return x > 0 ? 'r_arm' : 'l_arm';
+    if (n > 0.55 && n <= 0.8 && Math.abs(x) <= 0.12) return 'torso';
+    if (n > 0.45 && n <= 0.55) return 'waist';
+    if (n > 0.35 && n <= 0.45) return Math.abs(x) < 0.05 ? 'hips' : (x > 0 ? 'r_upper_leg' : 'l_upper_leg');
+    if (n > 0.18 && n <= 0.35) return x > 0 ? 'r_upper_leg' : 'l_upper_leg';
+    if (n > 0.05 && n <= 0.18) return x > 0 ? 'r_lower_leg' : 'l_lower_leg';
+    if (n <= 0.05) return x > 0 ? 'r_foot' : 'l_foot';
+    return 'torso';
+}
 
 const loader = new THREE.GLTFLoader();
 loader.load('mesh.glb', function(gltf) {
@@ -45,63 +82,114 @@ loader.load('mesh.glb', function(gltf) {
     });
     scene.add(gltf.scene);
     
-    // EXACT SAME CAMERA CODE AS test_view.html
     const box = new THREE.Box3().setFromObject(gltf.scene);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    
-    camera.position.set(center.x, center.y + 0.3, center.z + maxDim * 1.5);
+    camera.position.set(center.x, center.y + 0.3, center.z + Math.max(size.x, size.y, size.z) * 1.5);
     controls.target.copy(center);
     controls.update();
     
-    console.log("Camera at:", camera.position);
-    console.log("Target:", controls.target);
-    
-    // Load cage data AFTER mesh is set up
-    fetch('cage_data.json').then(r=>r.json()).then(d=>{D=d; console.log("Cage loaded");});
+    // Load cage data
+    fetch('cage_data.json').then(r=>r.json()).then(d=>{
+        D = d;
+        console.log("Cage loaded:", D.cv.length, "verts");
+        
+        // Create region-colored points
+        const minY = Math.min(...D.cv.map(v => v[1]));
+        const maxY = Math.max(...D.cv.map(v => v[1]));
+        const height = maxY - minY;
+        
+        const ptGeo = new THREE.BufferGeometry();
+        const positions = [];
+        const colors = [];
+        
+        for (let i = 0; i < D.cv.length; i++) {
+            const [x, y, z] = D.cv[i];
+            positions.push(x, y, z);
+            
+            const region = classifyVertex(x, y, z, minY, height);
+            const color = new THREE.Color(REGION_COLORS[region] || 0xffffff);
+            colors.push(color.r, color.g, color.b);
+        }
+        
+        ptGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        ptGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        
+        regionPoints = new THREE.Points(ptGeo, new THREE.PointsMaterial({
+            size: 0.025,
+            vertexColors: true
+        }));
+        regionPoints.visible = false;
+        scene.add(regionPoints);
+    });
 });
+
+function updateMesh(t) {
+    if (!meshGeo || !origPos || !D) return;
+    
+    const f0 = Math.floor(t) % D.nf;
+    const f1 = (f0+1) % D.nf;
+    const a = t - Math.floor(t);
+    
+    const pos = meshGeo.attributes.position.array;
+    for (let i = 0; i < origPos.length/3; i++) {
+        let dx=0, dy=0, dz=0;
+        for (let k=0; k<6; k++) {
+            const ci = D.bi[i][k], w = D.bw[i][k];
+            const cvx = D.cv[ci][0], cvy = D.cv[ci][1], cvz = D.cv[ci][2];
+            const kx = D.ck[f0][ci][0]*(1-a) + D.ck[f1][ci][0]*a;
+            const ky = D.ck[f0][ci][1]*(1-a) + D.ck[f1][ci][1]*a;
+            const kz = D.ck[f0][ci][2]*(1-a) + D.ck[f1][ci][2]*a;
+            dx += w*(kx-cvx);
+            dy += w*(ky-cvy);
+            dz += w*(kz-cvz);
+        }
+        pos[i*3] = origPos[i*3] + dx;
+        pos[i*3+1] = origPos[i*3+1] + dy;
+        pos[i*3+2] = origPos[i*3+2] + dz;
+    }
+    meshGeo.attributes.position.needsUpdate = true;
+    
+    // Update region points positions
+    if (regionPoints && regionPoints.visible) {
+        const rpos = regionPoints.geometry.attributes.position.array;
+        for (let i = 0; i < D.cv.length; i++) {
+            const kx = D.ck[f0][i][0]*(1-a) + D.ck[f1][i][0]*a;
+            const ky = D.ck[f0][i][1]*(1-a) + D.ck[f1][i][1]*a;
+            const kz = D.ck[f0][i][2]*(1-a) + D.ck[f1][i][2]*a;
+            rpos[i*3] = kx;
+            rpos[i*3+1] = ky;
+            rpos[i*3+2] = kz;
+        }
+        regionPoints.geometry.attributes.position.needsUpdate = true;
+    }
+}
+
+document.getElementById('anim').onchange = e => {
+    if (!e.target.checked && meshGeo && origPos) {
+        const pos = meshGeo.attributes.position.array;
+        for (let i = 0; i < origPos.length; i++) pos[i] = origPos[i];
+        meshGeo.attributes.position.needsUpdate = true;
+    }
+};
+
+document.getElementById('showRegions').onchange = e => {
+    if (regionPoints) regionPoints.visible = e.target.checked;
+    document.getElementById('legend').style.display = e.target.checked ? 'block' : 'none';
+};
+
+window.onresize = () => { camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); };
 
 function animate() {
     requestAnimationFrame(animate);
-    
-    // Only deform if animation enabled and data ready
-    if (document.getElementById('anim').checked && meshGeo && origPos && D) {
+    if (document.getElementById('anim').checked && D) {
         frame += 0.5;
-        const f0 = Math.floor(frame) % D.nf;
-        const f1 = (f0+1) % D.nf;
-        const a = frame - Math.floor(frame);
-        
-        const pos = meshGeo.attributes.position.array;
-        for (let i = 0; i < origPos.length/3; i++) {
-            let dx=0, dy=0, dz=0;
-            for (let k=0; k<6; k++) {
-                const ci = D.bi[i][k], w = D.bw[i][k];
-                const cvx = D.cv[ci][0], cvy = D.cv[ci][1], cvz = D.cv[ci][2];
-                const kx = D.ck[f0][ci][0]*(1-a) + D.ck[f1][ci][0]*a;
-                const ky = D.ck[f0][ci][1]*(1-a) + D.ck[f1][ci][1]*a;
-                const kz = D.ck[f0][ci][2]*(1-a) + D.ck[f1][ci][2]*a;
-                dx += w*(kx-cvx);
-                dy += w*(ky-cvy);
-                dz += w*(kz-cvz);
-            }
-            pos[i*3] = origPos[i*3] + dx;
-            pos[i*3+1] = origPos[i*3+1] + dy;
-            pos[i*3+2] = origPos[i*3+2] + dz;
-        }
-        meshGeo.attributes.position.needsUpdate = true;
-        document.getElementById('fr').textContent = f0;
+        updateMesh(frame);
     }
-    
     controls.update();
+    document.getElementById('fr').textContent = Math.floor(frame % (D ? D.nf : 30));
     renderer.render(scene, camera);
 }
 animate();
-
-window.onresize = () => {
-    camera.aspect = innerWidth/innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
-};
 </script>
 </body></html>
