@@ -11,150 +11,130 @@ body{margin:0;background:#1a1a2e;overflow:hidden;font-family:system-ui;color:#dd
   <label><input type="checkbox" id="showMesh" checked> Mesh</label>
   <label><input type="checkbox" id="showCage"> Cage</label>
   <label><input type="checkbox" id="showPts"> Points</label>
+  <div id="status">Loading...</div>
 </div>
-<div id="bottom">Frame: <span id="info">0</span> | Speed: <input type="range" id="spd" min="0" max="3" step="0.1" value="1" style="width:100px"> | Drag=rotate, Scroll=zoom</div>
+<div id="bottom">Frame: <span id="info">0</span> | Speed: <input type="range" id="spd" min="0" max="3" step="0.1" value="1" style="width:100px"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-// CAGE DATA - will be loaded from external file
-let D = null;
-
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a1a2e);
-
 const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.01, 100);
 const renderer = new THREE.WebGLRenderer({antialias: true});
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
-
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 scene.add(new THREE.DirectionalLight(0xffffff, 0.8)).position.set(2,3,2);
 
-let meshObj, meshGeo, origPos;
-let cageGeo, ptGeo, cageWire, cagePts;
+let meshObj, meshGeo, origPos, D = null;
 let frame = 0, speed = 1;
 
-// Load cage data first, then mesh
-fetch('cage_data.json')
-.then(r => r.json())
-.then(data => {
-    D = data;
-    console.log("Cage data loaded:", D.nf, "frames,", D.cv.length, "cage verts");
-    
-    // Create cage visualization
-    cageGeo = new THREE.BufferGeometry();
-    cageGeo.setAttribute('position', new THREE.Float32BufferAttribute(D.cv.flat(), 3));
-    cageWire = new THREE.LineSegments(
-        new THREE.WireframeGeometry(new THREE.BufferGeometry().setFromPoints(D.cv.map(v => new THREE.Vector3(...v)))),
-        new THREE.LineBasicMaterial({color: 0x00ff00, opacity: 0.5, transparent: true})
-    );
-    cageWire.visible = false;
-    scene.add(cageWire);
+const status = document.getElementById('status');
 
-    ptGeo = new THREE.BufferGeometry();
-    ptGeo.setAttribute('position', new THREE.Float32BufferAttribute(D.cv.flat(), 3));
-    cagePts = new THREE.Points(ptGeo, new THREE.PointsMaterial({color: 0xffff00, size: 0.015}));
-    cagePts.visible = false;
-    scene.add(cagePts);
-    
-    // Now load mesh
-    loadMesh();
-});
+// Load mesh FIRST - same as working test_view.html
+const loader = new THREE.GLTFLoader();
+status.textContent = 'Loading mesh...';
 
-function loadMesh() {
-    const loader = new THREE.GLTFLoader();
-    loader.load('mesh.glb', function(gltf) {
-        gltf.scene.traverse(child => {
-            if (child.isMesh) {
-                meshObj = child;
-                meshGeo = child.geometry;
-                origPos = meshGeo.attributes.position.array.slice();
-                child.material.metalness = 0;
-                child.material.roughness = 0.7;
-            }
-        });
-        scene.add(gltf.scene);
-        
-        // SAME CAMERA CODE AS WORKING test_view.html
-        const box = new THREE.Box3().setFromObject(gltf.scene);
-        const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-        
-        camera.position.set(center.x, center.y + 0.3, center.z + maxDim * 1.5);
-        controls.target.copy(center);
-        controls.update();
-        
-        console.log("Mesh loaded, camera set");
-        animate();
+loader.load('mesh.glb', function(gltf) {
+    console.log("GLB loaded");
+    
+    gltf.scene.traverse(child => {
+        if (child.isMesh) {
+            meshObj = child;
+            meshGeo = child.geometry;
+            origPos = meshGeo.attributes.position.array.slice();
+            child.material.metalness = 0;
+            child.material.roughness = 0.7;
+            console.log("Mesh:", origPos.length/3, "verts");
+        }
     });
-}
+    scene.add(gltf.scene);
+    
+    // Camera - EXACTLY like test_view.html
+    const box = new THREE.Box3().setFromObject(gltf.scene);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    camera.position.set(center.x, center.y + 0.3, center.z + maxDim * 1.5);
+    controls.target.copy(center);
+    controls.update();
+    console.log("Camera ready");
+    
+    status.textContent = 'Loading cage data...';
+    
+    // Now load cage data
+    fetch('cage_data.json')
+    .then(r => r.json())
+    .then(data => {
+        D = data;
+        console.log("Cage data:", D.cv.length, "cage verts,", D.nf, "frames");
+        console.log("Bindings:", D.bi.length, "mesh verts");
+        status.textContent = 'Ready!';
+    })
+    .catch(err => {
+        console.error("Cage data error:", err);
+        status.textContent = 'Cage error - mesh only';
+    });
+    
+    animate();
+    
+}, undefined, function(err) {
+    console.error("GLB error:", err);
+    status.textContent = 'GLB load failed!';
+});
 
 function updateMesh(t) {
     if (!meshGeo || !origPos || !D) return;
     
-    const f0 = Math.floor(t) % D.nf, f1 = (f0+1) % D.nf, alpha = t - Math.floor(t);
-    const deltas = new Float32Array(D.cv.length * 3);
-    
-    for (let i = 0; i < D.cv.length; i++) {
-        deltas[i*3]   = (D.ck[f0][i][0]*(1-alpha)+D.ck[f1][i][0]*alpha) - D.cv[i][0];
-        deltas[i*3+1] = (D.ck[f0][i][1]*(1-alpha)+D.ck[f1][i][1]*alpha) - D.cv[i][1];
-        deltas[i*3+2] = (D.ck[f0][i][2]*(1-alpha)+D.ck[f1][i][2]*alpha) - D.cv[i][2];
-    }
-    
-    const pos = meshGeo.attributes.position.array;
-    const numVerts = origPos.length / 3;
-    
-    for (let i = 0; i < numVerts; i++) {
-        let dx=0, dy=0, dz=0;
-        for (let k=0; k<6; k++) { 
-            const ci = D.bi[i][k], w = D.bw[i][k]; 
-            dx += w*deltas[ci*3]; 
-            dy += w*deltas[ci*3+1]; 
-            dz += w*deltas[ci*3+2]; 
+    try {
+        const f0 = Math.floor(t) % D.nf;
+        const f1 = (f0+1) % D.nf;
+        const alpha = t - Math.floor(t);
+        
+        const deltas = new Float32Array(D.cv.length * 3);
+        for (let i = 0; i < D.cv.length; i++) {
+            deltas[i*3]   = (D.ck[f0][i][0]*(1-alpha)+D.ck[f1][i][0]*alpha) - D.cv[i][0];
+            deltas[i*3+1] = (D.ck[f0][i][1]*(1-alpha)+D.ck[f1][i][1]*alpha) - D.cv[i][1];
+            deltas[i*3+2] = (D.ck[f0][i][2]*(1-alpha)+D.ck[f1][i][2]*alpha) - D.cv[i][2];
         }
-        pos[i*3] = origPos[i*3]+dx; 
-        pos[i*3+1] = origPos[i*3+1]+dy; 
-        pos[i*3+2] = origPos[i*3+2]+dz;
-    }
-    
-    meshGeo.attributes.position.needsUpdate = true;
-    meshGeo.computeVertexNormals();
-    
-    // Update cage visualization
-    if (cageGeo && ptGeo) {
-        const cp = cageGeo.attributes.position.array;
-        const pp = ptGeo.attributes.position.array;
-        for (let i = 0; i < D.cv.length; i++) { 
-            cp[i*3]=pp[i*3]=D.cv[i][0]+deltas[i*3]; 
-            cp[i*3+1]=pp[i*3+1]=D.cv[i][1]+deltas[i*3+1]; 
-            cp[i*3+2]=pp[i*3+2]=D.cv[i][2]+deltas[i*3+2]; 
+        
+        const pos = meshGeo.attributes.position.array;
+        const numVerts = origPos.length / 3;
+        
+        for (let i = 0; i < numVerts; i++) {
+            let dx=0, dy=0, dz=0;
+            for (let k=0; k<6; k++) { 
+                const ci = D.bi[i][k];
+                const w = D.bw[i][k]; 
+                dx += w*deltas[ci*3]; 
+                dy += w*deltas[ci*3+1]; 
+                dz += w*deltas[ci*3+2]; 
+            }
+            pos[i*3] = origPos[i*3]+dx; 
+            pos[i*3+1] = origPos[i*3+1]+dy; 
+            pos[i*3+2] = origPos[i*3+2]+dz;
         }
-        cageGeo.attributes.position.needsUpdate = true; 
-        ptGeo.attributes.position.needsUpdate = true;
+        
+        meshGeo.attributes.position.needsUpdate = true;
+        meshGeo.computeVertexNormals();
+    } catch(e) {
+        console.error("Deform error:", e);
     }
 }
 
 document.getElementById('showMesh').onchange = e => { if(meshObj) meshObj.visible = e.target.checked; };
-document.getElementById('showCage').onchange = e => { if(cageWire) cageWire.visible = e.target.checked; };
-document.getElementById('showPts').onchange = e => { if(cagePts) cagePts.visible = e.target.checked; };
 document.getElementById('spd').oninput = e => speed = parseFloat(e.target.value);
-
-window.onresize = () => {
-    camera.aspect = innerWidth/innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
-};
+window.onresize = () => { camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); };
 
 function animate() {
     requestAnimationFrame(animate);
     frame += speed * 0.5;
     updateMesh(frame);
     controls.update();
-    document.getElementById('info').textContent = (frame % (D ? D.nf : 1)).toFixed(1);
+    document.getElementById('info').textContent = (frame % (D ? D.nf : 30)).toFixed(1);
     renderer.render(scene, camera);
 }
 </script>
