@@ -385,11 +385,11 @@ loader.parse(glbData.buffer, '', function(gltf) {
     });
     scene.add(gltf.scene);
     
-    const box = new THREE.Box3().setFromObject(gltf.scene);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    controls.target.copy(center);
-    camera.position.set(center.x, center.y, center.z + Math.max(size.x, size.y, size.z) * 2);
+    // Fixed camera - mesh at origin, ~1 unit tall
+    
+    
+    controls.target.set(0, 0, 0);
+    camera.position.set(0, 0, 2);
     controls.update();
     
     document.getElementById('loading').style.display = 'none';
