@@ -106,11 +106,14 @@
   let regionId;
   let cageMesh;
   let meshHeight = 1;
+  let cageSmoothed = null;
 
   // JSON + motion
   let anchors=null, bounds=null;
   let motionData=null, armMotionData=null, spineMotionData=null;
   let cycleDuration=1.0;
+  const ENABLE_CAGE_SMOOTHING = true;
+  const CAGE_SMOOTHING = 0.15;
 
   const R = {}; // region arrays
   const P = {}; // pivots
@@ -333,6 +336,19 @@
     cageMesh.geometry.attributes.position.needsUpdate = true;
   }
 
+  function applyCageSmoothing(){
+    if(!ENABLE_CAGE_SMOOTHING || CAGE_SMOOTHING <= 0) return;
+    if(!cageSmoothed || cageSmoothed.length !== cagePos.length){
+      cageSmoothed = new Float32Array(cagePos.length);
+      cageSmoothed.set(cagePos);
+    }
+    const s = clamp(CAGE_SMOOTHING, 0, 1);
+    for(let i=0;i<cagePos.length;i++){
+      cageSmoothed[i] = cageSmoothed[i] * (1 - s) + cagePos[i] * s;
+      cagePos[i] = cageSmoothed[i];
+    }
+  }
+
   // ---------------- Foot plant correction ----------------
   function footLockCorrection(t){
     const plantStrength = +$('plant').value;
@@ -451,12 +467,80 @@
 
     // ----- Foot lock correction LAST (so it counteracts all rotations) -----
     footLockCorrection(t);
+    applyCageSmoothing();
   }
 
 
-function buildBindKNN(meshRestPos, cageRest, K = 8) {
+function normalizeRegionId(regionIdInput, cageLen) {
+  if (!Array.isArray(regionIdInput)) {
+    console.warn("regions.regionId missing or invalid. Filling with zeros.");
+    return new Array(cageLen).fill(0);
+  }
+  if (regionIdInput.length === cageLen) return regionIdInput.slice();
+  if (regionIdInput.length > cageLen) {
+    console.warn(`regions.regionId longer than cageRest (${regionIdInput.length} > ${cageLen}). Truncating.`);
+    return regionIdInput.slice(0, cageLen);
+  }
+  console.warn(`regions.regionId shorter than cageRest (${regionIdInput.length} < ${cageLen}). Padding.`);
+  const padded = regionIdInput.slice();
+  const fillVal = regionIdInput.length ? regionIdInput[regionIdInput.length - 1] : 0;
+  while (padded.length < cageLen) padded.push(fillVal);
+  return padded;
+}
+
+const REGION_ADJ = {
+  0: [0, 1, 2, 7, 8],   // torso can blend to upper legs/arms
+  1: [1, 3, 0],         // l_thigh -> l_shin + torso
+  2: [2, 4, 0],         // r_thigh -> r_shin + torso
+  3: [3, 5, 1],         // l_shin -> l_foot + l_thigh
+  4: [4, 6, 2],         // r_shin -> r_foot + r_thigh
+  5: [5, 3],            // l_foot -> l_shin
+  6: [6, 4],            // r_foot -> r_shin
+  7: [7, 9, 0],         // l_upperarm -> l_forearm + torso
+  8: [8, 10, 0],        // r_upperarm -> r_forearm + torso
+  9: [9, 7],            // l_forearm -> l_upperarm
+  10: [10, 8],          // r_forearm -> r_upperarm
+  11: [11]              // head/neck (if present)
+};
+
+function classifyMeshRegion(meta, x, y, z){
+  if (!meta || meta.height === undefined) return null;
+  const miny = meta.miny;
+  const H = meta.height || 1e-6;
+  const cx = meta.cx ?? 0;
+  const torsoHalf = meta.torso_half ?? 0.08;
+  const armThresh = meta.arm_thresh ?? torsoHalf * 1.15;
+  const ny = (y - miny) / H;
+
+  if (ny < 0.06) return x < cx ? 5 : 6; // feet
+  if (ny < 0.40) {
+    if (ny >= 0.22) return x < cx ? 1 : 2; // thigh
+    return x < cx ? 3 : 4; // shin
+  }
+  if (ny > 0.82) return 11; // head/neck
+
+  const armBand = ny > 0.55 && ny < 0.80 && Math.abs(x - cx) > armThresh;
+  if (armBand) {
+    const armDist = Math.abs(x - cx);
+    const split = armThresh * 1.4;
+    if (armDist <= split) return x < cx ? 7 : 8;
+    return x < cx ? 9 : 10;
+  }
+
+  return 0; // torso
+}
+
+function buildBindKNNRegion(meshRestPos, cageRest, regionIdInput, regionMeta, K = 8) {
   const nMesh = meshRestPos.length / 3;
   const nCage = cageRest.length;
+  const regionIdLocal = normalizeRegionId(regionIdInput, nCage);
+
+  const regionToIndices = new Map();
+  for (let ci = 0; ci < nCage; ci++) {
+    const r = regionIdLocal[ci];
+    if (!regionToIndices.has(r)) regionToIndices.set(r, []);
+    regionToIndices.get(r).push(ci);
+  }
 
   const idx = new Int32Array(nMesh * K);
   const w   = new Float32Array(nMesh * K);
@@ -464,11 +548,38 @@ function buildBindKNN(meshRestPos, cageRest, K = 8) {
   for (let vi = 0; vi < nMesh; vi++) {
     const x = meshRestPos[vi*3], y = meshRestPos[vi*3+1], z = meshRestPos[vi*3+2];
 
+    let meshRegion = classifyMeshRegion(regionMeta, x, y, z);
+    if (meshRegion === null) {
+      let nearestRegion = 0;
+      let nearestD2 = 1e30;
+      for (let ci = 0; ci < nCage; ci++) {
+        const cx = cageRest[ci][0], cy = cageRest[ci][1], cz = cageRest[ci][2];
+        const dx = x - cx, dy = y - cy, dz = z - cz;
+        const d2 = dx*dx + dy*dy + dz*dz;
+        if (d2 < nearestD2) {
+          nearestD2 = d2;
+          nearestRegion = regionIdLocal[ci];
+        }
+      }
+      meshRegion = nearestRegion;
+    }
+
+    const allowedRegions = REGION_ADJ[meshRegion] || [meshRegion];
+    const candidateIndices = [];
+    for (const r of allowedRegions) {
+      const list = regionToIndices.get(r);
+      if (list) candidateIndices.push(...list);
+    }
+
+    if (!candidateIndices.length) {
+      for (let ci = 0; ci < nCage; ci++) candidateIndices.push(ci);
+    }
+
     const bestD2 = new Float32Array(K);
     const bestI  = new Int32Array(K);
-    for (let k = 0; k < K; k++) { bestD2[k] = 1e30; bestI[k] = -1; }
+    for (let k = 0; k < K; k++) { bestD2[k] = 1e30; bestI[k] = candidateIndices[0] ?? 0; }
 
-    for (let ci = 0; ci < nCage; ci++) {
+    for (const ci of candidateIndices) {
       const cx = cageRest[ci][0], cy = cageRest[ci][1], cz = cageRest[ci][2];
       const dx = x - cx, dy = y - cy, dz = z - cz;
       const d2 = dx*dx + dy*dy + dz*dz;
@@ -493,7 +604,7 @@ function buildBindKNN(meshRestPos, cageRest, K = 8) {
     for (let k = 0; k < K; k++) w[vi*K + k] /= sum;
   }
 
-  return { K, idx, w };
+  return { K, idx, w, regionId: regionIdLocal };
 }
 
   // ---------------- Init ----------------
@@ -559,29 +670,35 @@ console.log("region meta =", regions.meta);
       cagePos[i*3+2]=cageRest[i][2];
     }
 
-    // TEMP TEST: ignore bind.json and build a clean bind
-const built = buildBindKNN(meshRestPos, cageRest, 8);
-K = built.K;
-bindIdx = built.idx;
-bindW = built.w;
+    // regions (validate length to match cage vertices)
+    regionId = normalizeRegionId(regions.regionId, cageRest.length);
 
-// SAFE max calc (no spread)
-let maxBindIdx = -1;
-for (let i = 0; i < bindIdx.length; i++) {
-  if (bindIdx[i] > maxBindIdx) maxBindIdx = bindIdx[i];
-}
+    console.log("cageRest length =", cageRest.length);
+    console.log("regions.regionId length =", regions.regionId?.length);
+    console.log("mesh vert count =", meshRestPos.length / 3);
 
-console.log("Built bind:", {
-  K,
-  cageVerts: cageRest.length,
-  meshVerts: meshRestPos.length / 3,
-  maxBindIdx
-});
+    // TEMP TEST: ignore bind.json and build a clean bind (region constrained)
+    const built = buildBindKNNRegion(meshRestPos, cageRest, regionId, regions.meta, 8);
+    K = built.K;
+    bindIdx = built.idx;
+    bindW = built.w;
+    regionId = built.regionId;
 
+    // SAFE max calc (no spread)
+    let maxBindIdx = -1;
+    for (let i = 0; i < bindIdx.length; i++) {
+      if (bindIdx[i] > maxBindIdx) maxBindIdx = bindIdx[i];
+    }
+    if (maxBindIdx >= cageRest.length) {
+      console.warn("bindIdx range exceeds cageRest length:", maxBindIdx, cageRest.length);
+    }
 
-
-    // regions
-    regionId = regions.regionId;
+    console.log("Built bind:", {
+      K,
+      cageVerts: cageRest.length,
+      meshVerts: meshRestPos.length / 3,
+      maxBindIdx
+    });
 
 
     R.torso = indicesByRegion(0);
