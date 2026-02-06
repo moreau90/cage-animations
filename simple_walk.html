@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Simple Walk</title>
+<style>
+body{margin:0;background:#1a1a2e;font-family:system-ui}
+#ui{position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.85);padding:14px;border-radius:10px;font-size:13px;color:#ddd}
+#ui label{display:block;margin:6px 0;cursor:pointer}
+</style>
+</head><body>
+<div id="ui">
+  <h3 style="margin:0 0 10px 0;color:#fff">Simple Walk Test</h3>
+  <label><input type="checkbox" id="animate"> Animate</label>
+  <div style="margin-top:10px">
+    Speed: <input type="range" id="speed" min="0" max="2" step="0.1" value="1" style="width:100px">
+  </div>
+  <div style="margin-top:5px">
+    Leg swing: <input type="range" id="legSwing" min="0" max="0.4" step="0.02" value="0.2" style="width:100px">
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2e);
+
+// CAMERA - positioned in front of where mesh will be
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.01, 100);
+camera.position.set(0, 0, 2.5);  // In front, at origin height
+camera.lookAt(0, 0, 0);  // Look at origin
+
+const renderer = new THREE.WebGLRenderer({antialias: true});
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// Lights
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+scene.add(new THREE.DirectionalLight(0xffffff, 0.8)).position.set(2, 3, 2);
+
+let meshObj = null;
+let meshGeo = null;
+let origPos = null;
+let frame = 0;
+let speed = 1;
+let legSwing = 0.2;
+
+// Create controls BEFORE loading mesh (like test_view.html)
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+// Start animation loop immediately
+function animate() {
+    requestAnimationFrame(animate);
+    if (document.getElementById('animate').checked && meshGeo) {
+        frame += speed;
+        updateMesh(frame);
+    }
+    controls.update();
+    renderer.render(scene, camera);
+}
+animate();
+
+const joints = {
+    l_hip: [-0.094, -0.098, -0.042],
+    r_hip: [0.094, -0.098, -0.038],
+    l_knee: [-0.019, -0.274, -0.048],
+    r_knee: [0.102, -0.269, -0.048],
+};
+
+const minY = -0.501, maxY = 0.500, height = maxY - minY, centerX = 0.0;
+function ny(y) { return (y - minY) / height; }
+
+function rotateX(x, y, z, px, py, pz, angle) {
+    const dy = y - py, dz = z - pz;
+    const c = Math.cos(angle), s = Math.sin(angle);
+    return [x, py + dy*c - dz*s, pz + dy*s + dz*c];
+}
+
+const loader = new THREE.GLTFLoader();
+loader.load('mesh.glb', function(gltf) {
+    gltf.scene.traverse(child => {
+        if (child.isMesh) {
+            meshObj = child;
+            meshGeo = child.geometry;
+            origPos = meshGeo.attributes.position.array.slice();
+            child.material.metalness = 0;
+            child.material.roughness = 0.7;
+            child.material.side = THREE.DoubleSide;
+        }
+    });
+
+    // Add mesh to scene
+    scene.add(gltf.scene);
+
+    // Fit camera to object - SAME AS test_view.html
+    const box = new THREE.Box3().setFromObject(gltf.scene);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+
+    camera.position.set(center.x, center.y + 0.3, center.z + maxDim * 1.5);
+    controls.target.copy(center);
+    controls.update();
+});
+
+function updateMesh(t) {
+    if (!meshGeo || !origPos) return;
+
+    const pos = meshGeo.attributes.position.array;
+    const numVerts = origPos.length / 3;
+    const phase = t * 0.1;
+
+    // Stronger animation values
+    const hipSwing = legSwing * 1.5;  // More hip rotation
+    const kneeSwing = legSwing * 2.0;  // More knee bend
+    const armSwing = 0.12;  // Arm forward/back
+
+    for (let i = 0; i < numVerts; i++) {
+        let x = origPos[i*3], y = origPos[i*3+1], z = origPos[i*3+2];
+        const normY = ny(y);
+
+        // LEFT LEG - rotate around hip, then knee
+        if (x < centerX - 0.01 && normY < 0.42 && normY > 0.01) {
+            const hipAngle = Math.sin(phase) * hipSwing;
+            [x, y, z] = rotateX(x, y, z, joints.l_hip[0], joints.l_hip[1], joints.l_hip[2], hipAngle);
+
+            // Lower leg bends at knee during forward swing
+            if (normY < 0.28) {
+                const kneeAngle = Math.max(0, Math.sin(phase)) * kneeSwing;
+                const [kx, ky, kz] = rotateX(joints.l_knee[0], joints.l_knee[1], joints.l_knee[2],
+                                              joints.l_hip[0], joints.l_hip[1], joints.l_hip[2], hipAngle);
+                [x, y, z] = rotateX(x, y, z, kx, ky, kz, kneeAngle);
+            }
+        }
+
+        // RIGHT LEG - opposite phase
+        else if (x > centerX + 0.01 && normY < 0.42 && normY > 0.01) {
+            const hipAngle = Math.sin(phase + Math.PI) * hipSwing;
+            [x, y, z] = rotateX(x, y, z, joints.r_hip[0], joints.r_hip[1], joints.r_hip[2], hipAngle);
+
+            if (normY < 0.28) {
+                const kneeAngle = Math.max(0, Math.sin(phase + Math.PI)) * kneeSwing;
+                const [kx, ky, kz] = rotateX(joints.r_knee[0], joints.r_knee[1], joints.r_knee[2],
+                                              joints.r_hip[0], joints.r_hip[1], joints.r_hip[2], hipAngle);
+                [x, y, z] = rotateX(x, y, z, kx, ky, kz, kneeAngle);
+            }
+        }
+
+        // LEFT ARM - swings opposite to left leg (z direction)
+        else if (x < centerX - 0.12 && normY > 0.30 && normY < 0.85) {
+            z += Math.sin(phase + Math.PI) * armSwing;
+        }
+
+        // RIGHT ARM - swings opposite to right leg
+        else if (x > centerX + 0.12 && normY > 0.30 && normY < 0.85) {
+            z += Math.sin(phase) * armSwing;
+        }
+
+        // HIPS - subtle side-to-side sway
+        else if (normY > 0.38 && normY < 0.50) {
+            x += Math.sin(phase * 2) * 0.008;
+            y += Math.sin(phase * 2 + Math.PI/2) * 0.005;  // Slight bob
+        }
+
+        // TORSO - subtle twist
+        else if (normY > 0.50 && normY < 0.75) {
+            const twist = Math.sin(phase) * 0.015;
+            const rx = x - centerX;
+            x = centerX + rx * Math.cos(twist) - z * Math.sin(twist);
+            z = rx * Math.sin(twist) + z * Math.cos(twist);
+        }
+
+        // HEAD - subtle bob
+        else if (normY > 0.85) {
+            y += Math.sin(phase * 2) * 0.005;
+        }
+
+        pos[i*3] = x; pos[i*3+1] = y; pos[i*3+2] = z;
+    }
+
+    meshGeo.attributes.position.needsUpdate = true;
+    meshGeo.computeVertexNormals();
+}
+
+document.getElementById('speed').oninput = e => speed = parseFloat(e.target.value);
+document.getElementById('legSwing').oninput = e => legSwing = parseFloat(e.target.value);
+
+window.onresize = () => {
+    camera.aspect = innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+};
+</script>
+</body></html>

@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Cage + Mixamo Walk (Anchors + Foot Lock)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body{margin:0;background:#0f1220;font-family:system-ui}
+    #ui{position:absolute;top:12px;left:12px;background:rgba(0,0,0,.78);color:#e7e7e7;padding:12px;border-radius:12px;z-index:5;max-width:360px;font-size:13px}
+    .row{display:flex;gap:10px;align-items:center;margin:8px 0}
+    .row label{min-width:130px;color:#bfe7ff}
+    input[type=range]{flex:1}
+    #status{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);color:#ddd;padding:10px 14px;border-radius:12px;z-index:5}
+    .section{margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12)}
+    .sectionTitle{color:#4ecdc4;font-weight:700;margin-bottom:6px}
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <div class="sectionTitle">Cage + Mixamo Walk</div>
+
+    <div class="row"><label><input id="play" type="checkbox" checked /> Animate</label></div>
+    <div class="row"><label>Speed</label><input id="speed" type="range" min="0" max="2" step="0.05" value="1" /><span id="speedVal">1.00</span></div>
+    <div class="row"><label>Alpha (stiffness)</label><input id="alpha" type="range" min="0" max="1" step="0.02" value="0.55" /><span id="alphaVal">0.55</span></div>
+
+    <div class="section">
+      <div class="sectionTitle">Mixamo axis fixes</div>
+      <div class="row"><label><input type="checkbox" id="flipHip" checked /> Flip Hip</label></div>
+      <div class="row"><label><input type="checkbox" id="flipKnee" checked /> Flip Knee</label></div>
+      <div class="row"><label><input type="checkbox" id="flipAnkleX" /> Flip Ankle X</label></div>
+      <div class="row"><label>Ankle L offset (deg)</label><input id="ankleOffL" type="range" min="-120" max="120" step="1" value="71" /><span id="ankleOffLVal">71</span></div>
+      <div class="row"><label>Ankle R offset (deg)</label><input id="ankleOffR" type="range" min="-120" max="120" step="1" value="71" /><span id="ankleOffRVal">71</span></div>
+    </div>
+
+    <div class="section">
+      <div class="sectionTitle">Foot plant</div>
+      <div class="row"><label>Plant strength</label><input id="plant" type="range" min="0" max="1" step="0.05" value="1" /><span id="plantVal">1.00</span></div>
+      <div class="row"><label>Knee stance thresh (deg)</label><input id="stanceKnee" type="range" min="5" max="60" step="1" value="25" /><span id="stanceKneeVal">25</span></div>
+      <div class="row"><label><input id="showCage" type="checkbox" checked /> Show cage</label></div>
+    </div>
+
+    <div class="section">
+      <div class="sectionTitle">Body motion</div>
+      <div class="row"><label><input id="enableBody" type="checkbox" checked /> Enable</label></div>
+      <div class="row"><label>Bob</label><input id="hipBob" type="range" min="0" max="0.06" step="0.005" value="0.02" /><span id="hipBobVal">0.02</span></div>
+      <div class="row"><label>Hip sway</label><input id="hipSway" type="range" min="0" max="1" step="0.1" value="0.5" /><span id="hipSwayVal">0.5</span></div>
+      <div class="row"><label>Forward lean (deg)</label><input id="forwardLean" type="range" min="0" max="20" step="1" value="5" /><span id="forwardLeanVal">5</span></div>
+      <div class="row"><label>Spine twist</label><input id="spineTwist" type="range" min="0" max="1" step="0.1" value="0.3" /><span id="spineTwistVal">0.3</span></div>
+    </div>
+  </div>
+
+  <div id="status">Loading…</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+  <script>
+  // ---------------- UI helpers ----------------
+  const $ = (id)=>document.getElementById(id);
+  function bindRange(id, outId, fmt=(v)=>v){
+    const el=$(id), out=$(outId);
+    const set=()=>out.textContent=fmt(el.value);
+    el.addEventListener('input', set); set();
+  }
+  bindRange('speed','speedVal', v=>(+v).toFixed(2));
+  bindRange('alpha','alphaVal', v=>(+v).toFixed(2));
+  bindRange('plant','plantVal', v=>(+v).toFixed(2));
+  bindRange('stanceKnee','stanceKneeVal', v=>String(v));
+  bindRange('ankleOffL','ankleOffLVal', v=>String(v));
+  bindRange('ankleOffR','ankleOffRVal', v=>String(v));
+  bindRange('hipBob','hipBobVal', v=>(+v).toFixed(2));
+  bindRange('hipSway','hipSwayVal', v=>(+v).toFixed(1));
+  bindRange('forwardLean','forwardLeanVal', v=>String(v));
+  bindRange('spineTwist','spineTwistVal', v=>(+v).toFixed(1));
+
+  const statusEl = $('status');
+
+  // ---------------- Scene ----------------
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0f1220);
+
+  const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.01, 200);
+  const renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(innerWidth, innerHeight);
+  document.body.appendChild(renderer.domElement);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+  dir.position.set(2,3,2);
+  scene.add(dir);
+
+  window.addEventListener('resize', ()=>{
+    camera.aspect = innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  });
+
+  // ---------------- Data ----------------
+  let meshObj, meshGeo, meshRestPos;
+  let cageRest, cageFaces, cagePos;
+  let bindIdx, bindW, K;
+  let regionId;
+  let cageMesh;
+  let meshHeight = 1;
+
+  // JSON + motion
+  let anchors=null, bounds=null;
+  let motionData=null, armMotionData=null, spineMotionData=null;
+  let cycleDuration=1.0;
+
+  const R = {}; // region arrays
+  const P = {}; // pivots
+
+  // Foot lock
+  let lockL=null, lockR=null;
+
+  // ---------------- Utilities ----------------
+  function clamp(x,a,b){ return Math.max(a, Math.min(b,x)); }
+
+  function rotateAroundAxis(px, py, pz, ox, oy, oz, ax, ay, az, angle) {
+    let x = px - ox, y = py - oy, z = pz - oz;
+    const c = Math.cos(angle), s = Math.sin(angle), t = 1 - c;
+    const len = Math.hypot(ax, ay, az) || 1;
+    ax/=len; ay/=len; az/=len;
+
+    const nx = (t*ax*ax + c)*x + (t*ax*ay - s*az)*y + (t*ax*az + s*ay)*z;
+    const ny = (t*ax*ay + s*az)*x + (t*ay*ay + c)*y + (t*ay*az - s*ax)*z;
+    const nz = (t*ax*az - s*ay)*x + (t*ay*az + s*ax)*y + (t*az*az + c)*z;
+    return [nx + ox, ny + oy, nz + oz];
+  }
+
+  async function loadJSON(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) {
+    const msg = `loadJSON failed: ${url} (${res.status} ${res.statusText})`;
+    throw new Error(msg);
+  }
+  try {
+    return await res.json();
+  } catch (e) {
+    throw new Error(`loadJSON parse failed: ${url} (${e.message})`);
+  }
+}
+
+
+  function indicesByRegion(r){
+    const out=[];
+    for(let i=0;i<regionId.length;i++) if(regionId[i]===r) out.push(i);
+    return out;
+  }
+
+  function applyRotX(indices, pivot, ang){
+    const [px,py,pz]=pivot;
+    for(const i of indices){
+      let x=cagePos[i*3], y=cagePos[i*3+1], z=cagePos[i*3+2];
+      [x,y,z] = rotateAroundAxis(x,y,z, px,py,pz, 1,0,0, ang);
+      cagePos[i*3]=x; cagePos[i*3+1]=y; cagePos[i*3+2]=z;
+    }
+  }
+  function applyRotY(indices, pivot, ang){
+    const [px,py,pz]=pivot;
+    for(const i of indices){
+      let x=cagePos[i*3], y=cagePos[i*3+1], z=cagePos[i*3+2];
+      [x,y,z] = rotateAroundAxis(x,y,z, px,py,pz, 0,1,0, ang);
+      cagePos[i*3]=x; cagePos[i*3+1]=y; cagePos[i*3+2]=z;
+    }
+  }
+  function applyRotZ(indices, pivot, ang){
+    const [px,py,pz]=pivot;
+    for(const i of indices){
+      let x=cagePos[i*3], y=cagePos[i*3+1], z=cagePos[i*3+2];
+      [x,y,z] = rotateAroundAxis(x,y,z, px,py,pz, 0,0,1, ang);
+      cagePos[i*3]=x; cagePos[i*3+1]=y; cagePos[i*3+2]=z;
+    }
+  }
+  function translate(indices, dx,dy,dz){
+    for(const i of indices){
+      cagePos[i*3]+=dx; cagePos[i*3+1]+=dy; cagePos[i*3+2]+=dz;
+    }
+  }
+  function regionCenter(indices){
+    let sx=0,sy=0,sz=0;
+    const n=Math.max(1, indices.length);
+    for(const i of indices){
+      sx+=cagePos[i*3]; sy+=cagePos[i*3+1]; sz+=cagePos[i*3+2];
+    }
+    return [sx/n, sy/n, sz/n];
+  }
+
+  // ---------------- Motion interpolation (from your old code) ----------------
+  function getRotationAtTime(boneName, t, axis = 'x_rot') {
+    if (!motionData || !motionData[boneName]) return 0;
+    const data = motionData[boneName];
+    const times = data.times;
+    const values = data[axis];
+    if (!values || values.length === 0) return 0;
+
+    const cycleT = t % cycleDuration;
+    const firstTime = times[0];
+    const lastTime = times[times.length - 1];
+
+    if (cycleT < firstTime || cycleT > lastTime) {
+      const v0 = values[values.length - 1];
+      const v1 = values[0];
+      const t0 = lastTime;
+      const t1 = firstTime + cycleDuration;
+      const adjustedT = cycleT < firstTime ? cycleT + cycleDuration : cycleT;
+      const frac = (adjustedT - t0) / (t1 - t0);
+      const degrees = v0 + (v1 - v0) * clamp(frac,0,1);
+      return degrees * Math.PI / 180;
+    }
+
+    let i = 0;
+    while (i < times.length - 1 && times[i + 1] < cycleT) i++;
+    const t0 = times[i], t1 = times[i + 1];
+    const v0 = values[i], v1 = values[i + 1];
+    const frac = (cycleT - t0) / (t1 - t0);
+    const degrees = v0 + (v1 - v0) * frac;
+    return degrees * Math.PI / 180;
+  }
+
+  function getArmRotationAtTime(boneName, t, axis = 'x_rot') {
+    if (!armMotionData || !armMotionData[boneName]) return 0;
+    const data = armMotionData[boneName];
+    const times = data.times;
+    const values = data[axis];
+    if (!values || values.length === 0) return 0;
+
+    const cycleT = t % cycleDuration;
+    const firstTime = times[0];
+    const lastTime = times[times.length - 1];
+
+    if (cycleT < firstTime || cycleT > lastTime) {
+      const v0 = values[values.length - 1];
+      const v1 = values[0];
+      const t0 = lastTime;
+      const t1 = firstTime + cycleDuration;
+      const adjustedT = cycleT < firstTime ? cycleT + cycleDuration : cycleT;
+      const frac = (adjustedT - t0) / (t1 - t0);
+      const degrees = v0 + (v1 - v0) * clamp(frac,0,1);
+      return degrees * Math.PI / 180;
+    }
+
+    let i = 0;
+    while (i < times.length - 1 && times[i + 1] < cycleT) i++;
+    const t0 = times[i], t1 = times[i + 1];
+    const v0 = values[i], v1 = values[i + 1];
+    const frac = (cycleT - t0) / (t1 - t0);
+    const degrees = v0 + (v1 - v0) * frac;
+    return degrees * Math.PI / 180;
+  }
+
+  function getSpineDataAtTime(boneName, t, axis = 'x_rot') {
+    if (!spineMotionData || !spineMotionData[boneName]) return 0;
+    const data = spineMotionData[boneName];
+    const times = data.times;
+    const values = data[axis];
+    if (!values || values.length === 0) return 0;
+
+    const cycleT = t % cycleDuration;
+    const firstTime = times[0];
+    const lastTime = times[times.length - 1];
+
+    if (cycleT < firstTime || cycleT > lastTime) {
+      const v0 = values[values.length - 1];
+      const v1 = values[0];
+      const t0 = lastTime;
+      const t1 = firstTime + cycleDuration;
+      const adjustedT = cycleT < firstTime ? cycleT + cycleDuration : cycleT;
+      const frac = (adjustedT - t0) / (t1 - t0);
+      return v0 + (v1 - v0) * clamp(frac,0,1);
+    }
+
+    let i = 0;
+    while (i < times.length - 1 && times[i + 1] < cycleT) i++;
+    const t0 = times[i], t1 = times[i + 1];
+    const v0 = values[i], v1 = values[i + 1];
+    const frac = (cycleT - t0) / (t1 - t0);
+    return v0 + (v1 - v0) * frac;
+  }
+
+  // ---------------- Cage -> Mesh deformation ----------------
+  function deformMesh(){
+    const alpha = +$('alpha').value;
+    const pos = meshGeo.attributes.position.array;
+    const nMesh = meshRestPos.length/3;
+    const nCage = cageRest.length;
+
+    // cage deltas
+    // (alloc once to avoid GC)
+    if(!deformMesh._dx || deformMesh._dx.length !== nCage*3){
+      deformMesh._dx = new Float32Array(nCage*3);
+    }
+    const dx = deformMesh._dx;
+
+    for(let i=0;i<nCage;i++){
+      dx[i*3]   = cagePos[i*3]   - cageRest[i][0];
+      dx[i*3+1] = cagePos[i*3+1] - cageRest[i][1];
+      dx[i*3+2] = cagePos[i*3+2] - cageRest[i][2];
+    }
+
+    for(let i=0;i<nMesh;i++){
+      let sx=0,sy=0,sz=0;
+      const base = i*K;
+      for(let j=0;j<K;j++){
+        const ci = bindIdx[base+j];
+        const w  = bindW[base+j];
+        sx += w*dx[ci*3];
+        sy += w*dx[ci*3+1];
+        sz += w*dx[ci*3+2];
+      }
+      pos[i*3]   = meshRestPos[i*3]   + alpha*sx;
+      pos[i*3+1] = meshRestPos[i*3+1] + alpha*sy;
+      pos[i*3+2] = meshRestPos[i*3+2] + alpha*sz;
+    }
+
+    meshGeo.attributes.position.needsUpdate = true;
+    meshGeo.computeVertexNormals();
+  }
+
+  function updateCageMesh(){
+    if(!cageMesh) return;
+    const arr = cageMesh.geometry.attributes.position.array;
+    for(let i=0;i<cageRest.length;i++){
+      arr[i*3]   = cagePos[i*3];
+      arr[i*3+1] = cagePos[i*3+1];
+      arr[i*3+2] = cagePos[i*3+2];
+    }
+    cageMesh.geometry.attributes.position.needsUpdate = true;
+  }
+
+  // ---------------- Foot plant correction ----------------
+  function footLockCorrection(t){
+    const plantStrength = +$('plant').value;
+    if(plantStrength <= 0) { lockL=null; lockR=null; return; }
+
+    const stanceThresh = +$('stanceKnee').value; // degrees
+    const lKdeg = Math.abs(getRotationAtTime('l_knee', t, 'x_rot') * 180/Math.PI);
+    const rKdeg = Math.abs(getRotationAtTime('r_knee', t, 'x_rot') * 180/Math.PI);
+
+    const lStance = lKdeg < stanceThresh;
+    const rStance = rKdeg < stanceThresh;
+
+    const lFootC = regionCenter(R.l_foot);
+    const rFootC = regionCenter(R.r_foot);
+
+    if(lStance && !lockL) lockL = lFootC.slice();
+    if(!lStance) lockL = null;
+
+    if(rStance && !lockR) lockR = rFootC.slice();
+    if(!rStance) lockR = null;
+
+    if(lockL){
+      const dx = (lockL[0]-lFootC[0]) * plantStrength;
+      const dy = (lockL[1]-lFootC[1]) * plantStrength;
+      const dz = (lockL[2]-lFootC[2]) * plantStrength;
+      translate([].concat(R.l_thigh, R.l_shin, R.l_foot), dx,dy,dz);
+    }
+    if(lockR){
+      const dx = (lockR[0]-rFootC[0]) * plantStrength;
+      const dy = (lockR[1]-rFootC[1]) * plantStrength;
+      const dz = (lockR[2]-rFootC[2]) * plantStrength;
+      translate([].concat(R.r_thigh, R.r_shin, R.r_foot), dx,dy,dz);
+    }
+  }
+
+  // ---------------- Cage driver: Mixamo -> cage ----------------
+  function driveCageFromMixamo(t){
+    // reset cage to rest
+    for(let i=0;i<cageRest.length;i++){
+      cagePos[i*3]=cageRest[i][0];
+      cagePos[i*3+1]=cageRest[i][1];
+      cagePos[i*3+2]=cageRest[i][2];
+    }
+
+    // ----- BODY motion (optional) -----
+    if($('enableBody').checked && spineMotionData && P.pelvis){
+      const hipBobScale = +$('hipBob').value;
+      const hipSwayScale = +$('hipSway').value;
+      const forwardLean = +$('forwardLean').value * Math.PI/180;
+      const spineTwistScale = +$('spineTwist').value;
+
+      const rawBob = getSpineDataAtTime('hips', t, 'y_trans');
+      const hipBob = (rawBob - 0.4) * hipBobScale;
+
+      const hipSwayZ = getSpineDataAtTime('hips', t, 'z_rot') * Math.PI/180 * hipSwayScale;
+      const hipTwistY = getSpineDataAtTime('hips', t, 'y_rot') * Math.PI/180 * hipSwayScale;
+      const spineTwist = getSpineDataAtTime('spine1', t, 'y_rot') * Math.PI/180 * spineTwistScale;
+
+      const bodyIdx = [].concat(
+        R.torso,
+        R.l_thigh, R.r_thigh,
+        R.l_shin, R.r_shin,
+        R.l_upperarm, R.r_upperarm,
+        R.l_forearm, R.r_forearm,
+        // intentionally exclude feet for now (foot lock later)
+        []
+      );
+
+      applyRotX(bodyIdx, P.pelvis, forwardLean);
+      applyRotZ(bodyIdx, P.pelvis, hipSwayZ);
+      applyRotY(bodyIdx, P.pelvis, hipTwistY);
+      translate(bodyIdx, 0, hipBob, 0);
+
+      // upper body counter twist
+      applyRotY(R.torso, [P.pelvis[0], P.pelvis[1]+0.10, P.pelvis[2]], spineTwist);
+    }
+
+    // ----- Leg angles from Mixamo -----
+    const flipHip   = $('flipHip').checked ? -1 : 1;
+    const flipKnee  = $('flipKnee').checked ? -1 : 1;
+    const flipAnkle = $('flipAnkleX').checked ? -1 : 1;
+
+    const lHipX   = getRotationAtTime('l_hip',   t, 'x_rot') * flipHip;
+    const lKneeX  = getRotationAtTime('l_knee',  t, 'x_rot') * flipKnee;
+    const lAnkleX = getRotationAtTime('l_ankle', t, 'x_rot') * flipAnkle;
+
+    const rHipX   = getRotationAtTime('r_hip',   t, 'x_rot') * flipHip;
+    const rKneeX  = getRotationAtTime('r_knee',  t, 'x_rot') * flipKnee;
+    const rAnkleX = getRotationAtTime('r_ankle', t, 'x_rot') * flipAnkle;
+
+    // ----- Apply hierarchy to cage regions around REAL pivots (anchors) -----
+    // LEFT: hip rotates thigh+shin+foot
+    applyRotX([].concat(R.l_thigh, R.l_shin, R.l_foot), P.l_hip, lHipX);
+    // LEFT: knee rotates shin+foot
+    applyRotX([].concat(R.l_shin, R.l_foot), P.l_knee, lKneeX);
+    // LEFT: ankle rotates foot (with offset)
+    const ankleOffL = (+$('ankleOffL').value) * Math.PI/180;
+    applyRotX(R.l_foot, P.l_ankle, lAnkleX - ankleOffL);
+
+    // RIGHT
+    applyRotX([].concat(R.r_thigh, R.r_shin, R.r_foot), P.r_hip, rHipX);
+    applyRotX([].concat(R.r_shin, R.r_foot), P.r_knee, rKneeX);
+    const ankleOffR = (+$('ankleOffR').value) * Math.PI/180;
+    applyRotX(R.r_foot, P.r_ankle, rAnkleX - ankleOffR);
+
+    // ----- Arms (optional) -----
+    if(armMotionData && P.l_shoulder && P.r_shoulder){
+      // If your JSON doesn't have these names, it's fine: it just yields 0.
+      const lShX = getArmRotationAtTime('l_shoulder', t, 'x_rot') || 0;
+      const rShX = getArmRotationAtTime('r_shoulder', t, 'x_rot') || 0;
+
+      // simple shoulder swing
+      applyRotX([].concat(R.l_upperarm, R.l_forearm), P.l_shoulder, lShX);
+      applyRotX([].concat(R.r_upperarm, R.r_forearm), P.r_shoulder, rShX);
+    }
+
+    // ----- Foot lock correction LAST (so it counteracts all rotations) -----
+    footLockCorrection(t);
+  }
+
+
+function buildBindKNN(meshRestPos, cageRest, K = 8) {
+  const nMesh = meshRestPos.length / 3;
+  const nCage = cageRest.length;
+
+  const idx = new Int32Array(nMesh * K);
+  const w   = new Float32Array(nMesh * K);
+
+  for (let vi = 0; vi < nMesh; vi++) {
+    const x = meshRestPos[vi*3], y = meshRestPos[vi*3+1], z = meshRestPos[vi*3+2];
+
+    const bestD2 = new Float32Array(K);
+    const bestI  = new Int32Array(K);
+    for (let k = 0; k < K; k++) { bestD2[k] = 1e30; bestI[k] = -1; }
+
+    for (let ci = 0; ci < nCage; ci++) {
+      const cx = cageRest[ci][0], cy = cageRest[ci][1], cz = cageRest[ci][2];
+      const dx = x - cx, dy = y - cy, dz = z - cz;
+      const d2 = dx*dx + dy*dy + dz*dz;
+
+      let worst = 0;
+      for (let k = 1; k < K; k++) if (bestD2[k] > bestD2[worst]) worst = k;
+
+      if (d2 < bestD2[worst]) {
+        bestD2[worst] = d2;
+        bestI[worst]  = ci;
+      }
+    }
+
+    let sum = 0;
+    for (let k = 0; k < K; k++) {
+      const d = Math.sqrt(bestD2[k]) + 1e-6;
+      const ww = 1.0 / d;
+      w[vi*K + k] = ww;
+      idx[vi*K + k] = bestI[k];
+      sum += ww;
+    }
+    for (let k = 0; k < K; k++) w[vi*K + k] /= sum;
+  }
+
+  return { K, idx, w };
+}
+
+  // ---------------- Init ----------------
+  (async function init(){
+    statusEl.textContent = "Loading mesh.glb…";
+    const gltf = await new Promise((res,rej)=> new THREE.GLTFLoader().load("mesh.glb", res, undefined, rej));
+    gltf.scene.traverse(o=>{
+      if(o.isMesh && !meshObj){
+        meshObj=o;
+        meshGeo=o.geometry;
+        meshRestPos = meshGeo.attributes.position.array.slice();
+        if(o.material){ o.material.metalness=0; o.material.roughness=0.85; o.material.side=THREE.DoubleSide; }
+      }
+    });
+    scene.add(gltf.scene);
+
+    const box = new THREE.Box3().setFromObject(gltf.scene);
+    const size = box.getSize(new THREE.Vector3());
+    meshHeight = Math.max(1e-6, size.y);
+    const center = box.getCenter(new THREE.Vector3());
+    controls.target.copy(center);
+    camera.position.set(center.x, center.y + 0.35*meshHeight, center.z + 1.6*meshHeight);
+    controls.update();
+statusEl.textContent = "Loading cage/bind/regions/motion…";
+
+let cage, bind, regions, anchorData, legMotion, armMotion, spineMotion;
+
+try {
+  [
+    cage,
+    bind,
+    regions,
+    anchorData,
+    legMotion,
+    armMotion,
+    spineMotion
+  ] = await Promise.all([
+    loadJSON("cage.json"),
+    loadJSON("bind.json"),
+    loadJSON("regions.json"),
+    loadJSON("discovered_anchors.json"),
+    loadJSON("leg_keyframes.json"),
+    loadJSON("arm_keyframes.json"),
+    loadJSON("spine_keyframes.json")
+  ]);
+} catch (err) {
+  console.error(err);
+  statusEl.textContent = `Load failed: ${err.message}`;
+  throw err; // stop init
+}
+
+// Debug
+console.log("regionId length =", regions.regionId?.length);
+console.log("region meta =", regions.meta);
+
+    // cage
+    cageRest = cage.verts;
+    cageFaces = cage.faces;
+    cagePos = new Float32Array(cageRest.length*3);
+    for(let i=0;i<cageRest.length;i++){
+      cagePos[i*3]=cageRest[i][0];
+      cagePos[i*3+1]=cageRest[i][1];
+      cagePos[i*3+2]=cageRest[i][2];
+    }
+
+    // TEMP TEST: ignore bind.json and build a clean bind
+const built = buildBindKNN(meshRestPos, cageRest, 8);
+K = built.K;
+bindIdx = built.idx;
+bindW = built.w;
+
+// SAFE max calc (no spread)
+let maxBindIdx = -1;
+for (let i = 0; i < bindIdx.length; i++) {
+  if (bindIdx[i] > maxBindIdx) maxBindIdx = bindIdx[i];
+}
+
+console.log("Built bind:", {
+  K,
+  cageVerts: cageRest.length,
+  meshVerts: meshRestPos.length / 3,
+  maxBindIdx
+});
+
+
+
+    // regions
+    regionId = regions.regionId;
+
+
+    R.torso = indicesByRegion(0);
+    R.l_thigh = indicesByRegion(1);
+    R.r_thigh = indicesByRegion(2);
+    R.l_shin  = indicesByRegion(3);
+    R.r_shin  = indicesByRegion(4);
+    R.l_foot  = indicesByRegion(5);
+    R.r_foot  = indicesByRegion(6);
+    R.l_upperarm = indicesByRegion(7);
+    R.r_upperarm = indicesByRegion(8);
+    R.l_forearm  = indicesByRegion(9);
+    R.r_forearm  = indicesByRegion(10);
+
+    // anchors + bounds
+    anchors = anchorData.anchors;
+    bounds = anchorData.mesh_bounds;
+
+    // motion JSON
+    motionData = legMotion.keyframes;
+    cycleDuration = legMotion.duration || 1.0;
+    armMotionData = armMotion.keyframes || null;
+    spineMotionData = spineMotion.keyframes || null;
+
+    // pivots from anchors (CRITICAL)
+    // if any are missing, we fallback to reasonable guesses
+    function pickPos(path, fallback){
+      // path like anchors.l_hip.pos
+      try{
+        const parts = path.split('.');
+        let cur = window;
+        // not using window; we want anchors object:
+        cur = {anchors};
+        for(const p of parts){
+          cur = cur[p];
+        }
+        if(Array.isArray(cur) && cur.length===3) return cur;
+      }catch(e){}
+      return fallback;
+    }
+
+    // direct mapping (based on your previous JSON usage)
+    P.l_hip   = (anchors.l_hip && anchors.l_hip.pos) ? anchors.l_hip.pos : [-0.08, bounds.min[1] + bounds.height*0.38, 0];
+    P.r_hip   = (anchors.r_hip && anchors.r_hip.pos) ? anchors.r_hip.pos : [ 0.08, bounds.min[1] + bounds.height*0.38, 0];
+    P.l_knee  = (anchors.l_knee && anchors.l_knee.pos) ? anchors.l_knee.pos : [-0.08, bounds.min[1] + bounds.height*0.22, 0.02];
+    P.r_knee  = (anchors.r_knee && anchors.r_knee.pos) ? anchors.r_knee.pos : [ 0.08, bounds.min[1] + bounds.height*0.22, 0.02];
+    P.l_ankle = (anchors.l_ankle && anchors.l_ankle.pos) ? anchors.l_ankle.pos : [-0.08, bounds.min[1] + bounds.height*0.06, 0.02];
+    P.r_ankle = (anchors.r_ankle && anchors.r_ankle.pos) ? anchors.r_ankle.pos : [ 0.08, bounds.min[1] + bounds.height*0.06, 0.02];
+
+    P.pelvis  = (anchors.pelvis && anchors.pelvis.pos) ? anchors.pelvis.pos : [bounds.center_x, bounds.min[1] + bounds.height*0.45, 0];
+
+    // shoulders optional (if present)
+    P.l_shoulder = (anchors.l_shoulder && anchors.l_shoulder.pos) ? anchors.l_shoulder.pos : [-0.15, bounds.min[1] + bounds.height*0.72, -0.03];
+    P.r_shoulder = (anchors.r_shoulder && anchors.r_shoulder.pos) ? anchors.r_shoulder.pos : [ 0.15, bounds.min[1] + bounds.height*0.72, -0.03];
+
+    // cage mesh wireframe
+    const cgeom = new THREE.BufferGeometry();
+    const carr = new Float32Array(cageRest.length*3);
+    for(let i=0;i<cageRest.length;i++){
+      carr[i*3]=cageRest[i][0];
+      carr[i*3+1]=cageRest[i][1];
+      carr[i*3+2]=cageRest[i][2];
+    }
+    cgeom.setAttribute('position', new THREE.BufferAttribute(carr,3));
+    const cidx = new Uint32Array(cageFaces.length*3);
+    for(let i=0;i<cageFaces.length;i++){
+      cidx[i*3]=cageFaces[i][0];
+      cidx[i*3+1]=cageFaces[i][1];
+      cidx[i*3+2]=cageFaces[i][2];
+    }
+    cgeom.setIndex(new THREE.BufferAttribute(cidx,1));
+    cageMesh = new THREE.Mesh(
+      cgeom,
+      new THREE.MeshBasicMaterial({color:0x4ecdc4, wireframe:true, transparent:true, opacity:0.5})
+    );
+    scene.add(cageMesh);
+
+    statusEl.textContent = "Ready.";
+  })().catch(err=>{
+    console.error(err);
+    statusEl.textContent = "Load failed. Make sure you're using a local server (not file://).";
+  });
+
+  // ---------------- Animate ----------------
+  let time = 0;
+  function tick(){
+    requestAnimationFrame(tick);
+
+    if($('play').checked && cageRest && motionData){
+      time += (1/60) * (+$('speed').value);
+      driveCageFromMixamo(time);
+      deformMesh();
+      if(cageMesh){
+        cageMesh.visible = $('showCage').checked;
+        updateCageMesh();
+      }
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  tick();
+  </script>
+</body>
+</html>

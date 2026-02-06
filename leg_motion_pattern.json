@@ -1,0 +1,54 @@
+{
+  "duration": 1.067,
+  "frame_count": 32,
+  "leg_motion": {
+    "l_hip": {
+      "min": -14.2,
+      "max": 40.8,
+      "mean": 15.7,
+      "amplitude": 27.5,
+      "max_at_time": 0.333,
+      "phase_offset": 2.027
+    },
+    "l_knee": {
+      "min": -70.9,
+      "max": -16.2,
+      "mean": -40.1,
+      "amplitude": 27.4,
+      "max_at_time": 0.633,
+      "phase_offset": 3.851
+    },
+    "l_ankle": {
+      "min": 47.7,
+      "max": 90.7,
+      "mean": 71.4,
+      "amplitude": 21.5,
+      "max_at_time": 0.767,
+      "phase_offset": 4.662
+    },
+    "r_hip": {
+      "min": -14.2,
+      "max": 44.4,
+      "mean": 14.1,
+      "amplitude": 29.3,
+      "max_at_time": 0.833,
+      "phase_offset": 5.067
+    },
+    "r_knee": {
+      "min": -66.8,
+      "max": -16.9,
+      "mean": -36.2,
+      "amplitude": 25.0,
+      "max_at_time": 0.733,
+      "phase_offset": 4.459
+    },
+    "r_ankle": {
+      "min": 37.5,
+      "max": 87.2,
+      "mean": 70.8,
+      "amplitude": 24.9,
+      "max_at_time": 0.267,
+      "phase_offset": 1.622
+    }
+  }
+}

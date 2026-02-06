@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Mixamo Motion Test</title>
+<style>
+body{margin:0;background:#1a1a2e;font-family:system-ui}
+#ui{position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.85);padding:14px;border-radius:10px;font-size:13px;color:#ddd;max-width:320px}
+#ui h3{margin:0 0 10px 0;color:#fff}
+#ui label{display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer}
+.slider-row{display:flex;align-items:center;gap:8px;margin:8px 0}
+.slider-row span:first-child{min-width:80px}
+#info{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);padding:10px 20px;border-radius:10px;color:#ddd}
+.section{margin-top:12px;padding-top:8px;border-top:1px solid #444}
+.section-title{color:#4ecdc4;font-weight:bold;margin-bottom:8px}
+</style>
+</head><body>
+<div id="ui">
+  <h3>Mixamo Motion Transfer Test</h3>
+  <label><input type="checkbox" id="animate" checked> Animate</label>
+  <label><input type="checkbox" id="debugBones"> Show bone segments (color)</label>
+
+  <div class="section">
+    <div class="section-title">Playback</div>
+    <div class="slider-row">
+      <span>Speed:</span>
+      <input type="range" id="speed" min="0" max="2" step="0.1" value="1" style="flex:1">
+      <span id="speedVal">1.0</span>
+    </div>
+    <div class="slider-row">
+      <span>Scale:</span>
+      <input type="range" id="motionScale" min="0" max="2" step="0.1" value="1" style="flex:1">
+      <span id="motionScaleVal">1.0</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Legs (flip direction)</div>
+    <label><input type="checkbox" id="flipHip" checked> Flip Hip</label>
+    <label><input type="checkbox" id="flipKnee" checked> Flip Knee</label>
+    <label><input type="checkbox" id="flipAnkleX"> Flip Ankle X</label>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Arms</div>
+    <label><input type="checkbox" id="enableArms" checked> Enable Arms</label>
+    <label><input type="checkbox" id="flipShoulder"> Flip Shoulder</label>
+    <label><input type="checkbox" id="flipElbow"> Flip Elbow</label>
+    <div class="slider-row">
+      <span>Shoulder X:</span>
+      <input type="range" id="shoulderX" min="0.08" max="0.20" step="0.01" value="0.15" style="flex:1">
+      <span id="shoulderXVal">0.15</span>
+    </div>
+    <div class="slider-row">
+      <span>T-pose:</span>
+      <input type="range" id="tposeAngle" min="0" max="90" step="5" value="70" style="flex:1">
+      <span id="tposeVal">70°</span>
+    </div>
+    <div class="slider-row">
+      <span>Swing:</span>
+      <input type="range" id="armSwing" min="0" max="1" step="0.1" value="0.5" style="flex:1">
+      <span id="armSwingVal">0.5</span>
+    </div>
+    <div class="slider-row">
+      <span>Elbow:</span>
+      <input type="range" id="elbowBend" min="-3" max="3" step="0.1" value="-2" style="flex:1">
+      <span id="elbowBendVal">-2.0</span>
+    </div>
+    <div class="slider-row">
+      <span>UpperArm:</span>
+      <input type="range" id="upperArmLen" min="0.10" max="0.30" step="0.01" value="0.19" style="flex:1">
+      <span id="upperArmLenVal">0.19</span>
+    </div>
+    <div class="slider-row">
+      <span>Forearm:</span>
+      <input type="range" id="forearmLen" min="0.05" max="0.20" step="0.01" value="0.12" style="flex:1">
+      <span id="forearmLenVal">0.12</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Body (Hips/Spine)</div>
+    <label><input type="checkbox" id="enableBody" checked> Enable Body Motion</label>
+    <div class="slider-row">
+      <span>Bob:</span>
+      <input type="range" id="hipBob" min="0" max="0.05" step="0.005" value="0.02" style="flex:1">
+      <span id="hipBobVal">0.02</span>
+    </div>
+    <div class="slider-row">
+      <span>Hip Sway:</span>
+      <input type="range" id="hipSway" min="0" max="1" step="0.1" value="0.5" style="flex:1">
+      <span id="hipSwayVal">0.5</span>
+    </div>
+    <div class="slider-row">
+      <span>Lean:</span>
+      <input type="range" id="forwardLean" min="0" max="15" step="1" value="5" style="flex:1">
+      <span id="forwardLeanVal">5°</span>
+    </div>
+    <div class="slider-row">
+      <span>Spine Twist:</span>
+      <input type="range" id="spineTwist" min="0" max="1" step="0.1" value="0.3" style="flex:1">
+      <span id="spineTwistVal">0.3</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Mesh Tuning</div>
+    <div class="slider-row">
+      <span>Groin gap:</span>
+      <input type="range" id="groinGap" min="0" max="0.15" step="0.01" value="0" style="flex:1">
+      <span id="groinGapVal">0.00</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Extracted from Mixamo</div>
+    <div id="motionInfo" style="font-size:11px;color:#888"></div>
+  </div>
+</div>
+<div id="info">Loading...</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2e);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.01, 100);
+const renderer = new THREE.WebGLRenderer({antialias: true});
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+scene.add(new THREE.DirectionalLight(0xffffff, 0.8)).position.set(2, 3, 2);
+
+let meshObj, meshGeo, origPos;
+let anchors = null;
+let bounds = null;
+let motionData = null;
+let cycleDuration = 1.067;
+let time = 0;
+let speed = 1;
+let motionScale = 1;
+
+// Interpolate keyframes to get rotation at any time
+function getRotationAtTime(boneName, t, axis = 'x_rot') {
+    if (!motionData || !motionData[boneName]) return 0;
+
+    const data = motionData[boneName];
+    const times = data.times;
+    const values = data[axis];
+
+    if (!values || values.length === 0) return 0;
+
+    // Loop time within cycle
+    const cycleT = t % cycleDuration;
+
+    // Handle wrap-around: cycleT before first keyframe or after last
+    const firstTime = times[0];
+    const lastTime = times[times.length - 1];
+
+    if (cycleT < firstTime || cycleT > lastTime) {
+        // Interpolate between last and first keyframe (across cycle boundary)
+        const v0 = values[values.length - 1];
+        const v1 = values[0];
+        const t0 = lastTime;
+        const t1 = firstTime + cycleDuration;
+
+        // Adjust cycleT for wrap calculation
+        const adjustedT = cycleT < firstTime ? cycleT + cycleDuration : cycleT;
+        const frac = (adjustedT - t0) / (t1 - t0);
+
+        const degrees = v0 + (v1 - v0) * Math.max(0, Math.min(1, frac));
+        return degrees * Math.PI / 180 * motionScale;
+    }
+
+    // Find surrounding keyframes
+    let i = 0;
+    while (i < times.length - 1 && times[i + 1] < cycleT) {
+        i++;
+    }
+
+    // Linear interpolation
+    const t0 = times[i];
+    const t1 = times[i + 1];
+    const v0 = values[i];
+    const v1 = values[i + 1];
+    const frac = (cycleT - t0) / (t1 - t0);
+
+    const degrees = v0 + (v1 - v0) * frac;
+    return degrees * Math.PI / 180 * motionScale;
+}
+
+// Rotation helper - rotate point around axis through pivot
+function rotateAroundAxis(px, py, pz, pivotX, pivotY, pivotZ, axisX, axisY, axisZ, angle) {
+    let x = px - pivotX;
+    let y = py - pivotY;
+    let z = pz - pivotZ;
+
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    const t = 1 - c;
+
+    const len = Math.sqrt(axisX*axisX + axisY*axisY + axisZ*axisZ);
+    const ax = axisX/len, ay = axisY/len, az = axisZ/len;
+
+    const nx = (t*ax*ax + c)*x + (t*ax*ay - s*az)*y + (t*ax*az + s*ay)*z;
+    const ny = (t*ax*ay + s*az)*x + (t*ay*ay + c)*y + (t*ay*az - s*ax)*z;
+    const nz = (t*ax*az - s*ay)*x + (t*ay*az + s*ax)*y + (t*az*az + c)*z;
+
+    return [nx + pivotX, ny + pivotY, nz + pivotZ];
+}
+
+// Distance from point to joint
+function distToJoint(x, y, z, joint) {
+    const dx = x - joint[0];
+    const dy = y - joint[1];
+    const dz = z - joint[2];
+    return Math.sqrt(dx*dx + dy*dy + dz*dz);
+}
+
+// Get spine/body rotation or translation at time
+function getSpineDataAtTime(boneName, t, axis = 'x_rot') {
+    if (!spineMotionData || !spineMotionData[boneName]) return 0;
+
+    const data = spineMotionData[boneName];
+    const times = data.times;
+    const values = data[axis];
+
+    if (!values || values.length === 0) return 0;
+
+    const cycleT = t % cycleDuration;
+    const firstTime = times[0];
+    const lastTime = times[times.length - 1];
+
+    if (cycleT < firstTime || cycleT > lastTime) {
+        const v0 = values[values.length - 1];
+        const v1 = values[0];
+        const t0 = lastTime;
+        const t1 = firstTime + cycleDuration;
+        const adjustedT = cycleT < firstTime ? cycleT + cycleDuration : cycleT;
+        const frac = (adjustedT - t0) / (t1 - t0);
+        return v0 + (v1 - v0) * Math.max(0, Math.min(1, frac));
+    }
+
+    let i = 0;
+    while (i < times.length - 1 && times[i + 1] < cycleT) i++;
+
+    const t0 = times[i];
+    const t1 = times[i + 1];
+    const v0 = values[i];
+    const v1 = values[i + 1];
+    const frac = (cycleT - t0) / (t1 - t0);
+
+    return v0 + (v1 - v0) * frac;
+}
+
+// Get arm rotation at time (from arm keyframes)
+function getArmRotationAtTime(boneName, t, axis = 'x_rot') {
+    if (!armMotionData || !armMotionData[boneName]) return 0;
+
+    const data = armMotionData[boneName];
+    const times = data.times;
+    const values = data[axis];
+
+    if (!values || values.length === 0) return 0;
+
+    const cycleT = t % cycleDuration;
+    const firstTime = times[0];
+    const lastTime = times[times.length - 1];
+
+    if (cycleT < firstTime || cycleT > lastTime) {
+        const v0 = values[values.length - 1];
+        const v1 = values[0];
+        const t0 = lastTime;
+        const t1 = firstTime + cycleDuration;
+        const adjustedT = cycleT < firstTime ? cycleT + cycleDuration : cycleT;
+        const frac = (adjustedT - t0) / (t1 - t0);
+        const degrees = v0 + (v1 - v0) * Math.max(0, Math.min(1, frac));
+        return degrees * Math.PI / 180 * motionScale;
+    }
+
+    let i = 0;
+    while (i < times.length - 1 && times[i + 1] < cycleT) i++;
+
+    const t0 = times[i];
+    const t1 = times[i + 1];
+    const v0 = values[i];
+    const v1 = values[i + 1];
+    const frac = (cycleT - t0) / (t1 - t0);
+
+    return (v0 + (v1 - v0) * frac) * Math.PI / 180 * motionScale;
+}
+
+const loader = new THREE.GLTFLoader();
+
+let armMotionData = null;
+let spineMotionData = null;
+
+// Load mesh, anchors, and motion data
+Promise.all([
+    new Promise(resolve => loader.load('mesh.glb', resolve)),
+    fetch('discovered_anchors.json').then(r => r.json()),
+    fetch('leg_keyframes.json').then(r => r.json()),
+    fetch('arm_keyframes.json').then(r => r.json()),
+    fetch('spine_keyframes.json').then(r => r.json())
+]).then(([gltf, anchorData, legMotion, armMotion, spineMotion]) => {
+    armMotionData = armMotion.keyframes;
+    spineMotionData = spineMotion.keyframes;
+    // Setup mesh
+    gltf.scene.traverse(child => {
+        if (child.isMesh) {
+            meshObj = child;
+            meshGeo = child.geometry;
+            origPos = meshGeo.attributes.position.array.slice();
+
+            // Add vertex colors for debug visualization
+            const numVerts = origPos.length / 3;
+            const colors = new Float32Array(numVerts * 3);
+            for (let i = 0; i < numVerts * 3; i++) colors[i] = 1.0;
+            meshGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            // Keep original texture, just add vertex color support
+            child.material.vertexColors = false;
+            child.material.metalness = 0;
+            child.material.roughness = 0.7;
+            child.material.side = THREE.DoubleSide;
+            child.material.needsUpdate = true;
+        }
+    });
+    scene.add(gltf.scene);
+
+    // Camera setup
+    const box = new THREE.Box3().setFromObject(gltf.scene);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    camera.position.set(center.x, center.y + 0.3, center.z + maxDim * 1.5);
+    controls.target.copy(center);
+    controls.update();
+
+    // Store data
+    anchors = anchorData.anchors;
+    bounds = anchorData.mesh_bounds;
+    motionData = legMotion.keyframes;
+    cycleDuration = legMotion.duration;
+
+    // Display motion info
+    let infoHtml = '<b>Leg + Arm keyframes loaded</b><br>';
+    infoHtml += `Duration: ${cycleDuration.toFixed(3)}s<br>`;
+    document.getElementById('motionInfo').innerHTML = infoHtml;
+
+    document.getElementById('info').textContent = 'Mixamo walk cycle applied to mesh';
+});
+
+function updateMesh(t) {
+    if (!meshGeo || !origPos || !anchors || !motionData) return;
+
+    const pos = meshGeo.attributes.position.array;
+    const numVerts = origPos.length / 3;
+
+    // Debug bone visualization
+    const debugBones = document.getElementById('debugBones').checked;
+    const colors = meshGeo.attributes.color ? meshGeo.attributes.color.array : null;
+    if (meshObj) {
+        meshObj.material.vertexColors = debugBones;
+        meshObj.material.needsUpdate = true;
+    }
+
+    // Animation uses actual time, looped within cycle duration
+
+    // Get joint positions
+    const lHip = anchors.l_hip.pos;
+    const rHip = anchors.r_hip.pos;
+    const lKnee = anchors.l_knee.pos;
+    const rKnee = anchors.r_knee.pos;
+    const lAnkle = anchors.l_ankle.pos;
+    const rAnkle = anchors.r_ankle.pos;
+
+    // Bone segment lengths (approximate from mesh)
+    const thighLen = 0.18;
+    const shinLen = 0.22;  // Increased to include more of foot
+
+    const minY = bounds.min[1];
+    const height = bounds.height;
+    const centerX = bounds.center_x;
+
+    // Get rotations from Mixamo keyframes (interpolated)
+    const flipHip = document.getElementById('flipHip').checked ? -1 : 1;
+    const flipKnee = document.getElementById('flipKnee').checked ? -1 : 1;
+    const flipAnkleX = document.getElementById('flipAnkleX').checked ? -1 : 1;
+
+    const lHipRotX = getRotationAtTime('l_hip', t, 'x_rot') * flipHip;
+    const lKneeRotX = getRotationAtTime('l_knee', t, 'x_rot') * flipKnee;
+    const lAnkleRotX = getRotationAtTime('l_ankle', t, 'x_rot') * flipAnkleX;
+
+    const rHipRotX = getRotationAtTime('r_hip', t, 'x_rot') * flipHip;
+    const rKneeRotX = getRotationAtTime('r_knee', t, 'x_rot') * flipKnee;
+    const rAnkleRotX = getRotationAtTime('r_ankle', t, 'x_rot') * flipAnkleX;
+
+    // Get body motion settings
+    const enableBody = document.getElementById('enableBody').checked;
+    const hipBobScale = parseFloat(document.getElementById('hipBob').value);
+    const hipSwayScale = parseFloat(document.getElementById('hipSway').value);
+    const forwardLean = parseFloat(document.getElementById('forwardLean').value) * Math.PI / 180;
+    const spineTwistScale = parseFloat(document.getElementById('spineTwist').value);
+
+    // Get hip motion from animation
+    let hipBob = 0, hipSwayZ = 0, hipTwistY = 0, spineTwist = 0;
+    if (enableBody && spineMotionData) {
+        // Hip vertical bob - normalize from 0-0.8 range to 0-1
+        const rawBob = getSpineDataAtTime('hips', t, 'y_trans');
+        hipBob = (rawBob - 0.4) * hipBobScale;  // Center around 0
+
+        // Hip sway (Z rotation) - side to side weight shift
+        hipSwayZ = getSpineDataAtTime('hips', t, 'z_rot') * Math.PI / 180 * hipSwayScale;
+
+        // Hip twist (Y rotation)
+        hipTwistY = getSpineDataAtTime('hips', t, 'y_rot') * Math.PI / 180 * hipSwayScale;
+
+        // Spine counter-twist
+        spineTwist = getSpineDataAtTime('spine1', t, 'y_rot') * Math.PI / 180 * spineTwistScale;
+    }
+
+    // Pelvis pivot point
+    const pelvisPivot = anchors.pelvis ? anchors.pelvis.pos : [centerX, minY + height * 0.45, 0];
+
+    for (let i = 0; i < numVerts; i++) {
+        let x = origPos[i*3];
+        let y = origPos[i*3+1];
+        let z = origPos[i*3+2];
+
+        const ny = (y - minY) / height;
+
+        // === BODY MOTION (affects everything) ===
+        if (enableBody) {
+            // 1. Forward lean (whole body tilts forward around pelvis)
+            [x, y, z] = rotateAroundAxis(x, y, z, pelvisPivot[0], pelvisPivot[1], pelvisPivot[2], 1, 0, 0, forwardLean);
+
+            // 2. Hip sway (Z rotation - weight shift side to side)
+            [x, y, z] = rotateAroundAxis(x, y, z, pelvisPivot[0], pelvisPivot[1], pelvisPivot[2], 0, 0, 1, hipSwayZ);
+
+            // 3. Hip twist (Y rotation)
+            [x, y, z] = rotateAroundAxis(x, y, z, pelvisPivot[0], pelvisPivot[1], pelvisPivot[2], 0, 1, 0, hipTwistY);
+
+            // 4. Vertical bob
+            y += hipBob;
+
+            // 5. Spine counter-twist (upper body only - above pelvis)
+            if (ny > 0.45) {
+                const spineInfluence = Math.min(1, (ny - 0.45) / 0.35);  // Fade in from pelvis to chest
+                [x, y, z] = rotateAroundAxis(x, y, z, pelvisPivot[0], pelvisPivot[1] + 0.1, pelvisPivot[2], 0, 1, 0, spineTwist * spineInfluence);
+            }
+        }
+
+        // === LEFT LEG ===
+        // Groin exclusion only for upper leg, not feet
+        const groinExclusion = parseFloat(document.getElementById('groinGap').value);
+        const effectiveGroin = ny > 0.15 ? groinExclusion : 0;  // No exclusion for lower leg/feet
+        if (x < centerX - effectiveGroin && ny < 0.40) {
+            const hipPivot = lHip;
+            const distFromHip = distToJoint(x, y, z, hipPivot);
+
+            const kneeAt = thighLen;
+            const ankleAt = thighLen + shinLen;
+
+            const isThigh = distFromHip <= kneeAt;
+            // Foot: anything below ankle Y level (treats entire foot as one rigid bone)
+            const ankleY = hipPivot[1] - thighLen - shinLen;
+            const isFoot = y < ankleY + 0.07;  // Larger buffer to include entire shoe/ankle area
+            const isShin = !isFoot && distFromHip > kneeAt;
+
+            // HIP rotation - just X for now (forward/back)
+            [x, y, z] = rotateAroundAxis(x, y, z, hipPivot[0], hipPivot[1], hipPivot[2], 1, 0, 0, lHipRotX);
+
+            // KNEE rotation (affects shin and foot)
+            if (isShin || isFoot) {
+                let kneePivot = [hipPivot[0], hipPivot[1] - thighLen, hipPivot[2]];
+                kneePivot = rotateAroundAxis(kneePivot[0], kneePivot[1], kneePivot[2],
+                    hipPivot[0], hipPivot[1], hipPivot[2], 1, 0, 0, lHipRotX);
+
+                // Knee X (bend) only
+                [x, y, z] = rotateAroundAxis(x, y, z, kneePivot[0], kneePivot[1], kneePivot[2], 1, 0, 0, lKneeRotX);
+            }
+
+            // ANKLE rotation (affects foot only) - X, Y, Z
+            if (isFoot) {
+                let anklePivot = [hipPivot[0], hipPivot[1] - thighLen - shinLen, hipPivot[2]];
+                anklePivot = rotateAroundAxis(anklePivot[0], anklePivot[1], anklePivot[2],
+                    hipPivot[0], hipPivot[1], hipPivot[2], 1, 0, 0, lHipRotX);
+
+                let kneePivot = [hipPivot[0], hipPivot[1] - thighLen, hipPivot[2]];
+                kneePivot = rotateAroundAxis(kneePivot[0], kneePivot[1], kneePivot[2],
+                    hipPivot[0], hipPivot[1], hipPivot[2], 1, 0, 0, lHipRotX);
+                anklePivot = rotateAroundAxis(anklePivot[0], anklePivot[1], anklePivot[2],
+                    kneePivot[0], kneePivot[1], kneePivot[2], 1, 0, 0, lKneeRotX);
+
+                // Ankle X only (toe up/down) - keep foot movement simple
+                const ankleOffsetX = lAnkleRotX - (71.4 * Math.PI / 180 * motionScale);
+                [x, y, z] = rotateAroundAxis(x, y, z, anklePivot[0], anklePivot[1], anklePivot[2], 1, 0, 0, ankleOffsetX);
+            }
+        }
+
+        // === RIGHT LEG ===
+        else if (x > centerX + effectiveGroin && ny < 0.40) {
+            const hipPivot = rHip;
+            const distFromHip = distToJoint(x, y, z, hipPivot);
+
+            const kneeAt = thighLen;
+            const ankleAt = thighLen + shinLen;
+
+            const isThigh = distFromHip <= kneeAt;
+            // Foot: anything below ankle Y level (treats entire foot as one rigid bone)
+            const ankleY = hipPivot[1] - thighLen - shinLen;
+            const isFoot = y < ankleY + 0.07;  // Larger buffer to include entire shoe/ankle area
+            const isShin = !isFoot && distFromHip > kneeAt;
+
+            // HIP rotation - just X (forward/back)
+            [x, y, z] = rotateAroundAxis(x, y, z, hipPivot[0], hipPivot[1], hipPivot[2], 1, 0, 0, rHipRotX);
+
+            // KNEE rotation
+            if (isShin || isFoot) {
+                let kneePivot = [hipPivot[0], hipPivot[1] - thighLen, hipPivot[2]];
+                kneePivot = rotateAroundAxis(kneePivot[0], kneePivot[1], kneePivot[2],
+                    hipPivot[0], hipPivot[1], hipPivot[2], 1, 0, 0, rHipRotX);
+
+                [x, y, z] = rotateAroundAxis(x, y, z, kneePivot[0], kneePivot[1], kneePivot[2], 1, 0, 0, rKneeRotX);
+            }
+
+            // ANKLE rotation - X only
+            if (isFoot) {
+                let anklePivot = [hipPivot[0], hipPivot[1] - thighLen - shinLen, hipPivot[2]];
+                anklePivot = rotateAroundAxis(anklePivot[0], anklePivot[1], anklePivot[2],
+                    hipPivot[0], hipPivot[1], hipPivot[2], 1, 0, 0, rHipRotX);
+
+                let kneePivot = [hipPivot[0], hipPivot[1] - thighLen, hipPivot[2]];
+                kneePivot = rotateAroundAxis(kneePivot[0], kneePivot[1], kneePivot[2],
+                    hipPivot[0], hipPivot[1], hipPivot[2], 1, 0, 0, rHipRotX);
+                anklePivot = rotateAroundAxis(anklePivot[0], anklePivot[1], anklePivot[2],
+                    kneePivot[0], kneePivot[1], kneePivot[2], 1, 0, 0, rKneeRotX);
+
+                const ankleOffsetX = rAnkleRotX - (70.8 * Math.PI / 180 * motionScale);
+                [x, y, z] = rotateAroundAxis(x, y, z, anklePivot[0], anklePivot[1], anklePivot[2], 1, 0, 0, ankleOffsetX);
+            }
+        }
+
+        // === ARMS (if enabled) ===
+        // Same approach as legs: distance-based classification, hierarchical rotation
+        const enableArms = document.getElementById('enableArms').checked;
+        if (enableArms) {
+            const flipShoulder = document.getElementById('flipShoulder').checked ? -1 : 1;
+            const flipElbow = document.getElementById('flipElbow').checked ? -1 : 1;
+
+            // Get slider values
+            const tPoseDown = parseFloat(document.getElementById('tposeAngle').value) * Math.PI / 180;
+            const armSwingScale = parseFloat(document.getElementById('armSwing').value) * flipShoulder;
+            const elbowBendScale = parseFloat(document.getElementById('elbowBend').value);
+            const upperArmLen = parseFloat(document.getElementById('upperArmLen').value);
+            const forearmLen = parseFloat(document.getElementById('forearmLen').value);
+
+            // Shoulder pivot - use slider value
+            const shoulderX = parseFloat(document.getElementById('shoulderX').value);
+            const lShoulderPivot = [-shoulderX, 0.20, -0.03];
+            const rShoulderPivot = [shoulderX, 0.20, -0.03];
+
+            // Arm swing = opposite leg's hip
+            const lArmSwing = rHipRotX * armSwingScale;
+            const rArmSwing = lHipRotX * armSwingScale;
+
+            // Elbow bends when arm goes back (value can be negative to flip direction)
+            const lElbowBend = Math.max(0, -lArmSwing) * elbowBendScale * flipElbow;
+            const rElbowBend = Math.max(0, -rArmSwing) * elbowBendScale * flipElbow;
+
+            const origX = origPos[i*3];
+            const origY = origPos[i*3+1];
+            const origZ = origPos[i*3+2];
+
+            // LEFT ARM
+            if (origX < -0.14 && origY > 0.14 && origY < 0.27) {
+                const distFromShoulder = distToJoint(origX, origY, origZ, lShoulderPivot);
+
+                // Classification: upperArm, forearm, hand (like thigh, shin, foot)
+                const isUpperArm = distFromShoulder <= upperArmLen;
+                const isForearm = distFromShoulder > upperArmLen && distFromShoulder <= upperArmLen + forearmLen;
+                const isHand = distFromShoulder > upperArmLen + forearmLen;
+
+                // 1. SHOULDER: T-pose down (entire arm)
+                [x, y, z] = rotateAroundAxis(x, y, z,
+                    lShoulderPivot[0], lShoulderPivot[1], lShoulderPivot[2],
+                    0, 0, 1, tPoseDown);
+
+                // 2. SHOULDER: Arm swing (entire arm)
+                [x, y, z] = rotateAroundAxis(x, y, z,
+                    lShoulderPivot[0], lShoulderPivot[1], lShoulderPivot[2],
+                    1, 0, 0, lArmSwing);
+
+                // 3. ELBOW: Bend (forearm + hand)
+                if (isForearm || isHand) {
+                    let elbowPivot = [lShoulderPivot[0] - upperArmLen, lShoulderPivot[1], lShoulderPivot[2]];
+                    elbowPivot = rotateAroundAxis(elbowPivot[0], elbowPivot[1], elbowPivot[2],
+                        lShoulderPivot[0], lShoulderPivot[1], lShoulderPivot[2],
+                        0, 0, 1, tPoseDown);
+                    elbowPivot = rotateAroundAxis(elbowPivot[0], elbowPivot[1], elbowPivot[2],
+                        lShoulderPivot[0], lShoulderPivot[1], lShoulderPivot[2],
+                        1, 0, 0, lArmSwing);
+
+                    [x, y, z] = rotateAroundAxis(x, y, z,
+                        elbowPivot[0], elbowPivot[1], elbowPivot[2],
+                        1, 0, 0, lElbowBend);
+
+                    // 4. WRIST: (hand only) - keep hand level
+                    if (isHand) {
+                        let wristPivot = [lShoulderPivot[0] - upperArmLen - forearmLen, lShoulderPivot[1], lShoulderPivot[2]];
+                        wristPivot = rotateAroundAxis(wristPivot[0], wristPivot[1], wristPivot[2],
+                            lShoulderPivot[0], lShoulderPivot[1], lShoulderPivot[2],
+                            0, 0, 1, tPoseDown);
+                        wristPivot = rotateAroundAxis(wristPivot[0], wristPivot[1], wristPivot[2],
+                            lShoulderPivot[0], lShoulderPivot[1], lShoulderPivot[2],
+                            1, 0, 0, lArmSwing);
+                        wristPivot = rotateAroundAxis(wristPivot[0], wristPivot[1], wristPivot[2],
+                            elbowPivot[0], elbowPivot[1], elbowPivot[2],
+                            1, 0, 0, lElbowBend);
+
+                        // Counter-rotate to keep hand from flopping
+                        [x, y, z] = rotateAroundAxis(x, y, z,
+                            wristPivot[0], wristPivot[1], wristPivot[2],
+                            1, 0, 0, -lElbowBend * 0.5);
+                    }
+                }
+            }
+
+            // RIGHT ARM
+            if (origX > 0.14 && origY > 0.14 && origY < 0.27) {
+                const distFromShoulder = distToJoint(origX, origY, origZ, rShoulderPivot);
+                const isForearm = distFromShoulder > upperArmLen && distFromShoulder <= upperArmLen + forearmLen;
+                const isHand = distFromShoulder > upperArmLen + forearmLen;
+
+                // 1. T-pose down
+                [x, y, z] = rotateAroundAxis(x, y, z,
+                    rShoulderPivot[0], rShoulderPivot[1], rShoulderPivot[2],
+                    0, 0, 1, -tPoseDown);
+
+                // 2. Arm swing
+                [x, y, z] = rotateAroundAxis(x, y, z,
+                    rShoulderPivot[0], rShoulderPivot[1], rShoulderPivot[2],
+                    1, 0, 0, rArmSwing);
+
+                // 3. Elbow bend
+                if (isForearm || isHand) {
+                    let elbowPivot = [rShoulderPivot[0] + upperArmLen, rShoulderPivot[1], rShoulderPivot[2]];
+                    elbowPivot = rotateAroundAxis(elbowPivot[0], elbowPivot[1], elbowPivot[2],
+                        rShoulderPivot[0], rShoulderPivot[1], rShoulderPivot[2],
+                        0, 0, 1, -tPoseDown);
+                    elbowPivot = rotateAroundAxis(elbowPivot[0], elbowPivot[1], elbowPivot[2],
+                        rShoulderPivot[0], rShoulderPivot[1], rShoulderPivot[2],
+                        1, 0, 0, rArmSwing);
+
+                    [x, y, z] = rotateAroundAxis(x, y, z,
+                        elbowPivot[0], elbowPivot[1], elbowPivot[2],
+                        1, 0, 0, rElbowBend);
+
+                    // 4. Wrist
+                    if (isHand) {
+                        let wristPivot = [rShoulderPivot[0] + upperArmLen + forearmLen, rShoulderPivot[1], rShoulderPivot[2]];
+                        wristPivot = rotateAroundAxis(wristPivot[0], wristPivot[1], wristPivot[2],
+                            rShoulderPivot[0], rShoulderPivot[1], rShoulderPivot[2],
+                            0, 0, 1, -tPoseDown);
+                        wristPivot = rotateAroundAxis(wristPivot[0], wristPivot[1], wristPivot[2],
+                            rShoulderPivot[0], rShoulderPivot[1], rShoulderPivot[2],
+                            1, 0, 0, rArmSwing);
+                        wristPivot = rotateAroundAxis(wristPivot[0], wristPivot[1], wristPivot[2],
+                            elbowPivot[0], elbowPivot[1], elbowPivot[2],
+                            1, 0, 0, rElbowBend);
+
+                        [x, y, z] = rotateAroundAxis(x, y, z,
+                            wristPivot[0], wristPivot[1], wristPivot[2],
+                            1, 0, 0, -rElbowBend * 0.5);
+                    }
+                }
+            }
+        }
+
+        pos[i*3] = x;
+        pos[i*3+1] = y;
+        pos[i*3+2] = z;
+
+        // Debug colors for bone segments
+        if (debugBones && colors) {
+            const origX = origPos[i*3];
+            const origY = origPos[i*3+1];
+            const origZ = origPos[i*3+2];
+            const ny = (origY - bounds.min[1]) / bounds.height;
+
+            // Default: gray (torso)
+            let r = 0.5, g = 0.5, b = 0.5;
+
+            // Get arm params
+            const upperArmLen = parseFloat(document.getElementById('upperArmLen').value);
+            const shoulderXDbg = parseFloat(document.getElementById('shoulderX').value);
+            const lShoulderPivot = [-shoulderXDbg, 0.20, -0.03];
+            const rShoulderPivot = [shoulderXDbg, 0.20, -0.03];
+
+            // LEFT LEG colors
+            if (origX < centerX && ny < 0.40) {
+                const hipPivot = lHip;
+                const distFromHip = distToJoint(origX, origY, origZ, hipPivot);
+                const ankleY = hipPivot[1] - thighLen - shinLen;
+                const isFoot = origY < ankleY + 0.07;
+                const isShin = !isFoot && distFromHip > thighLen;
+                const isThigh = distFromHip <= thighLen;
+
+                if (isThigh) { r = 1.0; g = 0.5; b = 0.0; }      // Orange: thigh
+                else if (isShin) { r = 0.0; g = 1.0; b = 1.0; }  // Cyan: shin
+                else if (isFoot) { r = 1.0; g = 0.0; b = 1.0; }  // Magenta: foot
+            }
+            // RIGHT LEG colors
+            else if (origX > centerX && ny < 0.40) {
+                const hipPivot = rHip;
+                const distFromHip = distToJoint(origX, origY, origZ, hipPivot);
+                const ankleY = hipPivot[1] - thighLen - shinLen;
+                const isFoot = origY < ankleY + 0.07;
+                const isShin = !isFoot && distFromHip > thighLen;
+                const isThigh = distFromHip <= thighLen;
+
+                if (isThigh) { r = 1.0; g = 0.5; b = 0.0; }
+                else if (isShin) { r = 0.0; g = 1.0; b = 1.0; }
+                else if (isFoot) { r = 1.0; g = 0.0; b = 1.0; }
+            }
+            // LEFT ARM colors
+            const forearmLenDbg = parseFloat(document.getElementById('forearmLen').value);
+            if (origX < -0.14 && origY > 0.14 && origY < 0.27) {
+                const distFromShoulder = distToJoint(origX, origY, origZ, lShoulderPivot);
+                const isUpperArm = distFromShoulder <= upperArmLen;
+                const isForearm = distFromShoulder > upperArmLen && distFromShoulder <= upperArmLen + forearmLen;
+                const isHand = distFromShoulder > upperArmLen + forearmLen;
+
+                if (isUpperArm) { r = 1.0; g = 0.0; b = 0.0; }      // Red: upper arm
+                else if (isForearm) { r = 0.0; g = 1.0; b = 0.0; }  // Green: forearm
+                else if (isHand) { r = 0.0; g = 0.0; b = 1.0; }     // Blue: hand
+            }
+            // RIGHT ARM colors
+            else if (origX > 0.14 && origY > 0.14 && origY < 0.27) {
+                const distFromShoulder = distToJoint(origX, origY, origZ, rShoulderPivot);
+                const isUpperArm = distFromShoulder <= upperArmLen;
+                const isForearm = distFromShoulder > upperArmLen && distFromShoulder <= upperArmLen + forearmLen;
+                const isHand = distFromShoulder > upperArmLen + forearmLen;
+
+                if (isUpperArm) { r = 1.0; g = 0.0; b = 0.0; }
+                else if (isForearm) { r = 0.0; g = 1.0; b = 0.0; }
+                else if (isHand) { r = 0.0; g = 0.0; b = 1.0; }
+            }
+
+            colors[i*3] = r;
+            colors[i*3+1] = g;
+            colors[i*3+2] = b;
+        }
+    }
+
+    meshGeo.attributes.position.needsUpdate = true;
+    if (debugBones && colors) meshGeo.attributes.color.needsUpdate = true;
+    meshGeo.computeVertexNormals();
+}
+
+// UI handlers
+document.getElementById('speed').oninput = e => {
+    speed = parseFloat(e.target.value);
+    document.getElementById('speedVal').textContent = speed.toFixed(1);
+};
+document.getElementById('motionScale').oninput = e => {
+    motionScale = parseFloat(e.target.value);
+    document.getElementById('motionScaleVal').textContent = motionScale.toFixed(1);
+};
+document.getElementById('groinGap').oninput = e => {
+    document.getElementById('groinGapVal').textContent = parseFloat(e.target.value).toFixed(2);
+};
+document.getElementById('shoulderX').oninput = e => {
+    document.getElementById('shoulderXVal').textContent = parseFloat(e.target.value).toFixed(2);
+};
+document.getElementById('tposeAngle').oninput = e => {
+    document.getElementById('tposeVal').textContent = e.target.value + '°';
+};
+document.getElementById('armSwing').oninput = e => {
+    document.getElementById('armSwingVal').textContent = parseFloat(e.target.value).toFixed(1);
+};
+document.getElementById('elbowBend').oninput = e => {
+    document.getElementById('elbowBendVal').textContent = parseFloat(e.target.value).toFixed(1);
+};
+document.getElementById('upperArmLen').oninput = e => {
+    document.getElementById('upperArmLenVal').textContent = parseFloat(e.target.value).toFixed(2);
+};
+document.getElementById('forearmLen').oninput = e => {
+    document.getElementById('forearmLenVal').textContent = parseFloat(e.target.value).toFixed(2);
+};
+document.getElementById('hipBob').oninput = e => {
+    document.getElementById('hipBobVal').textContent = parseFloat(e.target.value).toFixed(3);
+};
+document.getElementById('hipSway').oninput = e => {
+    document.getElementById('hipSwayVal').textContent = parseFloat(e.target.value).toFixed(1);
+};
+document.getElementById('forwardLean').oninput = e => {
+    document.getElementById('forwardLeanVal').textContent = e.target.value + '°';
+};
+document.getElementById('spineTwist').oninput = e => {
+    document.getElementById('spineTwistVal').textContent = parseFloat(e.target.value).toFixed(1);
+};
+
+window.onresize = () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+};
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    if (document.getElementById('animate').checked) {
+        time += 0.016 * speed;  // ~60fps
+        updateMesh(time);
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+}
+
+animate();
+</script>
+</body></html>

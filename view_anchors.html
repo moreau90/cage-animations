@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>View Discovered Anchors</title>
+<style>
+body{margin:0;background:#1a1a2e;font-family:system-ui}
+#ui{position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.85);padding:14px;border-radius:10px;font-size:12px;color:#ddd;max-width:300px;max-height:90vh;overflow-y:auto}
+#ui h3{margin:0 0 10px 0;color:#fff}
+.anchor-item{display:flex;align-items:center;gap:8px;margin:4px 0;padding:4px;border-radius:4px;cursor:pointer}
+.anchor-item:hover{background:rgba(255,255,255,0.1)}
+.anchor-dot{width:12px;height:12px;border-radius:50%}
+.anchor-name{flex:1}
+.anchor-pos{font-size:10px;color:#888}
+#info{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);padding:10px 20px;border-radius:10px;color:#ddd}
+</style>
+</head><body>
+<div id="ui">
+  <h3>Discovered Anchors</h3>
+  <div>Click anchor to highlight. Drag mesh to rotate.</div>
+  <hr style="border-color:#444;margin:10px 0">
+  <div id="anchor-list"></div>
+</div>
+<div id="info">Loading...</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2e);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.01, 100);
+const renderer = new THREE.WebGLRenderer({antialias: true});
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+scene.add(new THREE.DirectionalLight(0xffffff, 0.8)).position.set(2, 3, 2);
+
+// Color map for anchor types
+const COLORS = {
+    head: 0xff6b6b, neck: 0xff8787,
+    chest: 0x4ecdc4, spine: 0x45b7aa, pelvis: 0x3ca99f,
+    l_shoulder: 0x95e1d3, l_elbow: 0x7dd3c0, l_wrist: 0x65c5ad,
+    r_shoulder: 0x95e1d3, r_elbow: 0x7dd3c0, r_wrist: 0x65c5ad,
+    l_hip: 0xdfe6e9, l_knee: 0xb2bec3, l_ankle: 0x636e72, l_foot: 0x2d3436,
+    r_hip: 0xdfe6e9, r_knee: 0xb2bec3, r_ankle: 0x636e72, r_foot: 0x2d3436,
+};
+
+let anchorData = null;
+let anchorSpheres = {};
+let selectedAnchor = null;
+
+const loader = new THREE.GLTFLoader();
+
+// Load mesh
+loader.load('mesh.glb', function(gltf) {
+    gltf.scene.traverse(child => {
+        if (child.isMesh) {
+            child.material.metalness = 0;
+            child.material.roughness = 0.7;
+            child.material.transparent = true;
+            child.material.opacity = 0.7;
+        }
+    });
+    scene.add(gltf.scene);
+
+    const box = new THREE.Box3().setFromObject(gltf.scene);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    camera.position.set(center.x + size.x, center.y, center.z + size.z * 1.5);
+    controls.target.copy(center);
+    controls.update();
+
+    // Load anchor data
+    fetch('discovered_anchors.json')
+        .then(r => r.json())
+        .then(data => {
+            anchorData = data;
+            createAnchorVisuals();
+            createAnchorList();
+            document.getElementById('info').textContent = 'Drag to rotate | Scroll to zoom | Click anchors in list';
+        });
+});
+
+function createAnchorVisuals() {
+    const anchors = anchorData.anchors;
+
+    // Create spheres for each anchor
+    for (const [name, data] of Object.entries(anchors)) {
+        const geo = new THREE.SphereGeometry(0.015, 16, 16);
+        const mat = new THREE.MeshBasicMaterial({color: COLORS[name] || 0xffffff});
+        const sphere = new THREE.Mesh(geo, mat);
+        sphere.position.set(data.pos[0], data.pos[1], data.pos[2]);
+        scene.add(sphere);
+        anchorSpheres[name] = sphere;
+
+        // Draw line to parent
+        if (data.parent && anchors[data.parent]) {
+            const parentPos = anchors[data.parent].pos;
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(data.pos[0], data.pos[1], data.pos[2]),
+                new THREE.Vector3(parentPos[0], parentPos[1], parentPos[2])
+            ]);
+            const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({color: 0xffff00, opacity: 0.6, transparent: true}));
+            scene.add(line);
+        }
+    }
+}
+
+function createAnchorList() {
+    const list = document.getElementById('anchor-list');
+    const anchors = anchorData.anchors;
+
+    for (const [name, data] of Object.entries(anchors)) {
+        const item = document.createElement('div');
+        item.className = 'anchor-item';
+        item.innerHTML = `
+            <div class="anchor-dot" style="background:#${(COLORS[name] || 0xffffff).toString(16).padStart(6, '0')}"></div>
+            <span class="anchor-name">${name}</span>
+            <span class="anchor-pos">(${data.pos[0].toFixed(2)}, ${data.pos[1].toFixed(2)}, ${data.pos[2].toFixed(2)})</span>
+        `;
+        item.onclick = () => selectAnchor(name);
+        list.appendChild(item);
+    }
+}
+
+function selectAnchor(name) {
+    // Reset previous selection
+    if (selectedAnchor && anchorSpheres[selectedAnchor]) {
+        anchorSpheres[selectedAnchor].scale.set(1, 1, 1);
+        anchorSpheres[selectedAnchor].material.color.setHex(COLORS[selectedAnchor] || 0xffffff);
+    }
+
+    // Highlight new selection
+    selectedAnchor = name;
+    if (anchorSpheres[name]) {
+        anchorSpheres[name].scale.set(2, 2, 2);
+        anchorSpheres[name].material.color.setHex(0xff0000);
+
+        // Move camera to look at this anchor
+        const pos = anchorData.anchors[name].pos;
+        controls.target.set(pos[0], pos[1], pos[2]);
+    }
+}
+
+window.onresize = () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+};
+
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+}
+animate();
+</script>
+</body></html>

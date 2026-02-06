@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Semantic Anchor Animation</title>
+<style>
+body{margin:0;background:#1a1a2e;overflow:hidden;font-family:system-ui}
+#ui{position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.8);padding:14px;border-radius:10px;font-size:13px;color:#ddd;max-width:280px}
+#ui h3{margin:0 0 10px 0;color:#fff}
+#ui label{display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer}
+#ui input[type="checkbox"]{width:16px;height:16px}
+#ui input[type="range"]{flex:1}
+.slider-row{display:flex;align-items:center;gap:8px;margin:8px 0}
+.slider-row span{min-width:50px}
+#info{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);padding:10px 20px;border-radius:10px;color:#ddd}
+#loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:20px}
+</style>
+</head><body>
+<div id="loading">Loading mesh and animation data...</div>
+<div id="ui" style="display:none">
+  <h3>Semantic Anchor Animation</h3>
+  <label><input type="checkbox" id="showMesh" checked> Show Mesh</label>
+  <label><input type="checkbox" id="showCage"> Show Cage</label>
+  <label><input type="checkbox" id="showAnchors"> Show Anchors</label>
+  <label><input type="checkbox" id="animate" checked> Animate</label>
+  <div class="slider-row">
+    <span>Speed:</span>
+    <input type="range" id="speed" min="0" max="3" step="0.1" value="1">
+    <span id="speedVal">1.0</span>
+  </div>
+  <div class="slider-row">
+    <span>Frame:</span>
+    <input type="range" id="frameSlider" min="0" max="29" step="0.1" value="0">
+    <span id="frameVal">0</span>
+  </div>
+</div>
+<div id="info" style="display:none">
+  Drag to rotate | Scroll to zoom | Frame: <span id="frameInfo">0</span>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2e);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.01, 100);
+const renderer = new THREE.WebGLRenderer({antialias: true});
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+dirLight.position.set(2, 3, 2);
+scene.add(dirLight);
+
+let meshObj, meshGeo, origPos;
+let D = null;
+let frame = 0;
+let speed = 1;
+let isAnimating = true;
+
+// Cage visualization
+let cagePoints, cageMaterial;
+// Anchor visualization
+let anchorPoints, anchorLines;
+
+const loader = new THREE.GLTFLoader();
+
+// Load mesh
+loader.load('mesh.glb', function(gltf) {
+    gltf.scene.traverse(child => {
+        if (child.isMesh) {
+            meshObj = child;
+            meshGeo = child.geometry;
+            origPos = meshGeo.attributes.position.array.slice();
+            child.material.metalness = 0;
+            child.material.roughness = 0.7;
+            child.material.side = THREE.DoubleSide;
+        }
+    });
+    scene.add(gltf.scene);
+
+    // Setup camera
+    const box = new THREE.Box3().setFromObject(gltf.scene);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    camera.position.set(center.x + maxDim * 0.5, center.y + maxDim * 0.3, center.z + maxDim * 1.2);
+    controls.target.copy(center);
+    controls.update();
+
+    // Load animation data
+    fetch('cage_data_anchors.json')
+        .then(r => r.json())
+        .then(data => {
+            D = data;
+            console.log("Loaded:", D.cv.length, "cage verts,", Object.keys(D.anchors).length, "anchors");
+
+            // Create cage visualization
+            const cageGeo = new THREE.BufferGeometry();
+            cageGeo.setAttribute('position', new THREE.Float32BufferAttribute(D.cv.flat(), 3));
+            cageMaterial = new THREE.PointsMaterial({color: 0x00ff00, size: 0.02});
+            cagePoints = new THREE.Points(cageGeo, cageMaterial);
+            cagePoints.visible = false;
+            scene.add(cagePoints);
+
+            // Create anchor visualization
+            const anchorPositions = [];
+            const anchorColors = [];
+            const linePositions = [];
+
+            // Color map for anchors
+            const anchorColorMap = {
+                'pelvis': 0xff0000, 'spine': 0xff3333, 'chest': 0xff6666, 'neck': 0xff9999, 'head': 0xffcccc,
+                'l_shoulder': 0x00ff00, 'l_elbow': 0x33ff33, 'l_wrist': 0x66ff66,
+                'r_shoulder': 0x00ff00, 'r_elbow': 0x33ff33, 'r_wrist': 0x66ff66,
+                'l_hip': 0x0000ff, 'l_knee': 0x3333ff, 'l_ankle': 0x6666ff, 'l_toe': 0x9999ff,
+                'r_hip': 0x0000ff, 'r_knee': 0x3333ff, 'r_ankle': 0x6666ff, 'r_toe': 0x9999ff,
+            };
+
+            for (const [name, anchor] of Object.entries(D.anchors)) {
+                anchorPositions.push(...anchor.pos);
+                const color = new THREE.Color(anchorColorMap[name] || 0xffffff);
+                anchorColors.push(color.r, color.g, color.b);
+
+                // Draw line to parent
+                if (anchor.parent) {
+                    const parentPos = D.anchors[anchor.parent].pos;
+                    linePositions.push(...anchor.pos, ...parentPos);
+                }
+            }
+
+            const anchorGeo = new THREE.BufferGeometry();
+            anchorGeo.setAttribute('position', new THREE.Float32BufferAttribute(anchorPositions, 3));
+            anchorGeo.setAttribute('color', new THREE.Float32BufferAttribute(anchorColors, 3));
+            anchorPoints = new THREE.Points(anchorGeo, new THREE.PointsMaterial({
+                size: 0.03,
+                vertexColors: true
+            }));
+            anchorPoints.visible = false;
+            scene.add(anchorPoints);
+
+            // Skeleton lines
+            if (linePositions.length > 0) {
+                const lineGeo = new THREE.BufferGeometry();
+                lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+                anchorLines = new THREE.LineSegments(lineGeo, new THREE.LineBasicMaterial({color: 0xffff00, opacity: 0.5, transparent: true}));
+                anchorLines.visible = false;
+                scene.add(anchorLines);
+            }
+
+            // Hide loading, show UI
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('ui').style.display = 'block';
+            document.getElementById('info').style.display = 'block';
+
+            // Start animation
+            animate();
+        })
+        .catch(err => {
+            document.getElementById('loading').textContent = 'Error loading data: ' + err;
+        });
+});
+
+function updateMesh(t) {
+    if (!meshGeo || !origPos || !D) return;
+
+    const nf = D.nf;
+    const f0 = Math.floor(t) % nf;
+    const f1 = (f0 + 1) % nf;
+    const alpha = t - Math.floor(t);
+
+    // Interpolate cage positions
+    const cageDeltas = new Float32Array(D.cv.length * 3);
+    for (let i = 0; i < D.cv.length; i++) {
+        const rest = D.cv[i];
+        const k0 = D.ck[f0][i];
+        const k1 = D.ck[f1][i];
+        // Interpolate keyframe positions
+        const kx = k0[0] * (1 - alpha) + k1[0] * alpha;
+        const ky = k0[1] * (1 - alpha) + k1[1] * alpha;
+        const kz = k0[2] * (1 - alpha) + k1[2] * alpha;
+        // Delta from rest
+        cageDeltas[i * 3] = kx - rest[0];
+        cageDeltas[i * 3 + 1] = ky - rest[1];
+        cageDeltas[i * 3 + 2] = kz - rest[2];
+    }
+
+    // Update cage visualization
+    if (cagePoints && cagePoints.visible) {
+        const cagePos = cagePoints.geometry.attributes.position.array;
+        for (let i = 0; i < D.cv.length; i++) {
+            cagePos[i * 3] = D.cv[i][0] + cageDeltas[i * 3];
+            cagePos[i * 3 + 1] = D.cv[i][1] + cageDeltas[i * 3 + 1];
+            cagePos[i * 3 + 2] = D.cv[i][2] + cageDeltas[i * 3 + 2];
+        }
+        cagePoints.geometry.attributes.position.needsUpdate = true;
+    }
+
+    // Apply cage deformation to mesh
+    const pos = meshGeo.attributes.position.array;
+    const numVerts = origPos.length / 3;
+
+    for (let i = 0; i < numVerts; i++) {
+        let dx = 0, dy = 0, dz = 0;
+
+        // Weighted sum of cage deltas
+        for (let k = 0; k < 6; k++) {
+            const ci = D.bi[i][k];
+            const w = D.bw[i][k];
+            dx += w * cageDeltas[ci * 3];
+            dy += w * cageDeltas[ci * 3 + 1];
+            dz += w * cageDeltas[ci * 3 + 2];
+        }
+
+        pos[i * 3] = origPos[i * 3] + dx;
+        pos[i * 3 + 1] = origPos[i * 3 + 1] + dy;
+        pos[i * 3 + 2] = origPos[i * 3 + 2] + dz;
+    }
+
+    meshGeo.attributes.position.needsUpdate = true;
+    meshGeo.computeVertexNormals();
+}
+
+// UI handlers
+document.getElementById('showMesh').onchange = e => { if (meshObj) meshObj.visible = e.target.checked; };
+document.getElementById('showCage').onchange = e => { if (cagePoints) cagePoints.visible = e.target.checked; };
+document.getElementById('showAnchors').onchange = e => {
+    if (anchorPoints) anchorPoints.visible = e.target.checked;
+    if (anchorLines) anchorLines.visible = e.target.checked;
+};
+document.getElementById('animate').onchange = e => { isAnimating = e.target.checked; };
+document.getElementById('speed').oninput = e => {
+    speed = parseFloat(e.target.value);
+    document.getElementById('speedVal').textContent = speed.toFixed(1);
+};
+document.getElementById('frameSlider').oninput = e => {
+    if (!isAnimating) {
+        frame = parseFloat(e.target.value);
+        updateMesh(frame);
+    }
+};
+
+window.onresize = () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+};
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    if (isAnimating && D) {
+        frame += speed * 0.3;
+        if (frame >= D.nf) frame -= D.nf;
+        updateMesh(frame);
+        document.getElementById('frameSlider').value = frame;
+    }
+
+    document.getElementById('frameVal').textContent = Math.floor(frame);
+    document.getElementById('frameInfo').textContent = Math.floor(frame);
+
+    controls.update();
+    renderer.render(scene, camera);
+}
+</script>
+</body></html>

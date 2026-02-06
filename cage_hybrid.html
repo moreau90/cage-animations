@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Cage Hybrid Animation</title>
+<style>
+body{margin:0;background:#1a1a2e;font-family:system-ui}
+#ui{position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.85);padding:14px;border-radius:10px;font-size:13px;color:#ddd}
+#ui h3{margin:0 0 10px 0;color:#fff}
+#ui label{display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer}
+.slider-row{display:flex;align-items:center;gap:8px;margin:8px 0}
+.slider-row span:first-child{min-width:60px}
+#info{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);padding:10px 20px;border-radius:10px;color:#ddd}
+</style>
+</head><body>
+<div id="ui">
+  <h3>Animation Tuner</h3>
+  <label><input type="checkbox" id="animate" checked> Animate</label>
+  <label><input type="checkbox" id="showMesh" checked> Show Mesh</label>
+  <label><input type="checkbox" id="showAnchors"> Show Anchors</label>
+  <label><input type="checkbox" id="showBones"> Show Bone Regions</label>
+
+  <div style="margin-top:10px;padding-top:8px;border-top:1px solid #444">
+    <div style="color:#4ecdc4;font-weight:bold;margin-bottom:5px">General</div>
+    <div class="slider-row">
+      <span>Speed:</span>
+      <input type="range" id="speed" min="0" max="2" step="0.1" value="1" style="flex:1">
+    </div>
+  </div>
+
+  <div style="margin-top:10px;padding-top:8px;border-top:1px solid #444">
+    <div style="color:#ff6b6b;font-weight:bold;margin-bottom:5px">Head</div>
+    <div class="slider-row">
+      <span>Bob:</span>
+      <input type="range" id="headBob" min="0" max="0.02" step="0.001" value="0.003" style="flex:1">
+      <span id="headBobVal" style="min-width:40px">0.003</span>
+    </div>
+  </div>
+
+  <div style="margin-top:10px;padding-top:8px;border-top:1px solid #444">
+    <div style="color:#95e1d3;font-weight:bold;margin-bottom:5px">Arms</div>
+    <div class="slider-row">
+      <span>Shoulder X:</span>
+      <input type="range" id="shoulderX" min="0.10" max="0.25" step="0.01" value="0.16" style="flex:1">
+      <span id="shoulderXVal" style="min-width:40px">0.16</span>
+    </div>
+    <div class="slider-row">
+      <span>Arm down:</span>
+      <input type="range" id="armDown" min="0" max="1.8" step="0.1" value="1.3" style="flex:1">
+      <span id="armDownVal" style="min-width:40px">1.3</span>
+    </div>
+    <div class="slider-row">
+      <span>Arm swing:</span>
+      <input type="range" id="armSwing" min="0" max="0.3" step="0.02" value="0.15" style="flex:1">
+      <span id="armSwingVal" style="min-width:40px">0.15</span>
+    </div>
+    <div class="slider-row">
+      <span>Elbow fwd:</span>
+      <input type="range" id="elbowFwd" min="0" max="1.0" step="0.05" value="0.2" style="flex:1">
+      <span id="elbowFwdVal" style="min-width:40px">0.20</span>
+    </div>
+    <div class="slider-row">
+      <span>Elbow back:</span>
+      <input type="range" id="elbowBack" min="0" max="1.0" step="0.05" value="0.4" style="flex:1">
+      <span id="elbowBackVal" style="min-width:40px">0.40</span>
+    </div>
+    <div class="slider-row">
+      <span>Shldr shrug:</span>
+      <input type="range" id="shoulderShrug" min="0" max="0.02" step="0.002" value="0" style="flex:1">
+      <span id="shoulderShrugVal" style="min-width:40px">0.00</span>
+    </div>
+    <div class="slider-row">
+      <span>Upper arm:</span>
+      <input type="range" id="upperArmLen" min="0.05" max="0.25" step="0.01" value="0.15" style="flex:1">
+      <span id="upperArmLenVal" style="min-width:40px">0.15</span>
+    </div>
+    <div class="slider-row">
+      <span>Forearm:</span>
+      <input type="range" id="forearmLen" min="0.05" max="0.25" step="0.01" value="0.15" style="flex:1">
+      <span id="forearmLenVal" style="min-width:40px">0.15</span>
+    </div>
+  </div>
+
+  <div style="margin-top:10px;padding-top:8px;border-top:1px solid #444">
+    <div style="color:#dfe6e9;font-weight:bold;margin-bottom:5px">Torso</div>
+    <div class="slider-row">
+      <span>Twist:</span>
+      <input type="range" id="torsoTwist" min="0" max="0.03" step="0.002" value="0.005" style="flex:1">
+      <span id="torsoTwistVal" style="min-width:40px">0.005</span>
+    </div>
+  </div>
+
+  <div style="margin-top:10px;padding-top:8px;border-top:1px solid #444">
+    <div style="color:#ffeaa7;font-weight:bold;margin-bottom:5px">Hips</div>
+    <div class="slider-row">
+      <span>Sway:</span>
+      <input type="range" id="hipSway" min="0" max="0.02" step="0.001" value="0.005" style="flex:1">
+      <span id="hipSwayVal" style="min-width:40px">0.005</span>
+    </div>
+    <div class="slider-row">
+      <span>Bob:</span>
+      <input type="range" id="hipBob" min="0" max="0.02" step="0.001" value="0.005" style="flex:1">
+      <span id="hipBobVal" style="min-width:40px">0.005</span>
+    </div>
+  </div>
+
+  <div style="margin-top:10px;padding-top:8px;border-top:1px solid #444">
+    <div style="color:#74b9ff;font-weight:bold;margin-bottom:5px">Legs</div>
+    <div class="slider-row">
+      <span>Hip swing:</span>
+      <input type="range" id="legSwing" min="0" max="0.5" step="0.05" value="0.25" style="flex:1">
+      <span id="legSwingVal" style="min-width:40px">0.25</span>
+    </div>
+    <div class="slider-row">
+      <span>Thigh len:</span>
+      <input type="range" id="thighLen" min="0.10" max="0.30" step="0.01" value="0.18" style="flex:1">
+      <span id="thighLenVal" style="min-width:40px">0.18</span>
+    </div>
+    <div class="slider-row">
+      <span>Shin len:</span>
+      <input type="range" id="shinLen" min="0.10" max="0.30" step="0.01" value="0.18" style="flex:1">
+      <span id="shinLenVal" style="min-width:40px">0.18</span>
+    </div>
+    <div class="slider-row">
+      <span>Knee bend:</span>
+      <input type="range" id="kneeBend" min="0" max="1.0" step="0.05" value="0.4" style="flex:1">
+      <span id="kneeBendVal" style="min-width:40px">0.40</span>
+    </div>
+    <div class="slider-row">
+      <span>Stride:</span>
+      <input type="range" id="stride" min="0" max="0.2" step="0.01" value="0.08" style="flex:1">
+      <span id="strideVal" style="min-width:40px">0.08</span>
+    </div>
+    <div class="slider-row">
+      <span>Foot lift:</span>
+      <input type="range" id="footLift" min="0" max="0.10" step="0.01" value="0.03" style="flex:1">
+      <span id="footLiftVal" style="min-width:40px">0.03</span>
+    </div>
+    <div class="slider-row">
+      <span>Heel strike:</span>
+      <input type="range" id="heelStrike" min="0" max="0.6" step="0.05" value="0.3" style="flex:1">
+      <span id="heelStrikeVal" style="min-width:40px">0.30</span>
+    </div>
+    <div class="slider-row">
+      <span>Toe off:</span>
+      <input type="range" id="toeOff" min="0" max="0.6" step="0.05" value="0.3" style="flex:1">
+      <span id="toeOffVal" style="min-width:40px">0.30</span>
+    </div>
+  </div>
+
+  <div style="margin-top:10px;padding-top:8px;border-top:1px solid #444">
+    <div style="color:#a29bfe;font-weight:bold;margin-bottom:5px">Body</div>
+    <div class="slider-row">
+      <span>Bounce:</span>
+      <input type="range" id="bodyBounce" min="0" max="0.02" step="0.001" value="0.005" style="flex:1">
+      <span id="bodyBounceVal" style="min-width:40px">0.005</span>
+    </div>
+    <div class="slider-row">
+      <span>Fwd lean:</span>
+      <input type="range" id="forwardLean" min="0" max="0.1" step="0.01" value="0" style="flex:1">
+      <span id="forwardLeanVal" style="min-width:40px">0.00</span>
+    </div>
+    <div class="slider-row">
+      <span>Blend:</span>
+      <input type="range" id="blendZone" min="0.01" max="0.10" step="0.01" value="0.03" style="flex:1">
+      <span id="blendZoneVal" style="min-width:40px">0.03</span>
+    </div>
+  </div>
+
+  <div style="margin-top:10px;padding-top:8px;border-top:1px solid #444;font-size:10px;color:#666">
+    Tip: Set all to 0 to see base pose
+  </div>
+</div>
+<div id="info">Loading...</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2e);
+
+const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.01, 100);
+const renderer = new THREE.WebGLRenderer({antialias: true});
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+scene.add(new THREE.DirectionalLight(0xffffff, 0.8)).position.set(2, 3, 2);
+
+let meshObj, meshGeo, origPos;
+let anchors = null;
+let frame = 0;
+
+// Animation parameters
+let speed = 1;
+let legSwingAmount = 0.25;
+let armSwingAmount = 0.15;
+let shoulderX = 0.16;
+let armDownAngle = 1.3;
+let headBob = 0.003;
+let torsoTwist = 0.005;
+let hipSway = 0.005;
+let hipBob = 0.005;
+let kneeBend = 1.5;
+let bodyBounce = 0.005;
+let forwardLean = 0;
+let elbowFwd = 0.2;
+let elbowBack = 0.4;
+let upperArmLen = 0.15;
+let forearmLen = 0.15;
+let showBones = false;
+let shoulderShrug = 0;
+let thighLen = 0.18;
+let shinLen = 0.18;
+let footLift = 0.03;
+let stride = 0.08;
+let heelStrike = 0.3;
+let toeOff = 0.3;
+let blendZone = 0.03;
+
+// Rotation helper - rotate point around pivot on axis
+function rotateAroundAxis(px, py, pz, pivotX, pivotY, pivotZ, axisX, axisY, axisZ, angle) {
+    // Translate to origin
+    let x = px - pivotX;
+    let y = py - pivotY;
+    let z = pz - pivotZ;
+
+    // Rodrigues rotation formula
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    const t = 1 - c;
+
+    // Normalize axis
+    const len = Math.sqrt(axisX*axisX + axisY*axisY + axisZ*axisZ);
+    const ax = axisX/len, ay = axisY/len, az = axisZ/len;
+
+    const nx = (t*ax*ax + c)*x + (t*ax*ay - s*az)*y + (t*ax*az + s*ay)*z;
+    const ny = (t*ax*ay + s*az)*x + (t*ay*ay + c)*y + (t*ay*az - s*ax)*z;
+    const nz = (t*ax*az - s*ay)*x + (t*ay*az + s*ax)*y + (t*az*az + c)*z;
+
+    return [nx + pivotX, ny + pivotY, nz + pivotZ];
+}
+
+const loader = new THREE.GLTFLoader();
+
+Promise.all([
+    new Promise(resolve => loader.load('mesh.glb', resolve)),
+    fetch('discovered_anchors.json').then(r => r.json())
+]).then(([gltf, anchorData]) => {
+    // Setup mesh
+    gltf.scene.traverse(child => {
+        if (child.isMesh) {
+            meshObj = child;
+            meshGeo = child.geometry;
+            origPos = meshGeo.attributes.position.array.slice();
+            child.material.metalness = 0;
+            child.material.roughness = 0.7;
+            child.material.side = THREE.DoubleSide;
+        }
+    });
+    scene.add(gltf.scene);
+
+    // Camera setup - SAME AS test_view.html (which works)
+    const box = new THREE.Box3().setFromObject(gltf.scene);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    camera.position.set(center.x, center.y + 0.3, center.z + maxDim * 1.5);
+    controls.target.copy(center);
+    controls.update();
+
+    // Store anchors
+    anchors = anchorData.anchors;
+
+    // Create anchor visualization
+    const anchorGroup = new THREE.Group();
+    anchorGroup.visible = false;
+    for (const [name, data] of Object.entries(anchors)) {
+        const geo = new THREE.SphereGeometry(0.015, 8, 8);
+        const mat = new THREE.MeshBasicMaterial({color: 0x00ff00});
+        const sphere = new THREE.Mesh(geo, mat);
+        sphere.position.set(data.pos[0], data.pos[1], data.pos[2]);
+        anchorGroup.add(sphere);
+
+        // Line to parent
+        if (data.parent && anchors[data.parent]) {
+            const pp = anchors[data.parent].pos;
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(...data.pos),
+                new THREE.Vector3(...pp)
+            ]);
+            anchorGroup.add(new THREE.Line(lineGeo, new THREE.LineBasicMaterial({color: 0xffff00})));
+        }
+    }
+    scene.add(anchorGroup);
+    document.getElementById('showAnchors').onchange = e => anchorGroup.visible = e.target.checked;
+
+    // Classify mesh vertices by region based on proximity to anchors
+    console.log("Classifying mesh vertices...");
+    const numVerts = origPos.length / 3;
+    const vertexRegions = new Array(numVerts);
+
+    // Simple region assignment based on position
+    const bounds = anchorData.mesh_bounds;
+    const height = bounds.height;
+    const minY = bounds.min[1];
+    const centerX = bounds.center_x;
+
+    for (let i = 0; i < numVerts; i++) {
+        const x = origPos[i*3];
+        const y = origPos[i*3+1];
+        const z = origPos[i*3+2];
+        const ny = (y - minY) / height;
+
+        // Determine region
+        let region = 'torso';
+
+        // Head
+        if (ny > 0.85) region = 'head';
+        // Neck
+        else if (ny > 0.78) region = 'neck';
+        // Arms - check if significantly left or right AND at arm height
+        else if (x < centerX - 0.12 && ny > 0.30 && ny < 0.80) region = 'l_arm';
+        else if (x > centerX + 0.12 && ny > 0.30 && ny < 0.80) region = 'r_arm';
+        // Upper body
+        else if (ny > 0.45) region = 'torso';
+        // Hips/pelvis
+        else if (ny > 0.38) region = 'hips';
+        // Upper legs
+        else if (ny > 0.20) {
+            region = x < centerX ? 'l_upper_leg' : 'r_upper_leg';
+        }
+        // Lower legs
+        else if (ny > 0.05) {
+            region = x < centerX ? 'l_lower_leg' : 'r_lower_leg';
+        }
+        // Feet
+        else {
+            region = x < centerX ? 'l_foot' : 'r_foot';
+        }
+
+        vertexRegions[i] = region;
+    }
+
+    // Store for animation
+    window.vertexRegions = vertexRegions;
+    window.anchors = anchors;
+    window.bounds = bounds;
+
+    document.getElementById('info').textContent = 'Drag to rotate | Scroll to zoom';
+});
+
+// Calculate distance from point to joint
+function distToJoint(x, y, z, joint) {
+    const dx = x - joint[0];
+    const dy = y - joint[1];
+    const dz = z - joint[2];
+    return Math.sqrt(dx*dx + dy*dy + dz*dz);
+}
+
+// Visualize bone regions with colors
+function updateBoneColors() {
+    if (!meshGeo || !origPos || !window.anchors) return;
+
+    const colors = new Float32Array(origPos.length);
+    const numVerts = origPos.length / 3;
+    const anchors = window.anchors;
+    const bounds = window.bounds;
+    const minY = bounds.min[1];
+    const height = bounds.height;
+    const centerX = bounds.center_x;
+
+    for (let i = 0; i < numVerts; i++) {
+        const x = origPos[i*3];
+        const y = origPos[i*3+1];
+        const z = origPos[i*3+2];
+        const ny = (y - minY) / height;
+
+        let r = 0.7, g = 0.7, b = 0.7; // Default gray
+
+        if (showBones) {
+            // Bone segment boundaries
+            const elbowAt = upperArmLen;
+            const wristAt = upperArmLen + forearmLen;
+
+            // Left arm segments - use shoulder PIVOT position (same as animation)
+            if (x < -shoulderX && ny > 0.45 && ny < 0.80) {
+                const shoulderPivot = [-shoulderX, anchors.l_shoulder.pos[1], anchors.l_shoulder.pos[2]];
+                const dist = Math.sqrt((x - shoulderPivot[0])**2 + (y - shoulderPivot[1])**2 + (z - shoulderPivot[2])**2);
+                if (dist <= elbowAt) {
+                    r = 1; g = 0; b = 0; // RED = upper arm
+                } else if (dist <= wristAt) {
+                    r = 0; g = 1; b = 0; // GREEN = forearm
+                } else {
+                    r = 0; g = 0; b = 1; // BLUE = hand
+                }
+            }
+            // Right arm segments
+            else if (x > shoulderX && ny > 0.45 && ny < 0.80) {
+                const shoulderPivot = [shoulderX, anchors.r_shoulder.pos[1], anchors.r_shoulder.pos[2]];
+                const dist = Math.sqrt((x - shoulderPivot[0])**2 + (y - shoulderPivot[1])**2 + (z - shoulderPivot[2])**2);
+                if (dist <= elbowAt) {
+                    r = 0.8; g = 0; b = 0; // Dark red = upper arm
+                } else if (dist <= wristAt) {
+                    r = 0; g = 0.8; b = 0; // Dark green = forearm
+                } else {
+                    r = 0; g = 0; b = 0.8; // Dark blue = hand
+                }
+            }
+            // Left leg - use distance from hip like animation
+            else if (x < centerX && ny < 0.45) {
+                const hipPivot = anchors.l_hip.pos;
+                const dist = Math.sqrt((x - hipPivot[0])**2 + (y - hipPivot[1])**2 + (z - hipPivot[2])**2);
+                const kneeAt = thighLen;
+                const ankleAt = thighLen + shinLen;
+
+                if (dist <= kneeAt) {
+                    r = 1; g = 0.5; b = 0; // Orange = thigh
+                } else if (dist <= ankleAt) {
+                    r = 1; g = 1; b = 0; // Yellow = shin
+                } else {
+                    r = 1; g = 0; b = 1; // Magenta = foot
+                }
+            }
+            // Right leg
+            else if (x > centerX && ny < 0.45) {
+                const hipPivot = anchors.r_hip.pos;
+                const dist = Math.sqrt((x - hipPivot[0])**2 + (y - hipPivot[1])**2 + (z - hipPivot[2])**2);
+                const kneeAt = thighLen;
+                const ankleAt = thighLen + shinLen;
+
+                if (dist <= kneeAt) {
+                    r = 0.8; g = 0.4; b = 0; // Dark orange = thigh
+                } else if (dist <= ankleAt) {
+                    r = 0.8; g = 0.8; b = 0; // Dark yellow = shin
+                } else {
+                    r = 0.8; g = 0; b = 0.8; // Dark magenta = foot
+                }
+            }
+            // Torso
+            else if (ny > 0.45 && ny < 0.85) {
+                r = 0; g = 0.8; b = 0.8; // Cyan = torso
+            }
+            // Head
+            else if (ny > 0.85) {
+                r = 1; g = 0.8; b = 0.6; // Skin = head
+            }
+        }
+
+        colors[i*3] = r;
+        colors[i*3+1] = g;
+        colors[i*3+2] = b;
+    }
+
+    meshGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    if (meshObj) {
+        meshObj.material.vertexColors = showBones;
+        meshObj.material.needsUpdate = true;
+    }
+}
+
+// Calculate smooth weight based on distance (closer = higher weight)
+function calcWeight(dist, falloff = 0.15) {
+    return 1.0 / (1.0 + (dist / falloff) * (dist / falloff));
+}
+
+function updateMesh(t) {
+    if (!meshGeo || !origPos || !window.anchors) return;
+
+    const pos = meshGeo.attributes.position.array;
+    const numVerts = origPos.length / 3;
+    const anchors = window.anchors;
+    const bounds = window.bounds;
+
+    const phase = t * 0.1; // Walking phase
+
+    // Get joint positions from anchors
+    const lHip = anchors.l_hip.pos;
+    const rHip = anchors.r_hip.pos;
+    const lKnee = anchors.l_knee.pos;
+    const rKnee = anchors.r_knee.pos;
+    const lAnkle = anchors.l_ankle.pos;
+    const rAnkle = anchors.r_ankle.pos;
+    const pelvis = anchors.pelvis.pos;
+
+    // Arm joints - shoulder pivot at edge of torso where arm connects
+    // Discovered positions were on the arm itself, not at the joint
+    const shoulderY = anchors.l_shoulder.pos[1];  // Use discovered Y height
+    const shoulderZ = anchors.l_shoulder.pos[2];  // Use discovered Z depth
+    const lShoulder = [-0.18, shoulderY, shoulderZ];  // Edge of torso
+    const rShoulder = [0.18, shoulderY, shoulderZ];
+    const lElbow = anchors.l_elbow.pos;
+    const rElbow = anchors.r_elbow.pos;
+
+    // LEG animation angles
+    const lHipAngle = Math.sin(phase) * legSwingAmount;
+    const rHipAngle = Math.sin(phase + Math.PI) * legSwingAmount;
+    const lKneeAngle = Math.max(0, Math.sin(phase)) * legSwingAmount * kneeBend;
+    const rKneeAngle = Math.max(0, Math.sin(phase + Math.PI)) * legSwingAmount * kneeBend;
+
+    // ARM animation angles (opposite to legs - when left leg forward, right arm forward)
+    const lShoulderAngle = Math.sin(phase + Math.PI) * armSwingAmount;  // Left arm opposite to left leg
+    const rShoulderAngle = Math.sin(phase) * armSwingAmount;            // Right arm opposite to right leg
+    const lElbowAngle = Math.max(0, -Math.sin(phase + Math.PI)) * armSwingAmount * 0.5;  // Slight bend on backswing
+    const rElbowAngle = Math.max(0, -Math.sin(phase)) * armSwingAmount * 0.5;
+
+    // Pre-calculate rotated knee positions
+    const [lKneeRotX, lKneeRotY, lKneeRotZ] = rotateAroundAxis(
+        lKnee[0], lKnee[1], lKnee[2], lHip[0], lHip[1], lHip[2], 1, 0, 0, lHipAngle);
+    const [rKneeRotX, rKneeRotY, rKneeRotZ] = rotateAroundAxis(
+        rKnee[0], rKnee[1], rKnee[2], rHip[0], rHip[1], rHip[2], 1, 0, 0, rHipAngle);
+
+    // Pre-calculate rotated elbow positions
+    const [lElbowRotX, lElbowRotY, lElbowRotZ] = rotateAroundAxis(
+        lElbow[0], lElbow[1], lElbow[2], lShoulder[0], lShoulder[1], lShoulder[2], 1, 0, 0, lShoulderAngle);
+    const [rElbowRotX, rElbowRotY, rElbowRotZ] = rotateAroundAxis(
+        rElbow[0], rElbow[1], rElbow[2], rShoulder[0], rShoulder[1], rShoulder[2], 1, 0, 0, rShoulderAngle);
+
+    const minY = bounds.min[1];
+    const height = bounds.height;
+    const centerX = bounds.center_x;
+
+    // Global body effects
+    const bounceOffset = Math.sin(phase * 2) * bodyBounce;
+
+    for (let i = 0; i < numVerts; i++) {
+        let x = origPos[i*3];
+        let y = origPos[i*3+1];
+        let z = origPos[i*3+2];
+
+        const ny = (y - minY) / height;  // Normalized Y (0 = feet, 1 = head)
+
+        // Apply body bounce (whole body moves up/down, less at feet)
+        if (ny > 0.1) {
+            y += bounceOffset * ny;
+        }
+
+        // Apply forward lean (tilt upper body forward)
+        if (ny > 0.40 && forwardLean > 0) {
+            z -= forwardLean * (ny - 0.40);
+        }
+
+        // === LEFT LEG (rigid bone segments) ===
+        // Bones: THIGH (hip→knee) | SHIN (knee→ankle) | FOOT (past ankle)
+        // Joints: [HIP] [KNEE] [ANKLE]
+        if (x < centerX && ny < 0.45) {
+            // Hip pivot
+            const hipPivot = lHip;
+
+            // Distance from hip to classify bone segment
+            const distFromHip = distToJoint(x, y, z, hipPivot);
+
+            // Bone segment boundaries
+            const kneeAt = thighLen;
+            const ankleAt = thighLen + shinLen;
+
+            // Classify into bone segment
+            const isThigh = distFromHip <= kneeAt;
+            const isShin = distFromHip > kneeAt && distFromHip <= ankleAt;
+            const isFoot = distFromHip > ankleAt;
+
+            // Walk phase
+            const swingPhase = Math.sin(phase);
+
+            // === HIP JOINT (affects ALL leg segments) ===
+            // Stride increases hip rotation angle (bigger steps)
+            const hipRot = swingPhase * (legSwingAmount + stride);
+            [x, y, z] = rotateAroundAxis(x, y, z, hipPivot[0], hipPivot[1], hipPivot[2], 1, 0, 0, hipRot);
+
+            // === KNEE JOINT (affects SHIN and FOOT only) ===
+            if ((isShin || isFoot) && kneeBend > 0) {
+                // Calculate knee pivot after hip rotation
+                let kneePivot = [hipPivot[0], hipPivot[1] - thighLen, hipPivot[2]];
+                kneePivot = rotateAroundAxis(kneePivot[0], kneePivot[1], kneePivot[2],
+                    hipPivot[0], hipPivot[1], hipPivot[2], 1, 0, 0, hipRot);
+
+                // Knee bends during swing phase (when leg moves forward, knee bends)
+                const kneeRot = Math.max(0, swingPhase) * kneeBend;
+                [x, y, z] = rotateAroundAxis(x, y, z, kneePivot[0], kneePivot[1], kneePivot[2], 1, 0, 0, kneeRot);
+            }
+
+            // === ANKLE JOINT (affects FOOT only) - heel-to-toe motion ===
+            if (isFoot) {
+                // Calculate ankle pivot after hip and knee rotations
+                let anklePivot = [hipPivot[0], hipPivot[1] - thighLen - shinLen, hipPivot[2]];
+                anklePivot = rotateAroundAxis(anklePivot[0], anklePivot[1], anklePivot[2],
+                    hipPivot[0], hipPivot[1], hipPivot[2], 1, 0, 0, hipRot);
+
+                if (kneeBend > 0) {
+                    let kneePivot = [hipPivot[0], hipPivot[1] - thighLen, hipPivot[2]];
+                    kneePivot = rotateAroundAxis(kneePivot[0], kneePivot[1], kneePivot[2],
+                        hipPivot[0], hipPivot[1], hipPivot[2], 1, 0, 0, hipRot);
+                    const kneeRot = Math.max(0, swingPhase) * kneeBend;
+                    anklePivot = rotateAroundAxis(anklePivot[0], anklePivot[1], anklePivot[2],
+                        kneePivot[0], kneePivot[1], kneePivot[2], 1, 0, 0, kneeRot);
+                }
+
+                // Heel-toe motion:
+                // - Heel strike: when leg swings forward and lands, heel down (toe up) = negative rotation
+                // - Toe off: when leg pushes off, toe down (heel up) = positive rotation
+                let ankleRot = 0;
+                if (swingPhase > 0) {
+                    // Forward swing / heel strike - toe points up
+                    ankleRot = -swingPhase * heelStrike;
+                } else {
+                    // Back swing / toe off - toe points down
+                    ankleRot = -swingPhase * toeOff;
+                }
+                [x, y, z] = rotateAroundAxis(x, y, z, anklePivot[0], anklePivot[1], anklePivot[2], 1, 0, 0, ankleRot);
+
+                // Foot lift during swing - parabolic arc
+                // Peaks when foot passes under body (swingPhase=0), on ground at extremes (±1)
+                if (footLift > 0) {
+                    const liftCurve = 1 - swingPhase * swingPhase;  // 1 at middle, 0 at extremes
+                    y += liftCurve * footLift;
+                }
+            }
+
+        }
+
+        // === RIGHT LEG (rigid bone segments) ===
+        else if (x > centerX && ny < 0.45) {
+            const hipPivot = rHip;
+            const distFromHip = distToJoint(x, y, z, hipPivot);
+
+            const kneeAt = thighLen;
+            const ankleAt = thighLen + shinLen;
+
+            const isThigh = distFromHip <= kneeAt;
+            const isShin = distFromHip > kneeAt && distFromHip <= ankleAt;
+            const isFoot = distFromHip > ankleAt;
+
+            // Opposite phase for right leg
+            const swingPhase = Math.sin(phase + Math.PI);
+
+            // === HIP JOINT ===
+            // Stride increases hip rotation angle (bigger steps)
+            const hipRot = swingPhase * (legSwingAmount + stride);
+            [x, y, z] = rotateAroundAxis(x, y, z, hipPivot[0], hipPivot[1], hipPivot[2], 1, 0, 0, hipRot);
+
+            // === KNEE JOINT ===
+            if ((isShin || isFoot) && kneeBend > 0) {
+                let kneePivot = [hipPivot[0], hipPivot[1] - thighLen, hipPivot[2]];
+                kneePivot = rotateAroundAxis(kneePivot[0], kneePivot[1], kneePivot[2],
+                    hipPivot[0], hipPivot[1], hipPivot[2], 1, 0, 0, hipRot);
+
+                const kneeRot = Math.max(0, swingPhase) * kneeBend;
+                [x, y, z] = rotateAroundAxis(x, y, z, kneePivot[0], kneePivot[1], kneePivot[2], 1, 0, 0, kneeRot);
+            }
+
+            // === ANKLE JOINT ===
+            if (isFoot) {
+                let anklePivot = [hipPivot[0], hipPivot[1] - thighLen - shinLen, hipPivot[2]];
+                anklePivot = rotateAroundAxis(anklePivot[0], anklePivot[1], anklePivot[2],
+                    hipPivot[0], hipPivot[1], hipPivot[2], 1, 0, 0, hipRot);
+
+                if (kneeBend > 0) {
+                    let kneePivot = [hipPivot[0], hipPivot[1] - thighLen, hipPivot[2]];
+                    kneePivot = rotateAroundAxis(kneePivot[0], kneePivot[1], kneePivot[2],
+                        hipPivot[0], hipPivot[1], hipPivot[2], 1, 0, 0, hipRot);
+                    const kneeRot = Math.max(0, swingPhase) * kneeBend;
+                    anklePivot = rotateAroundAxis(anklePivot[0], anklePivot[1], anklePivot[2],
+                        kneePivot[0], kneePivot[1], kneePivot[2], 1, 0, 0, kneeRot);
+                }
+
+                let ankleRot = 0;
+                if (swingPhase > 0) {
+                    ankleRot = -swingPhase * heelStrike;
+                } else {
+                    ankleRot = -swingPhase * toeOff;
+                }
+                [x, y, z] = rotateAroundAxis(x, y, z, anklePivot[0], anklePivot[1], anklePivot[2], 1, 0, 0, ankleRot);
+
+                // Foot lift during swing - parabolic arc
+                if (footLift > 0) {
+                    const liftCurve = 1 - swingPhase * swingPhase;
+                    y += liftCurve * footLift;
+                }
+            }
+
+        }
+
+        // === LEFT ARM (clear bone segments) ===
+        // Bones: UPPER ARM (shoulder→elbow) | FOREARM (elbow→wrist) | HAND (past wrist)
+        // Joints: [SHOULDER] [ELBOW] [WRIST] - rotation happens here
+        else if (x < -shoulderX && ny > 0.45 && ny < 0.80) {
+            // Shoulder pivot (where arm meets torso)
+            const shoulderPivot = [-shoulderX, lShoulder[1], lShoulder[2]];
+
+            // Distance from shoulder pivot to classify bone segment
+            const dist = Math.sqrt((x - shoulderPivot[0])**2 + (y - shoulderPivot[1])**2 + (z - shoulderPivot[2])**2);
+
+            // Bone segment boundaries
+            const elbowAt = upperArmLen;
+            const wristAt = upperArmLen + forearmLen;
+
+            // Classify into bone segment
+            const isUpperArm = dist <= elbowAt;
+            const isForearm = dist > elbowAt && dist <= wristAt;
+            const isHand = dist > wristAt;
+
+            // Tiny blend at shoulder-torso junction only
+            const shoulderBlend = Math.min(1.0, Math.max(0, (-x - shoulderX) / blendZone));
+
+            // === SHOULDER JOINT ROTATION (affects ALL arm segments) ===
+            // 1. Rotate arm down from T-pose
+            const armDownRot = armDownAngle * shoulderBlend;
+            [x, y, z] = rotateAroundAxis(x, y, z, shoulderPivot[0], shoulderPivot[1], shoulderPivot[2], 0, 0, 1, armDownRot);
+
+            // 2. Arm swing (forward/back)
+            const swingRot = Math.sin(phase + Math.PI) * armSwingAmount * shoulderBlend;
+            [x, y, z] = rotateAroundAxis(x, y, z, shoulderPivot[0], shoulderPivot[1], shoulderPivot[2], 1, 0, 0, swingRot);
+
+            // Shoulder shrug
+            if (shoulderShrug > 0) {
+                y += Math.sin(phase + Math.PI) * shoulderShrug * shoulderBlend;
+            }
+
+            // === ELBOW JOINT ROTATION (affects FOREARM and HAND only) ===
+            if ((isForearm || isHand) && (elbowFwd > 0 || elbowBack > 0)) {
+                // Calculate where elbow pivot is after shoulder rotations
+                let elbowPivot = [shoulderPivot[0] - upperArmLen, shoulderPivot[1], shoulderPivot[2]];
+                elbowPivot = rotateAroundAxis(elbowPivot[0], elbowPivot[1], elbowPivot[2],
+                    shoulderPivot[0], shoulderPivot[1], shoulderPivot[2], 0, 0, 1, armDownRot);
+                elbowPivot = rotateAroundAxis(elbowPivot[0], elbowPivot[1], elbowPivot[2],
+                    shoulderPivot[0], shoulderPivot[1], shoulderPivot[2], 1, 0, 0, swingRot);
+
+                // Elbow bend - NEGATIVE X rotation bends hand toward body
+                const swingPhase = Math.sin(phase + Math.PI);
+                let elbowRot = 0;
+                if (swingPhase > 0) {
+                    // Forward swing - bend elbow (hand toward chest)
+                    elbowRot = -swingPhase * elbowFwd;
+                } else {
+                    // Back swing - bend elbow more
+                    elbowRot = swingPhase * elbowBack;  // swingPhase is already negative
+                }
+
+                [x, y, z] = rotateAroundAxis(x, y, z, elbowPivot[0], elbowPivot[1], elbowPivot[2], 1, 0, 0, elbowRot);
+            }
+        }
+
+        // === RIGHT ARM (clear bone segments) ===
+        else if (x > shoulderX && ny > 0.45 && ny < 0.80) {
+            // Shoulder pivot
+            const shoulderPivot = [shoulderX, rShoulder[1], rShoulder[2]];
+
+            // Distance from shoulder pivot
+            const dist = Math.sqrt((x - shoulderPivot[0])**2 + (y - shoulderPivot[1])**2 + (z - shoulderPivot[2])**2);
+
+            // Bone segment boundaries
+            const elbowAt = upperArmLen;
+            const wristAt = upperArmLen + forearmLen;
+
+            // Classify into bone segment
+            const isUpperArm = dist <= elbowAt;
+            const isForearm = dist > elbowAt && dist <= wristAt;
+            const isHand = dist > wristAt;
+
+            // Tiny blend at shoulder-torso junction only
+            const shoulderBlend = Math.min(1.0, Math.max(0, (x - shoulderX) / blendZone));
+
+            // === SHOULDER JOINT ROTATION (affects ALL arm segments) ===
+            const armDownRot = -armDownAngle * shoulderBlend;
+            [x, y, z] = rotateAroundAxis(x, y, z, shoulderPivot[0], shoulderPivot[1], shoulderPivot[2], 0, 0, 1, armDownRot);
+
+            const swingRot = Math.sin(phase) * armSwingAmount * shoulderBlend;
+            [x, y, z] = rotateAroundAxis(x, y, z, shoulderPivot[0], shoulderPivot[1], shoulderPivot[2], 1, 0, 0, swingRot);
+
+            if (shoulderShrug > 0) {
+                y += Math.sin(phase) * shoulderShrug * shoulderBlend;
+            }
+
+            // === ELBOW JOINT ROTATION (affects FOREARM and HAND only) ===
+            if ((isForearm || isHand) && (elbowFwd > 0 || elbowBack > 0)) {
+                // Calculate where elbow pivot is after shoulder rotations
+                let elbowPivot = [shoulderPivot[0] + upperArmLen, shoulderPivot[1], shoulderPivot[2]];
+                elbowPivot = rotateAroundAxis(elbowPivot[0], elbowPivot[1], elbowPivot[2],
+                    shoulderPivot[0], shoulderPivot[1], shoulderPivot[2], 0, 0, 1, armDownRot);
+                elbowPivot = rotateAroundAxis(elbowPivot[0], elbowPivot[1], elbowPivot[2],
+                    shoulderPivot[0], shoulderPivot[1], shoulderPivot[2], 1, 0, 0, swingRot);
+
+                // Elbow bend - NEGATIVE X rotation bends hand toward body
+                const swingPhase = Math.sin(phase);
+                let elbowRot = 0;
+                if (swingPhase > 0) {
+                    // Forward swing - bend elbow
+                    elbowRot = -swingPhase * elbowFwd;
+                } else {
+                    // Back swing - bend elbow more
+                    elbowRot = swingPhase * elbowBack;
+                }
+
+                [x, y, z] = rotateAroundAxis(x, y, z, elbowPivot[0], elbowPivot[1], elbowPivot[2], 1, 0, 0, elbowRot);
+            }
+        }
+
+        // === HIPS - sway and bob ===
+        else if (ny > 0.38 && ny < 0.50) {
+            x += Math.sin(phase * 2) * hipSway;
+            y += Math.sin(phase * 2 + Math.PI/2) * hipBob;
+        }
+
+        // === TORSO - twist ===
+        else if (ny > 0.50 && ny < 0.78) {
+            z += Math.sin(phase) * torsoTwist * (y - pelvis[1]);
+        }
+
+        // === HEAD - bob ===
+        else if (ny > 0.85) {
+            y += Math.sin(phase * 2) * headBob;
+        }
+
+        pos[i*3] = x;
+        pos[i*3+1] = y;
+        pos[i*3+2] = z;
+    }
+
+    meshGeo.attributes.position.needsUpdate = true;
+    meshGeo.computeVertexNormals();
+}
+
+// UI handlers
+document.getElementById('showMesh').onchange = e => { if (meshObj) meshObj.visible = e.target.checked; };
+document.getElementById('speed').oninput = e => speed = parseFloat(e.target.value);
+
+// Arm controls
+document.getElementById('shoulderX').oninput = e => {
+    shoulderX = parseFloat(e.target.value);
+    document.getElementById('shoulderXVal').textContent = shoulderX.toFixed(2);
+    if (showBones) updateBoneColors();
+};
+document.getElementById('armDown').oninput = e => {
+    armDownAngle = parseFloat(e.target.value);
+    document.getElementById('armDownVal').textContent = armDownAngle.toFixed(1);
+};
+document.getElementById('armSwing').oninput = e => {
+    armSwingAmount = parseFloat(e.target.value);
+    document.getElementById('armSwingVal').textContent = armSwingAmount.toFixed(2);
+};
+
+// Head controls
+document.getElementById('headBob').oninput = e => {
+    headBob = parseFloat(e.target.value);
+    document.getElementById('headBobVal').textContent = headBob.toFixed(3);
+};
+
+// Torso controls
+document.getElementById('torsoTwist').oninput = e => {
+    torsoTwist = parseFloat(e.target.value);
+    document.getElementById('torsoTwistVal').textContent = torsoTwist.toFixed(3);
+};
+
+// Hip controls
+document.getElementById('hipSway').oninput = e => {
+    hipSway = parseFloat(e.target.value);
+    document.getElementById('hipSwayVal').textContent = hipSway.toFixed(3);
+};
+document.getElementById('hipBob').oninput = e => {
+    hipBob = parseFloat(e.target.value);
+    document.getElementById('hipBobVal').textContent = hipBob.toFixed(3);
+};
+
+// Leg controls
+document.getElementById('legSwing').oninput = e => {
+    legSwingAmount = parseFloat(e.target.value);
+    document.getElementById('legSwingVal').textContent = legSwingAmount.toFixed(2);
+};
+document.getElementById('kneeBend').oninput = e => {
+    kneeBend = parseFloat(e.target.value);
+    document.getElementById('kneeBendVal').textContent = kneeBend.toFixed(1);
+};
+
+// Body controls
+document.getElementById('bodyBounce').oninput = e => {
+    bodyBounce = parseFloat(e.target.value);
+    document.getElementById('bodyBounceVal').textContent = bodyBounce.toFixed(3);
+};
+document.getElementById('forwardLean').oninput = e => {
+    forwardLean = parseFloat(e.target.value);
+    document.getElementById('forwardLeanVal').textContent = forwardLean.toFixed(2);
+};
+document.getElementById('blendZone').oninput = e => {
+    blendZone = parseFloat(e.target.value);
+    document.getElementById('blendZoneVal').textContent = blendZone.toFixed(2);
+};
+
+// Arm extras
+document.getElementById('elbowFwd').oninput = e => {
+    elbowFwd = parseFloat(e.target.value);
+    document.getElementById('elbowFwdVal').textContent = elbowFwd.toFixed(2);
+};
+document.getElementById('elbowBack').oninput = e => {
+    elbowBack = parseFloat(e.target.value);
+    document.getElementById('elbowBackVal').textContent = elbowBack.toFixed(2);
+};
+document.getElementById('shoulderShrug').oninput = e => {
+    shoulderShrug = parseFloat(e.target.value);
+    document.getElementById('shoulderShrugVal').textContent = shoulderShrug.toFixed(3);
+};
+document.getElementById('upperArmLen').oninput = e => {
+    upperArmLen = parseFloat(e.target.value);
+    document.getElementById('upperArmLenVal').textContent = upperArmLen.toFixed(2);
+    if (showBones) updateBoneColors();
+};
+document.getElementById('forearmLen').oninput = e => {
+    forearmLen = parseFloat(e.target.value);
+    document.getElementById('forearmLenVal').textContent = forearmLen.toFixed(2);
+    if (showBones) updateBoneColors();
+};
+document.getElementById('showBones').onchange = e => {
+    showBones = e.target.checked;
+    if (meshObj) updateBoneColors();
+};
+
+// Leg controls
+document.getElementById('thighLen').oninput = e => {
+    thighLen = parseFloat(e.target.value);
+    document.getElementById('thighLenVal').textContent = thighLen.toFixed(2);
+    if (showBones) updateBoneColors();
+};
+document.getElementById('shinLen').oninput = e => {
+    shinLen = parseFloat(e.target.value);
+    document.getElementById('shinLenVal').textContent = shinLen.toFixed(2);
+    if (showBones) updateBoneColors();
+};
+document.getElementById('footLift').oninput = e => {
+    footLift = parseFloat(e.target.value);
+    document.getElementById('footLiftVal').textContent = footLift.toFixed(2);
+};
+document.getElementById('stride').oninput = e => {
+    stride = parseFloat(e.target.value);
+    document.getElementById('strideVal').textContent = stride.toFixed(2);
+};
+document.getElementById('heelStrike').oninput = e => {
+    heelStrike = parseFloat(e.target.value);
+    document.getElementById('heelStrikeVal').textContent = heelStrike.toFixed(2);
+};
+document.getElementById('toeOff').oninput = e => {
+    toeOff = parseFloat(e.target.value);
+    document.getElementById('toeOffVal').textContent = toeOff.toFixed(2);
+};
+
+window.onresize = () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+};
+
+function animate() {
+    requestAnimationFrame(animate);
+
+    if (document.getElementById('animate').checked) {
+        frame += speed;
+        updateMesh(frame);
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+}
+
+// Start animation loop IMMEDIATELY (before mesh loads)
+animate();
+</script>
+</body></html>

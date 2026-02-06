@@ -57,7 +57,7 @@ loader.load('mesh.glb', function(gltf) {
     controls.target.copy(center);
     controls.update();
     
-    fetch('cage_data.json').then(r=>r.json()).then(d=>{
+    fetch('cage_data_mvc.json').then(r=>r.json()).then(d=>{
         D = d;
         console.log("Loaded:", D.cv.length, "cage verts,", D.mr.length, "mesh regions");
     });
