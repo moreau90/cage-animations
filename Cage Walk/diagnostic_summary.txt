@@ -1,0 +1,204 @@
+============================================================
+  DIAGNOSTIC SUMMARY -Capoeira wild.fbx
+  2026-02-20 06:16:44
+============================================================
+
+-- STRETCH / DEFORMATION --
+  Multi-frame worst stretch:  163.7x  BAD [l_shin/l_shin]
+  Avg strain per frame:       19.9%  BAD
+  Worst frame strain:         43.3%
+  Post-collapse worst:        5.3x  OK
+  Edges >5x after collapse:   5  BAD (5 remaining)
+
+-- CROTCH / THIGH BLEND --
+  Cross-thigh blend verts:    2163  GOOD
+  Sharp boundary verts:       1023  OK
+  Cross-boundary edges:       0  GOOD
+
+-- KNEE BLEND --
+  Knee band verts:            1666 total, 983 blended (59%)  BAD
+
+-- JITTER --
+  Worst jitter (accel):       402.2mm/f^2 (v15232 [r_toe])  BAD
+  Avg jitter (accel):         29.61mm/f^2  BAD
+
+-- FOOT GROUND CONTACT --
+  L foot penetration:         none
+  R foot penetration:         none
+  L foot float (gap):         920.1mm
+  R foot float (gap):         715.1mm
+
+-- WEIGHT SMOOTHNESS --
+  Abrupt weight edges:        0 / 153821 (0.00%)  GOOD
+
+-- BONE vs CAGE COMPARISON --
+  Overall avg error:          0.0mm
+  Worst region:               ? (0.0mm max)
+
+-- SURFACE HEALTH --
+  Inverted triangles:         1442/94735 (1.52%)  BAD
+    head          232/17515 (1.3%)
+    l_thigh       219/5565 (3.9%)
+    r_thigh       157/5519 (2.8%)
+    l_shin        141/5244 (2.7%)
+    l_uarm        90/4010 (2.2%)
+    r_uarm        60/3907 (1.5%)
+    r_shin        35/5226 (0.7%)
+    pelvis        5/2833 (0.2%)
+  Normal displacement:
+    l_thigh       bulge max= 60.9mm WARN  cave max= -52.3mm WARN
+    r_thigh       bulge max=118.5mm WARN  cave max=-129.9mm WARN
+    l_shin        bulge max= 78.7mm WARN  cave max= -56.7mm WARN
+    r_shin        bulge max= 62.1mm WARN  cave max= -62.7mm WARN
+    l_foot        bulge max=  2.5mm GOOD  cave max=  -3.0mm GOOD
+    r_foot        bulge max=  2.0mm GOOD  cave max=  -2.3mm GOOD
+    l_uarm        bulge max= 16.6mm OK    cave max= -14.6mm GOOD
+    r_uarm        bulge max= 22.8mm OK    cave max= -21.6mm OK
+    l_farm        bulge max= 24.6mm OK    cave max= -25.4mm OK
+    r_farm        bulge max= 23.0mm OK    cave max= -24.4mm OK
+    head          bulge max= 44.1mm WARN  cave max= -42.5mm WARN
+    pelvis        bulge max= 23.7mm OK    cave max= -23.3mm OK
+
+-- PROPORTION COMPARISON --
+  Arm length ratio:           0.961 (FBX=0.2662 Cage=0.2559)  OK
+  Shoulder spread ratio:      0.831 (FBX=0.1962 Cage=0.2360)  MISMATCH
+  Hip spread ratio:           0.685 (FBX=0.0890 Cage=0.1300)  MISMATCH
+  Total reach diff:           9.7mm  OK
+
+-- BONE DIRECTION COMPARISON --
+  Worst direction error:      l_foot (47.1° max)
+    l_thigh       err: avg= 17.9° max= 20.8° (f78) BAD   vel: avg=10.0 max= 22.9°/f FAST  accel: avg= 2.59 max= 13.3°/f² f²
+    r_thigh       err: avg= 17.8° max= 20.5° (f88) BAD   vel: avg= 8.7 max= 38.5°/f FAST  accel: avg= 2.11 max= 10.2°/f² f²
+    l_shin        err: avg=  7.4° max=  9.3° (f358) WARN  vel: avg=12.6 max= 36.5°/f FAST  accel: avg= 3.62 max= 12.7°/f² f²
+    r_shin        err: avg=  7.4° max= 10.5° (f68) WARN  vel: avg=11.2 max= 40.8°/f FAST  accel: avg= 3.73 max= 22.2°/f² f²
+    l_foot        err: avg= 24.6° max= 47.1° (f71) BAD   vel: avg=13.8 max= 37.3°/f FAST  accel: avg= 4.11 max= 27.9°/f² f²
+    r_foot        err: avg= 23.1° max= 41.5° (f269) BAD   vel: avg=12.7 max= 53.0°/f FAST  accel: avg= 4.90 max= 25.8°/f² f²
+    l_uarm        err: avg=  8.1° max= 11.1° (f82) WARN  vel: avg=12.4 max= 41.0°/f FAST  accel: avg= 2.72 max= 15.0°/f² f²
+    r_uarm        err: avg=  8.0° max= 10.2° (f26) WARN  vel: avg=14.0 max= 41.1°/f FAST  accel: avg= 3.34 max= 16.6°/f² f²
+    l_farm        err: avg=  4.1° max=  8.3° (f78) WARN  vel: avg=14.5 max= 49.9°/f FAST  accel: avg= 3.46 max= 20.9°/f² f²
+    r_farm        err: avg=  4.2° max=  8.3° (f60) WARN  vel: avg=13.7 max= 46.3°/f FAST  accel: avg= 3.63 max= 18.3°/f² f²
+    head          err: avg= 10.5° max= 11.7° (f36) WARN  vel: avg= 8.8 max= 26.6°/f FAST  accel: avg= 1.72 max=  8.2°/f² f²
+    torso         err: avg=  5.7° max= 11.6° (f38) WARN  vel: avg= 8.2 max= 18.3°/f OK    accel: avg= 1.21 max=  5.1°/f² f²
+
+-- JOINT ANGLE COMPARISON (motion fidelity) --
+  Worst joint motion error:   l_hip (28.8° max)
+    l_hip         motion: avg=  9.0° max= 28.8° (f303) BAD   rest offset=  6.8°  vel diff: avg= 2.04 max= 10.5°/f
+    r_hip         motion: avg=  4.5° max= 22.8° (f59) BAD   rest offset=  5.8°  vel diff: avg= 1.93 max=  9.3°/f
+    l_knee        motion: avg=  6.3° max= 16.9° (f326) BAD   rest offset=  0.9°  vel diff: avg= 1.94 max=  8.7°/f
+    r_knee        motion: avg=  3.6° max= 11.7° (f76) WARN  rest offset=  7.4°  vel diff: avg= 1.32 max=  7.8°/f
+    l_ankle       motion: avg=  6.1° max= 25.4° (f71) BAD   rest offset= 16.1°  vel diff: avg= 2.35 max= 16.5°/f
+    r_ankle       motion: avg=  4.7° max= 17.0° (f349) BAD   rest offset= 18.2°  vel diff: avg= 2.14 max= 13.2°/f
+    l_shoulder    motion: avg=  5.7° max= 17.0° (f88) BAD   rest offset=  9.3°  vel diff: avg= 1.08 max=  6.1°/f
+    r_shoulder    motion: avg=  3.3° max= 10.9° (f31) WARN  rest offset=  4.1°  vel diff: avg= 1.27 max=  6.1°/f
+    l_elbow       motion: avg=  0.7° max=  3.9° (f78) OK    rest offset= -0.2°  vel diff: avg= 0.66 max=  6.2°/f
+    r_elbow       motion: avg=  0.9° max=  4.9° (f68) OK    rest offset= -0.6°  vel diff: avg= 0.98 max=  5.0°/f
+
+-- BONE LENGTH COMPARISON --
+    l_thigh       ours= 173.0mm  fbx= 203.8mm  ratio=0.849  [0.841-0.870]  DIFF
+    r_thigh       ours= 173.0mm  fbx= 203.7mm  ratio=0.850  [0.840-0.900]  DIFF
+    l_shin        ours= 201.6mm  fbx= 168.5mm  ratio=1.197  [1.178-1.285]  DIFF
+    r_shin        ours= 201.6mm  fbx= 168.7mm  ratio=1.196  [1.178-1.325]  DIFF
+    l_foot        ours= 114.1mm  fbx= 110.6mm  ratio=1.041  [0.941-1.405]  OK
+    r_foot        ours= 114.9mm  fbx= 108.2mm  ratio=1.093  [0.937-1.841]  OK
+    l_uarm        ours= 132.2mm  fbx= 130.8mm  ratio=1.011  [0.995-1.093]  OK
+    r_uarm        ours= 132.2mm  fbx= 130.0mm  ratio=1.017  [0.995-1.103]  OK
+    l_farm        ours= 123.8mm  fbx= 130.7mm  ratio=0.948  [0.928-1.076]  OK
+    r_farm        ours= 123.8mm  fbx= 130.8mm  ratio=0.947  [0.928-1.051]  OK
+
+-- SHAPE FIDELITY (proportion-invariant) --
+  Overall avg:                28.3°
+  Worst segment:              l_shin (90.1° combined max)
+    l_thigh       bend: avg= 41.4° max= 51.8°  plane: avg= 26.2° max= 58.0°  combined= 51.2° (f355) BAD
+    r_thigh       bend: avg= 27.4° max= 53.8°  plane: avg= 33.9° max= 50.9°  combined= 46.7° (f67) BAD
+    l_shin        bend: avg=  6.6° max= 15.9°  plane: avg= 34.7° max= 88.6°  combined= 35.7° (f38) BAD
+    r_shin        bend: avg=  4.7° max= 12.8°  plane: avg= 34.0° max= 89.3°  combined= 34.6° (f320) BAD
+    l_foot        bend: avg= 20.9° max= 41.4°  plane: avg= 14.8° max= 66.4°  combined= 26.6° (f76) BAD
+    r_foot        bend: avg= 18.6° max= 35.2°  plane: avg= 15.6° max= 37.1°  combined= 25.1° (f58) BAD
+    l_uarm        bend: avg= 10.5° max= 20.7°  plane: avg=  9.7° max= 14.8°  combined= 15.0° (f76) WARN
+    r_uarm        bend: avg=  7.5° max= 22.5°  plane: avg= 10.3° max= 47.8°  combined= 13.9° (f82) BAD
+    l_farm        bend: avg=  0.7° max=  3.7°  plane: avg=  8.5° max= 13.8°  combined=  8.6° (f323) OK
+    r_farm        bend: avg=  1.0° max=  5.6°  plane: avg= 17.6° max= 87.2°  combined= 17.6° (f282) BAD
+    torso         bend: avg= 32.6° max= 37.0°  plane: avg= 14.5° max= 28.1°  combined= 36.5° (f90) BAD
+
+-- CONTACT DRIFT --
+    l_foot        (no locks detected)
+    r_foot        (no locks detected)
+    l_hand        (no locks detected)
+    r_hand        (no locks detected)
+
+-- PROPORTION MISMATCH (diagnostic only) --
+  Worst proportion mismatch:  l_toe (0.6227 max)
+    l_knee        err: avg=0.3707 max=0.4218 (f78) BAD
+    r_knee        err: avg=0.3270 max=0.4083 (f56) BAD
+    l_ankle       err: avg=0.4245 max=0.4985 (f283) BAD
+    r_ankle       err: avg=0.3834 max=0.4464 (f26) BAD
+    l_toe         err: avg=0.4893 max=0.6227 (f76) BAD
+    r_toe         err: avg=0.4355 max=0.6108 (f27) BAD
+    l_elbow       err: avg=0.2947 max=0.3897 (f333) BAD
+    r_elbow       err: avg=0.2568 max=0.4200 (f38) BAD
+    l_wrist       err: avg=0.3803 max=0.4903 (f327) BAD
+    r_wrist       err: avg=0.3659 max=0.5334 (f38) BAD
+    l_shoulder    err: avg=0.1934 max=0.2615 (f72) WARN
+    r_shoulder    err: avg=0.1901 max=0.2895 (f38) WARN
+    head          err: avg=0.0380 max=0.0984 (f325) OK
+
+-- OSCILLATION ANALYSIS --
+    l_foot        mean= 113.9mm  std=100.6mm  range=[2.3-514.0]  CV=0.883  HIGH_OSC
+    r_foot        mean= 158.6mm  std=153.7mm  range=[2.9-557.8]  CV=0.969  HIGH_OSC
+    l_shin        mean=  79.5mm  std= 67.6mm  range=[3.7-340.4]  CV=0.851  HIGH_OSC
+    r_shin        mean= 103.9mm  std=101.7mm  range=[2.3-395.8]  CV=0.979  HIGH_OSC
+
+-- CORRELATION ANALYSIS --
+  L shin_dir_err vs foot_jitter: r=0.000  INDEPENDENT
+  L ankle_angle_err vs foot_deviation: r=0.545  CORRELATED
+  R shin_dir_err vs foot_jitter: r=0.000  INDEPENDENT
+  R ankle_angle_err vs foot_deviation: r=0.313  INDEPENDENT
+
+-- TWIST COMPARISON (cage vs FBX) --
+    l_uarm        err: avg=  0.0° max=  0.0° (f0)  cage= 31.9° fbx= 31.9°  OK
+    r_uarm        err: avg=  0.0° max=  0.0° (f0)  cage= 37.4° fbx= 37.4°  OK
+    l_farm        err: avg=  0.0° max=  0.0° (f0)  cage=  1.6° fbx=  1.6°  OK
+    r_farm        err: avg=  0.0° max=  0.0° (f0)  cage=  0.8° fbx=  0.8°  OK
+    l_thigh       err: avg=  0.0° max=  0.0° (f0)  cage= 12.6° fbx= 12.6°  OK
+    r_thigh       err: avg=  0.0° max=  0.0° (f0)  cage= 20.1° fbx= 20.1°  OK
+
+-- FBX GROUND TRUTH COMPARISON --
+  Overall avg error:          52.9mm
+  Worst region:               r_toe (698.1mm max)
+    l_thigh       avg   21.1mm  max  204.9mm (f32)  BAD
+    r_thigh       avg   31.6mm  max  308.3mm (f268)  BAD
+    l_shin        avg   71.4mm  max  464.2mm (f171)  BAD
+    r_shin        avg   90.9mm  max  536.2mm (f172)  BAD
+    l_foot        avg   91.5mm  max  635.2mm (f171)  BAD
+    r_foot        avg  129.1mm  max  695.9mm (f173)  BAD
+    l_uarm        avg   24.3mm  max  247.9mm (f193)  BAD
+    r_uarm        avg   30.1mm  max  199.7mm (f180)  BAD
+    l_farm        avg   58.5mm  max  318.4mm (f97)  BAD
+    r_farm        avg   77.9mm  max  322.4mm (f277)  BAD
+    head          avg   23.7mm  max  197.5mm (f193)  BAD
+    torso         avg   12.4mm  max  412.4mm (f37)  BAD
+    pelvis        avg   10.3mm  max  176.8mm (f289)  BAD
+    spine1        avg   11.3mm  max  180.6mm (f289)  BAD
+    spine2        avg    2.2mm  max   86.4mm (f38)  BAD
+    chest         avg   14.3mm  max  182.1mm (f289)  BAD
+    l_toe         avg  124.2mm  max  637.8mm (f171)  BAD
+    r_toe         avg  183.1mm  max  698.1mm (f173)  BAD
+  FBX ref mesh stretch:       worst=108.0x  avg strain=12.7%
+  Cage mesh stretch:          worst=163.7x  avg strain=19.9%
+
+-- SEGMENT RIGIDITY (domW≥0.8 verts) --
+    l_ankle→l_toe             mean= 3.14%  max= 7.59%  blend=0.132  >2%:62.3%  TRANSFORM?
+    l_elbow→l_wrist           mean= 0.69%  max=11.43%  blend=0.037  >2%:8.2%  OK
+    l_hip→l_knee              mean= 2.77%  max=12.78%  blend=0.060  >2%:46.5%  TRANSFORM?
+    l_knee→l_ankle            mean= 3.80%  max=18.15%  blend=0.083  >2%:47.2%  TRANSFORM?
+    l_shoulder→l_elbow        mean= 0.63%  max=10.44%  blend=0.019  >2%:9.6%  OK
+    neck→head                 mean= 0.12%  max=10.02%  blend=0.003  >2%:2.3%  GOOD
+    pelvis→spine_joint        mean= 1.06%  max=21.64%  blend=0.049  >2%:12.5%  OK
+    r_ankle→r_toe             mean= 2.44%  max= 5.66%  blend=0.117  >2%:63.0%  TRANSFORM?
+    r_elbow→r_wrist           mean= 0.97%  max= 9.16%  blend=0.048  >2%:12.8%  OK
+    r_hip→r_knee              mean= 4.23%  max=14.17%  blend=0.072  >2%:64.6%  TRANSFORM?
+    r_knee→r_ankle            mean= 2.69%  max=10.72%  blend=0.082  >2%:41.1%  TRANSFORM?
+    r_shoulder→r_elbow        mean= 0.67%  max=12.35%  blend=0.018  >2%:7.5%  OK
+    spine2_joint→neck         mean= 0.75%  max= 7.18%  blend=0.037  >2%:9.8%  OK
+
+============================================================

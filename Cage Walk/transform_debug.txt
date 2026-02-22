@@ -1,0 +1,328 @@
+║ ONE-SHOT 3-WAY TRANSFORM DEBUG                              ║
+╚══════════════════════════════════════════════════════════════╝
+[CONTEXT] boneLBSActive=true useDQS=false fbxDeformTransfer=false laplacianSmoothing=true lastGroundCorrection=0.073293
+
+── SEGMENT: pelvis → l_hip (pelvis>l_hip) ──
+  childBoneIdx=29 parentBoneIdx=20
+  P[pelvis]=[0.0067,-0.0789,0.0109]
+  P[l_hip]=[-0.0413,-0.0789,0.0109]
+  retargetedJoints[pelvis]=[-0.2751,-0.0326,0.0470]
+  retargetedJoints[l_hip]=[-0.2364,-0.0050,0.0536]
+  boneTransform[l_hip].R=[-0.7012,0.3133,0.6405,-0.7122,-0.2671,-0.6491,-0.0323,-0.9113,0.4104]
+  boneTransform[l_hip].t=[-0.2476,0.0249,-0.0241]
+  det(R)=1.000000
+
+  VERT 36838 rest=[-0.0421,-0.2484,-0.0017]
+  weights: 29(l_hip):0.9609 21(r_hip):0.0229 20(pelvis):0.0162 
+  dominant: bi=29 jn=l_hip w=0.9609 reverseCheck(_jointToBoneIdx[l_hip])=29 OK
+  parentJoint=pelvis
+  segAxis: P[pelvis]→P[l_hip] len=0.0480 dir=[-1.000,0.000,0.000]
+  t=1.017 zone=joint-band(child)
+  rigid_dom     =[-0.29698,0.12230,0.20286]
+  lbs_recomputed=[-0.29452,0.11797,0.20082]
+  pos[]         =[-0.29452,0.11797,0.20082]
+  Δ rigid↔lbs=0.005385 (11.23%)  Δ rigid↔pos=0.005385 (11.23%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+  VERT 42572 rest=[-0.0421,-0.2484,-0.0017]
+  weights: 29(l_hip):0.9609 21(r_hip):0.0229 20(pelvis):0.0162 
+  dominant: bi=29 jn=l_hip w=0.9609 reverseCheck(_jointToBoneIdx[l_hip])=29 OK
+  parentJoint=pelvis
+  segAxis: P[pelvis]→P[l_hip] len=0.0480 dir=[-1.000,0.000,0.000]
+  t=1.017 zone=joint-band(child)
+  rigid_dom     =[-0.29698,0.12230,0.20286]
+  lbs_recomputed=[-0.29452,0.11797,0.20082]
+  pos[]         =[-0.29452,0.11797,0.20082]
+  Δ rigid↔lbs=0.005385 (11.23%)  Δ rigid↔pos=0.005385 (11.23%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+  VERT 42381 rest=[-0.0323,-0.2483,-0.0071]
+  weights: 29(l_hip):0.9609 21(r_hip):0.0227 20(pelvis):0.0164 
+  dominant: bi=29 jn=l_hip w=0.9609 reverseCheck(_jointToBoneIdx[l_hip])=29 OK
+  parentJoint=pelvis
+  segAxis: P[pelvis]→P[l_hip] len=0.0480 dir=[-1.000,0.000,0.000]
+  t=0.814 zone=transition
+  rigid_dom     =[-0.30726,0.11883,0.20028]
+  lbs_recomputed=[-0.30480,0.11453,0.19822]
+  pos[]         =[-0.30480,0.11453,0.19822]
+  Δ rigid↔lbs=0.005373 (11.20%)  Δ rigid↔pos=0.005373 (11.20%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+── SEGMENT: pelvis → r_hip (pelvis>r_hip) ──
+  childBoneIdx=21 parentBoneIdx=20
+  P[pelvis]=[0.0067,-0.0789,0.0109]
+  P[r_hip]=[0.0546,-0.0789,0.0109]
+  retargetedJoints[pelvis]=[-0.2751,-0.0326,0.0470]
+  retargetedJoints[r_hip]=[-0.3137,-0.0603,0.0404]
+  boneTransform[r_hip].R=[-0.6168,-0.5119,0.598,-0.4662,0.8497,0.2465,-0.6343,-0.1267,-0.7627]
+  boneTransform[r_hip].t=[-0.3269,0.1029,0.0733]
+  det(R)=1.000000
+
+  VERT 1230 rest=[0.0680,-0.2679,-0.0949]
+  weights: 21(r_hip):0.9605 20(pelvis):0.0395 
+  dominant: bi=21 jn=r_hip w=0.9605 reverseCheck(_jointToBoneIdx[r_hip])=21 OK
+  parentJoint=pelvis
+  segAxis: P[pelvis]→P[r_hip] len=0.0480 dir=[1.000,0.000,0.000]
+  t=1.279 zone=joint-band(child)
+  rigid_dom     =[-0.28848,-0.17981,0.13652]
+  lbs_recomputed=[-0.29488,-0.16628,0.13575]
+  pos[]         =[-0.29488,-0.16628,0.13575]
+  Δ rigid↔lbs=0.014989 (31.26%)  Δ rigid↔pos=0.014989 (31.26%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+  VERT 1428 rest=[0.0782,-0.2690,-0.0919]
+  weights: 21(r_hip):0.9608 20(pelvis):0.0392 
+  dominant: bi=21 jn=r_hip w=0.9608 reverseCheck(_jointToBoneIdx[r_hip])=21 OK
+  parentJoint=pelvis
+  segAxis: P[pelvis]→P[r_hip] len=0.0480 dir=[1.000,0.000,0.000]
+  t=1.491 zone=joint-band(child)
+  rigid_dom     =[-0.29238,-0.18482,0.12796]
+  lbs_recomputed=[-0.29888,-0.17149,0.12759]
+  pos[]         =[-0.29888,-0.17149,0.12759]
+  Δ rigid↔lbs=0.014836 (30.94%)  Δ rigid↔pos=0.014836 (30.94%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+  VERT 5963 rest=[0.0782,-0.2690,-0.0919]
+  weights: 21(r_hip):0.9608 20(pelvis):0.0392 
+  dominant: bi=21 jn=r_hip w=0.9608 reverseCheck(_jointToBoneIdx[r_hip])=21 OK
+  parentJoint=pelvis
+  segAxis: P[pelvis]→P[r_hip] len=0.0480 dir=[1.000,0.000,0.000]
+  t=1.491 zone=joint-band(child)
+  rigid_dom     =[-0.29238,-0.18482,0.12796]
+  lbs_recomputed=[-0.29888,-0.17149,0.12759]
+  pos[]         =[-0.29888,-0.17149,0.12759]
+  Δ rigid↔lbs=0.014836 (30.94%)  Δ rigid↔pos=0.014836 (30.94%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+── SEGMENT: l_hip → l_knee (l_hip>l_knee) ──
+  childBoneIdx=33 parentBoneIdx=29
+  P[l_hip]=[-0.0413,-0.0789,0.0109]
+  P[l_knee]=[-0.0412,-0.2297,-0.0323]
+  retargetedJoints[l_hip]=[-0.2364,-0.0050,0.0536]
+  retargetedJoints[l_knee]=[-0.3114,0.0633,0.1732]
+  boneTransform[l_knee].R=[-0.7339,0.6673,0.1269,-0.6719,-0.6857,-0.2798,-0.0997,-0.2906,0.9516]
+  boneTransform[l_knee].t=[-0.1843,-0.0576,0.1331]
+  det(R)=1.000000
+
+  VERT 44335 rest=[-0.0516,-0.4694,-0.0867]
+  weights: 33(l_knee):0.9603 29(l_hip):0.0288 34(l_ankle):0.0110 
+  dominant: bi=33 jn=l_knee w=0.9603 reverseCheck(_jointToBoneIdx[l_knee])=33 OK
+  parentJoint=l_hip
+  segAxis: P[l_hip]→P[l_knee] len=0.1568 dir=[0.001,-0.961,-0.276]
+  t=2.565 zone=joint-band(child)
+  rigid_dom     =[-0.47063,0.32322,0.19225]
+  lbs_recomputed=[-0.46903,0.32068,0.19714]
+  pos[]         =[-0.46903,0.32068,0.19714]
+  Δ rigid↔lbs=0.005734 (3.66%)  Δ rigid↔pos=0.005734 (3.66%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+  VERT 12103 rest=[-0.0733,-0.4685,-0.0949]
+  weights: 33(l_knee):0.9610 29(l_hip):0.0288 34(l_ankle):0.0102 
+  dominant: bi=33 jn=l_knee w=0.9610 reverseCheck(_jointToBoneIdx[l_knee])=33 OK
+  parentJoint=l_hip
+  segAxis: P[l_hip]→P[l_knee] len=0.1568 dir=[0.001,-0.961,-0.276]
+  t=2.574 zone=joint-band(child)
+  rigid_dom     =[-0.45514,0.33939,0.18626]
+  lbs_recomputed=[-0.45372,0.33702,0.19124]
+  pos[]         =[-0.45372,0.33702,0.19124]
+  Δ rigid↔lbs=0.005694 (3.63%)  Δ rigid↔pos=0.005694 (3.63%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+  VERT 10670 rest=[-0.0961,-0.4694,-0.0817]
+  weights: 33(l_knee):0.9605 29(l_hip):0.0294 34(l_ankle):0.0101 
+  dominant: bi=33 jn=l_knee w=0.9605 reverseCheck(_jointToBoneIdx[l_knee])=33 OK
+  parentJoint=l_hip
+  segAxis: P[l_hip]→P[l_knee] len=0.1568 dir=[0.001,-0.961,-0.276]
+  t=2.556 zone=joint-band(child)
+  rigid_dom     =[-0.43737,0.35163,0.20135]
+  lbs_recomputed=[-0.43582,0.34915,0.20622]
+  pos[]         =[-0.43582,0.34915,0.20622]
+  Δ rigid↔lbs=0.005675 (3.62%)  Δ rigid↔pos=0.005675 (3.62%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+── SEGMENT: r_hip → r_knee (r_hip>r_knee) ──
+  childBoneIdx=31 parentBoneIdx=21
+  P[r_hip]=[0.0546,-0.0789,0.0109]
+  P[r_knee]=[0.0412,-0.2297,-0.0323]
+  retargetedJoints[r_hip]=[-0.3137,-0.0603,0.0404]
+  retargetedJoints[r_knee]=[-0.2541,-0.1927,0.1010]
+  boneTransform[r_knee].R=[-0.6587,-0.123,0.7423,-0.5932,0.6918,-0.4117,-0.4629,-0.7115,-0.5287]
+  boneTransform[r_knee].t=[-0.2312,0.0506,-0.0605]
+  det(R)=1.000000
+
+  VERT 54885 rest=[0.1021,-0.4766,-0.0663]
+  weights: 31(r_knee):0.9602 21(r_hip):0.0324 30(r_ankle):0.0074 
+  dominant: bi=31 jn=r_knee w=0.9602 reverseCheck(_jointToBoneIdx[r_knee])=31 OK
+  parentJoint=r_hip
+  segAxis: P[r_hip]→P[r_knee] len=0.1574 dir=[-0.085,-0.958,-0.275]
+  t=2.529 zone=joint-band(child)
+  rigid_dom     =[-0.28901,-0.31239,0.26644]
+  lbs_recomputed=[-0.28547,-0.31409,0.26179]
+  pos[]         =[-0.28547,-0.31409,0.26179]
+  Δ rigid↔lbs=0.006086 (3.87%)  Δ rigid↔pos=0.006086 (3.87%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+  VERT 54804 rest=[0.0913,-0.4760,-0.0853]
+  weights: 31(r_knee):0.9605 21(r_hip):0.0311 30(r_ankle):0.0085 
+  dominant: bi=31 jn=r_knee w=0.9605 reverseCheck(_jointToBoneIdx[r_knee])=31 OK
+  parentJoint=r_hip
+  segAxis: P[r_hip]→P[r_knee] len=0.1574 dir=[-0.085,-0.958,-0.275]
+  t=2.564 zone=joint-band(child)
+  rigid_dom     =[-0.29608,-0.29782,0.28103]
+  lbs_recomputed=[-0.29253,-0.29985,0.27680]
+  pos[]         =[-0.29253,-0.29985,0.27680]
+  Δ rigid↔lbs=0.005885 (3.74%)  Δ rigid↔pos=0.005885 (3.74%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+  VERT 54997 rest=[0.0913,-0.4760,-0.0853]
+  weights: 31(r_knee):0.9605 21(r_hip):0.0311 30(r_ankle):0.0085 
+  dominant: bi=31 jn=r_knee w=0.9605 reverseCheck(_jointToBoneIdx[r_knee])=31 OK
+  parentJoint=r_hip
+  segAxis: P[r_hip]→P[r_knee] len=0.1574 dir=[-0.085,-0.958,-0.275]
+  t=2.564 zone=joint-band(child)
+  rigid_dom     =[-0.29608,-0.29782,0.28103]
+  lbs_recomputed=[-0.29253,-0.29985,0.27680]
+  pos[]         =[-0.29253,-0.29985,0.27680]
+  Δ rigid↔lbs=0.005885 (3.74%)  Δ rigid↔pos=0.005885 (3.74%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+── SEGMENT: spine1_joint → spine2_joint (spine1_joint>spine2_joint) ──
+  childBoneIdx=18 parentBoneIdx=23
+  P[spine1_joint]=[0.0000,0.0915,-0.0221]
+  P[spine2_joint]=[0.0000,0.1867,-0.0226]
+  retargetedJoints[spine1_joint]=[-0.1986,-0.1142,-0.0655]
+  retargetedJoints[spine2_joint]=[-0.1607,-0.1935,-0.1021]
+  boneTransform[spine2_joint].R=[-0.9536,0.2695,-0.134,-0.1878,-0.8807,-0.4348,-0.2352,-0.3895,0.8905]
+  boneTransform[spine2_joint].t=[-0.2141,0.0344,-0.0093]
+  det(R)=1.000000
+
+  VERT 31171 rest=[-0.0690,0.1795,-0.1005]
+  weights: 18(spine2_joint):0.9609 24(l_collar):0.0391 
+  dominant: bi=18 jn=spine2_joint w=0.9609 reverseCheck(_jointToBoneIdx[spine2_joint])=18 OK
+  parentJoint=spine1_joint
+  segAxis: P[spine1_joint]→P[spine2_joint] len=0.0952 dir=[-0.000,1.000,-0.005]
+  t=0.929 zone=joint-band(child)
+  rigid_dom     =[-0.08646,-0.06703,-0.15247]
+  lbs_recomputed=[-0.08398,-0.06855,-0.15289]
+  pos[]         =[-0.08398,-0.06855,-0.15289]
+  Δ rigid↔lbs=0.002936 (3.08%)  Δ rigid↔pos=0.002936 (3.08%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+  VERT 31193 rest=[-0.0660,0.1901,-0.1008]
+  weights: 18(spine2_joint):0.9604 24(l_collar):0.0396 
+  dominant: bi=18 jn=spine2_joint w=0.9604 reverseCheck(_jointToBoneIdx[spine2_joint])=18 OK
+  parentJoint=spine1_joint
+  segAxis: P[spine1_joint]→P[spine2_joint] len=0.0952 dir=[-0.000,1.000,-0.005]
+  t=1.040 zone=joint-band(child)
+  rigid_dom     =[-0.08642,-0.07680,-0.15755]
+  lbs_recomputed=[-0.08426,-0.07818,-0.15794]
+  pos[]         =[-0.08426,-0.07818,-0.15794]
+  Δ rigid↔lbs=0.002592 (2.72%)  Δ rigid↔pos=0.002592 (2.72%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+  VERT 17963 rest=[-0.0703,0.3273,-0.0544]
+  weights: 18(spine2_joint):0.9641 24(l_collar):0.0356 
+  dominant: bi=18 jn=spine2_joint w=0.9641 reverseCheck(_jointToBoneIdx[spine2_joint])=18 OK
+  parentJoint=spine1_joint
+  segAxis: P[spine1_joint]→P[spine2_joint] len=0.0952 dir=[-0.000,1.000,-0.005]
+  t=2.479 zone=joint-band(child)
+  rigid_dom     =[-0.05154,-0.21704,-0.16865]
+  lbs_recomputed=[-0.05374,-0.21742,-0.16923]
+  pos[]         =[-0.05374,-0.21742,-0.16923]
+  Δ rigid↔lbs=0.002305 (2.42%)  Δ rigid↔pos=0.002305 (2.42%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+── SEGMENT: l_shoulder → l_elbow (l_shoulder>l_elbow) ──
+  childBoneIdx=27 parentBoneIdx=26
+  P[l_shoulder]=[-0.0951,0.2280,-0.0168]
+  P[l_elbow]=[-0.2472,0.2137,-0.0456]
+  retargetedJoints[l_shoulder]=[-0.0391,-0.2662,-0.1158]
+  retargetedJoints[l_elbow]=[0.0499,-0.3704,-0.0424]
+  boneTransform[l_elbow].R=[0.3637,0.3097,-0.8785,0.9148,-0.2966,0.2741,-0.1756,-0.9034,-0.3912]
+  boneTransform[l_elbow].t=[0.0335,0.0049,0.0895]
+  det(R)=1.000000
+
+  VERT 23564 rest=[-0.4116,0.1895,-0.0596]
+  weights: 27(l_elbow):0.9606 26(l_shoulder):0.0394 
+  dominant: bi=27 jn=l_elbow w=0.9606 reverseCheck(_jointToBoneIdx[l_elbow])=27 OK
+  parentJoint=l_shoulder
+  segAxis: P[l_shoulder]→P[l_elbow] len=0.1555 dir=[-0.978,-0.092,-0.185]
+  t=2.065 zone=joint-band(child)
+  rigid_dom     =[-0.00510,-0.44415,0.01387]
+  lbs_recomputed=[0.00018,-0.44306,0.01502]
+  pos[]         =[0.00018,-0.44306,0.01502]
+  Δ rigid↔lbs=0.005520 (3.55%)  Δ rigid↔pos=0.005520 (3.55%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+  VERT 15079 rest=[-0.4073,0.1882,-0.0511]
+  weights: 27(l_elbow):0.9603 26(l_shoulder):0.0397 
+  dominant: bi=27 jn=l_elbow w=0.9603 reverseCheck(_jointToBoneIdx[l_elbow])=27 OK
+  parentJoint=l_shoulder
+  segAxis: P[l_shoulder]→P[l_elbow] len=0.1555 dir=[-0.978,-0.092,-0.185]
+  t=2.029 zone=joint-band(child)
+  rigid_dom     =[-0.01146,-0.43756,0.01092]
+  lbs_recomputed=[-0.00627,-0.43675,0.01213]
+  pos[]         =[-0.00627,-0.43675,0.01213]
+  Δ rigid↔lbs=0.005398 (3.47%)  Δ rigid↔pos=0.005398 (3.47%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+  VERT 15081 rest=[-0.4099,0.1900,-0.0543]
+  weights: 27(l_elbow):0.9610 26(l_shoulder):0.0390 
+  dominant: bi=27 jn=l_elbow w=0.9610 reverseCheck(_jointToBoneIdx[l_elbow])=27 OK
+  parentJoint=l_shoulder
+  segAxis: P[l_shoulder]→P[l_elbow] len=0.1555 dir=[-0.978,-0.092,-0.185]
+  t=2.048 zone=joint-band(child)
+  rigid_dom     =[-0.00902,-0.44135,0.01106]
+  lbs_recomputed=[-0.00383,-0.44045,0.01223]
+  pos[]         =[-0.00383,-0.44045,0.01223]
+  Δ rigid↔lbs=0.005391 (3.47%)  Δ rigid↔pos=0.005391 (3.47%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+── SEGMENT: r_shoulder → r_elbow (r_shoulder>r_elbow) ──
+  childBoneIdx=2 parentBoneIdx=17
+  P[r_shoulder]=[0.0951,0.2280,-0.0168]
+  P[r_elbow]=[0.2472,0.2137,-0.0456]
+  retargetedJoints[r_shoulder]=[-0.2268,-0.2638,-0.1672]
+  retargetedJoints[r_elbow]=[-0.3208,-0.3856,-0.1899]
+  boneTransform[r_elbow].R=[0.1179,0.4682,0.8757,-0.9695,-0.1366,0.2036,0.2149,-0.873,0.4378]
+  boneTransform[r_elbow].t=[-0.4101,-0.0341,-0.0365]
+  det(R)=1.000000
+
+  VERT 11449 rest=[0.4029,0.1807,-0.0395]
+  weights: 2(r_elbow):0.9604 17(r_shoulder):0.0396 
+  dominant: bi=2 jn=r_elbow w=0.9604 reverseCheck(_jointToBoneIdx[r_elbow])=2 OK
+  parentJoint=r_shoulder
+  segAxis: P[r_shoulder]→P[r_elbow] len=0.1555 dir=[0.978,-0.092,-0.185]
+  t=1.992 zone=joint-band(child)
+  rigid_dom     =[-0.31256,-0.45750,-0.12493]
+  lbs_recomputed=[-0.31598,-0.45724,-0.12713]
+  pos[]         =[-0.31598,-0.45724,-0.12713]
+  Δ rigid↔lbs=0.004069 (2.62%)  Δ rigid↔pos=0.004069 (2.62%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+  VERT 58964 rest=[0.4035,0.1829,-0.0376]
+  weights: 2(r_elbow):0.9614 17(r_shoulder):0.0386 
+  dominant: bi=2 jn=r_elbow w=0.9614 reverseCheck(_jointToBoneIdx[r_elbow])=2 OK
+  parentJoint=r_shoulder
+  segAxis: P[r_shoulder]→P[r_elbow] len=0.1555 dir=[0.978,-0.092,-0.185]
+  t=1.992 zone=joint-band(child)
+  rigid_dom     =[-0.30976,-0.45800,-0.12590]
+  lbs_recomputed=[-0.31311,-0.45779,-0.12805]
+  pos[]         =[-0.31311,-0.45779,-0.12805]
+  Δ rigid↔lbs=0.003986 (2.56%)  Δ rigid↔pos=0.003986 (2.56%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+  VERT 57962 rest=[0.4012,0.1798,-0.0271]
+  weights: 2(r_elbow):0.9614 17(r_shoulder):0.0386 
+  dominant: bi=2 jn=r_elbow w=0.9614 reverseCheck(_jointToBoneIdx[r_elbow])=2 OK
+  parentJoint=r_shoulder
+  segAxis: P[r_shoulder]→P[r_elbow] len=0.1555 dir=[0.978,-0.092,-0.185]
+  t=1.967 zone=joint-band(child)
+  rigid_dom     =[-0.30231,-0.45321,-0.11908]
+  lbs_recomputed=[-0.30566,-0.45327,-0.12118]
+  pos[]         =[-0.30566,-0.45327,-0.12118]
+  Δ rigid↔lbs=0.003952 (2.54%)  Δ rigid↔pos=0.003952 (2.54%)  Δ lbs↔pos=0.000000 (0.00%)
+  → TRANSFORM (dominant bone R,t is wrong — mapping/space issue)
+
+╔══════════════════════════════════════════════════════════════╗
+║ END 3-WAY TRANSFORM DEBUG                                   ║

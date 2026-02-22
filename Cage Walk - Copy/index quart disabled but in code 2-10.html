@@ -1,0 +1,4179 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Cage + Mixamo Walk (Anchors + Foot Lock)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body{margin:0;background:#0f1220;font-family:system-ui}
+    #ui{position:absolute;top:12px;left:12px;background:rgba(0,0,0,.78);color:#e7e7e7;padding:12px;border-radius:12px;z-index:5;max-width:360px;font-size:13px}
+    .row{display:flex;gap:10px;align-items:center;margin:8px 0}
+    .row label{min-width:130px;color:#bfe7ff}
+    input[type=range]{flex:1}
+    #status{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);color:#ddd;padding:10px 14px;border-radius:12px;z-index:5}
+    .section{margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12)}
+    .sectionTitle{color:#4ecdc4;font-weight:700;margin-bottom:6px}
+    #dropOverlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(78,205,196,0.15);z-index:1000;display:none;align-items:center;justify-content:center;pointer-events:none}
+    #dropOverlay.active{display:flex}
+    #dropOverlay .dropMsg{font-size:24px;color:#4ecdc4;border:3px dashed #4ecdc4;padding:60px 80px;border-radius:20px;background:rgba(0,0,0,.5)}
+    #fbxInfo{color:#4ecdc4;font-size:11px;margin-top:4px}
+  </style>
+</head>
+<body>
+  <div id="ui">
+    <div class="sectionTitle">Cage + Mixamo Walk</div>
+
+    <div class="row" style="flex-wrap:wrap">
+      <label style="min-width:auto;color:#4ecdc4">Drop FBX anywhere or:</label>
+      <input type="file" id="fbxFile" accept=".fbx" style="font-size:11px;max-width:160px" />
+    </div>
+    <div id="fbxInfo"></div>
+
+    <div class="row"><label><input id="play" type="checkbox" checked /> Animate</label></div>
+    <div class="row"><label>Speed</label><input id="speed" type="range" min="0" max="2" step="0.05" value="1" /><span id="speedVal">1.00</span></div>
+    <div class="row"><label>Alpha (stiffness)</label><input id="alpha" type="range" min="0" max="1" step="0.02" value="1" /><span id="alphaVal">1.00</span></div>
+
+    <div class="section">
+      <div class="sectionTitle">Mixamo axis fixes</div>
+      <div class="row"><label><input type="checkbox" id="flipHip" checked /> Flip Hip</label></div>
+      <div class="row"><label><input type="checkbox" id="flipKnee" checked /> Flip Knee</label></div>
+      <div class="row"><label><input type="checkbox" id="flipAnkleX" /> Flip Ankle X</label></div>
+      <div class="row"><label>Ankle L offset (deg)</label><input id="ankleOffL" type="range" min="-120" max="120" step="1" value="71" /><span id="ankleOffLVal">71</span></div>
+      <div class="row"><label>Ankle R offset (deg)</label><input id="ankleOffR" type="range" min="-120" max="120" step="1" value="71" /><span id="ankleOffRVal">71</span></div>
+    </div>
+
+    <div class="section">
+      <div class="sectionTitle">Foot plant</div>
+      <div class="row"><label>Plant strength</label><input id="plant" type="range" min="0" max="1" step="0.05" value="0" /><span id="plantVal">0.00</span></div>
+      <div class="row"><label>Knee stance thresh (deg)</label><input id="stanceKnee" type="range" min="5" max="60" step="1" value="25" /><span id="stanceKneeVal">25</span></div>
+      <div class="row"><label><input id="showCage" type="checkbox" checked /> Show cage</label></div>
+      <div class="row"><label><input id="debugRegions" type="checkbox" /> Show regions (color)</label></div>
+      <div class="row"><label><input id="useDQS" type="checkbox" /> DQS blend (vs LBS)</label></div>
+      <div class="row"><label><input id="hardRegions" type="checkbox" /> Hard regions (no blend)</label></div>
+      <div class="row"><label><input id="debugPivots" type="checkbox" /> Show arm pivots</label></div>
+      <div class="row"><label><input id="debugFBXJoints" type="checkbox" /> Show FBX joints</label></div>
+    </div>
+
+    <div class="section">
+      <div class="sectionTitle">Body motion</div>
+      <div class="row"><label><input id="enableBody" type="checkbox" checked /> Enable</label></div>
+      <div class="row"><label>Bob</label><input id="hipBob" type="range" min="0" max="0.06" step="0.005" value="0.02" /><span id="hipBobVal">0.02</span></div>
+      <div class="row"><label>Hip sway</label><input id="hipSway" type="range" min="0" max="1" step="0.1" value="0.5" /><span id="hipSwayVal">0.5</span></div>
+      <div class="row"><label>Forward lean (deg)</label><input id="forwardLean" type="range" min="0" max="20" step="1" value="5" /><span id="forwardLeanVal">5</span></div>
+      <div class="row"><label>Spine twist</label><input id="spineTwist" type="range" min="0" max="1" step="0.1" value="0.3" /><span id="spineTwistVal">0.3</span></div>
+    </div>
+
+    <div class="section">
+      <div class="sectionTitle">Arms</div>
+      <div class="row"><label><input id="enableArms" type="checkbox" checked /> Enable</label></div>
+      <div class="row"><label>Shoulder X</label><input id="shoulderX" type="range" min="0.08" max="0.20" step="0.01" value="0.15" /><span id="shoulderXVal">0.15</span></div>
+      <div class="row"><label>T-pose down (deg)</label><input id="tposeAngle" type="range" min="0" max="90" step="5" value="70" /><span id="tposeVal">70</span></div>
+      <div class="row"><label>Arm swing</label><input id="armSwing" type="range" min="0" max="5" step="0.1" value="2.5" /><span id="armSwingVal">2.5</span></div>
+      <div class="row"><label><input id="flipShoulder" type="checkbox" /> Flip swing dir</label></div>
+      <div class="row"><label>Elbow bend</label><input id="elbowBend" type="range" min="0" max="5" step="0.1" value="2" /><span id="elbowBendVal">2.0</span></div>
+      <div class="row"><label><input id="flipElbow" type="checkbox" /> Flip elbow dir</label></div>
+      <div class="row"><label>Upper arm len</label><input id="upperArmLen" type="range" min="0.05" max="0.40" step="0.01" value="0.19" /><span id="upperArmLenVal">0.19</span></div>
+      <div class="row"><label>Forearm len</label><input id="forearmLen" type="range" min="0.05" max="0.20" step="0.01" value="0.12" /><span id="forearmLenVal">0.12</span></div>
+    </div>
+  </div>
+
+  <div id="dropOverlay"><div class="dropMsg">Drop Mixamo FBX here</div></div>
+
+  <div id="status">Loading…</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fflate@0.6.9/umd/index.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/curves/NURBSCurve.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/curves/NURBSUtils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+
+  <script>
+  // TODO Option B: upgrade blend from linear transform blend to Dual Quaternion Skinning (DQS)
+  // using same region transforms.
+
+  // ---------------- UI helpers ----------------
+  const $ = (id)=>document.getElementById(id);
+  function bindRange(id, outId, fmt=(v)=>v){
+    const el=$(id), out=$(outId);
+    const set=()=>out.textContent=fmt(el.value);
+    el.addEventListener('input', set); set();
+  }
+  bindRange('speed','speedVal', v=>(+v).toFixed(2));
+  bindRange('alpha','alphaVal', v=>(+v).toFixed(2));
+  bindRange('plant','plantVal', v=>(+v).toFixed(2));
+  bindRange('stanceKnee','stanceKneeVal', v=>String(v));
+  bindRange('ankleOffL','ankleOffLVal', v=>String(v));
+  bindRange('ankleOffR','ankleOffRVal', v=>String(v));
+  bindRange('hipBob','hipBobVal', v=>(+v).toFixed(2));
+  bindRange('hipSway','hipSwayVal', v=>(+v).toFixed(1));
+  bindRange('forwardLean','forwardLeanVal', v=>String(v));
+  bindRange('spineTwist','spineTwistVal', v=>(+v).toFixed(1));
+  bindRange('shoulderX','shoulderXVal', v=>(+v).toFixed(2));
+  bindRange('tposeAngle','tposeVal', v=>String(v));
+  bindRange('armSwing','armSwingVal', v=>(+v).toFixed(1));
+  bindRange('elbowBend','elbowBendVal', v=>(+v).toFixed(1));
+  bindRange('upperArmLen','upperArmLenVal', v=>(+v).toFixed(2));
+  bindRange('forearmLen','forearmLenVal', v=>(+v).toFixed(2));
+  const statusEl = $('status');
+
+  // ---------------- Version marker ----------------
+  console.log('%c[CAGE v3 — quaternion debug build]', 'color: lime; font-weight: bold; font-size: 14px');
+
+  // ---------------- Scene ----------------
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0f1220);
+
+  const camera = new THREE.PerspectiveCamera(50, innerWidth/innerHeight, 0.01, 200);
+  const renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(innerWidth, innerHeight);
+  document.body.appendChild(renderer.domElement);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+  dir.position.set(2,3,2);
+  scene.add(dir);
+
+  // Axes helper: R=X, G=Y, B=Z (0.3m long, at origin)
+  const axes = new THREE.AxesHelper(0.3);
+  scene.add(axes);
+
+  // Debug pivot spheres (shoulder=red, elbow=green, wrist=blue) × 2 sides
+  const pivotSphereGeo = new THREE.SphereGeometry(0.018, 8, 8);
+  const pivotSpheres = {};
+  const pivotColors = {
+    lShoulder: 0xff0000, rShoulder: 0xff4444,
+    lElbow: 0x00ff00, rElbow: 0x44ff44,
+    lWrist: 0x0000ff, rWrist: 0x4444ff
+  };
+  for (const [name, color] of Object.entries(pivotColors)) {
+    const mat = new THREE.MeshBasicMaterial({ color, depthTest: false });
+    const mesh = new THREE.Mesh(pivotSphereGeo, mat);
+    mesh.visible = false;
+    mesh.renderOrder = 999;
+    scene.add(mesh);
+    pivotSpheres[name] = mesh;
+  }
+
+  // FBX joint debug spheres — show where FBX thinks each joint is (mapped to cage space)
+  const fbxJointSphereGeo = new THREE.SphereGeometry(0.012, 8, 8);
+  const fbxJointSpheres = {};
+  const fbxJointNames = ['pelvis','l_hip','l_knee','l_ankle','r_hip','r_knee','r_ankle',
+    'l_shoulder','l_elbow','l_wrist','r_shoulder','r_elbow','r_wrist','neck','head','chest'];
+  for (const name of fbxJointNames) {
+    const mat = new THREE.MeshBasicMaterial({ color: 0xffff00, depthTest: false });
+    const mesh = new THREE.Mesh(fbxJointSphereGeo, mat);
+    mesh.visible = false;
+    mesh.renderOrder = 999;
+    scene.add(mesh);
+    fbxJointSpheres[name] = mesh;
+  }
+
+  window.addEventListener('resize', ()=>{
+    camera.aspect = innerWidth/innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  });
+
+  // ---------------- Data ----------------
+  let meshObj, meshGeo, meshRestPos;
+  let cageRest, cageFaces, cagePos;
+  let bindIdx, bindW, K;
+  let regionId;
+  let cageMesh;
+  let meshHeight = 1;
+  let cageSmoothed = null;
+  let meshVertRegions = null;   // precomputed per-mesh-vertex region weight arrays
+  let regionIndices = {};       // region ID -> cage vert index array
+  let allLeftArmCage = [];      // combined l_upperarm + l_forearm cage indices (baked)
+  let allRightArmCage = [];     // combined r_upperarm + r_forearm cage indices (baked)
+  let armState = null;          // current arm rotation state (set by driveCage, used by deformMesh)
+  let legState = null;          // current leg rotation state for analytical leg transforms
+  let headState = null;         // current head rotation state for analytical head transform
+  // Temporal coherence: previous frame bend axes (prevents popping near straight limbs)
+  // Temporal coherence for joints that always bend the same way (elbows, knees)
+  const prevBendAxis = { lArm: null, rArm: null, lKnee: null, rKnee: null };
+  // Cage-derived shoulder anchors and arm directions (set by resplitArmRegions)
+  let cageShoulderL = null, cageShoulderR = null;
+  let cageArmDirL = null, cageArmDirR = null;
+
+  // JSON + motion
+  let anchors=null, bounds=null;
+  let motionData=null, armMotionData=null, spineMotionData=null;
+  let armBaseline = null; // first-frame values for computing deltas
+  let cycleDuration=1.0;
+  let jointPosData = null; // joint_positions.json data (position-based driving)
+  const ENABLE_CAGE_SMOOTHING = false;  // disabled: Kabsch rotation approach doesn't need it
+  const CAGE_SMOOTHING = 0.15;
+
+  const R = {}; // region arrays
+  const P = {}; // pivots
+
+  // Foot lock
+  let lockL=null, lockR=null;
+
+  // ---------------- Utilities ----------------
+  function clamp(x,a,b){ return Math.max(a, Math.min(b,x)); }
+
+  // Smooth a cyclic array with a 3-point weighted average [0.25, 0.5, 0.25].
+  // Wraps around at boundaries for seamless looping animations.
+  // Multiple passes approximate a Gaussian filter.
+  function smoothArray(arr, passes = 3) {
+    const n = arr.length;
+    let result = arr.slice();
+    for (let p = 0; p < passes; p++) {
+      const tmp = result.slice();
+      for (let i = 0; i < n; i++) {
+        result[i] = 0.25 * tmp[(i-1+n)%n] + 0.5 * tmp[i] + 0.25 * tmp[(i+1)%n];
+      }
+    }
+    return result;
+  }
+
+  function rotateAroundAxis(px, py, pz, ox, oy, oz, ax, ay, az, angle) {
+    let x = px - ox, y = py - oy, z = pz - oz;
+    const c = Math.cos(angle), s = Math.sin(angle), t = 1 - c;
+    const len = Math.hypot(ax, ay, az) || 1;
+    ax/=len; ay/=len; az/=len;
+
+    const nx = (t*ax*ax + c)*x + (t*ax*ay - s*az)*y + (t*ax*az + s*ay)*z;
+    const ny = (t*ax*ay + s*az)*x + (t*ay*ay + c)*y + (t*ay*az - s*ax)*z;
+    const nz = (t*ax*az - s*ay)*x + (t*ay*az + s*ax)*y + (t*az*az + c)*z;
+    return [nx + ox, ny + oy, nz + oz];
+  }
+
+  async function loadJSON(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) {
+    const msg = `loadJSON failed: ${url} (${res.status} ${res.statusText})`;
+    throw new Error(msg);
+  }
+  try {
+    return await res.json();
+  } catch (e) {
+    throw new Error(`loadJSON parse failed: ${url} (${e.message})`);
+  }
+}
+
+
+  function indicesByRegion(r){
+    const out=[];
+    for(let i=0;i<regionId.length;i++) if(regionId[i]===r) out.push(i);
+    return out;
+  }
+
+  // --- Vector helpers for arm split ---
+  function vsub(a,b){ return [a[0]-b[0], a[1]-b[1], a[2]-b[2]]; }
+  function vadd(a,b){ return [a[0]+b[0], a[1]+b[1], a[2]+b[2]]; }
+  function vdot(a,b){ return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
+  function vlen(a){ return Math.sqrt(vdot(a,a)); }
+  function vscale(a,s){ return [a[0]*s, a[1]*s, a[2]*s]; }
+
+  // Compute the rotation that maps fromDir→toDir, then apply it to applyToDir.
+  // Used for animation retargeting: extracts the "delta rotation" from the FBX
+  // animation and applies it to the cage rest direction, preserving cage proportions.
+  function applyDeltaRotation(fromDir, toDir, applyToDir) {
+    let ax = vcross(fromDir, toDir);
+    const axLen = vlen(ax);
+    const d = Math.max(-1, Math.min(1, vdot(fromDir, toDir)));
+    const ang = Math.acos(d);
+    if (Math.abs(ang) < 1e-4) return applyToDir; // near-identical: no rotation
+    if (axLen < 1e-6) {
+      // Near-180° rotation: cross product degenerate, pick any perpendicular axis
+      ax = Math.abs(fromDir[1]) < 0.9
+        ? vcross(fromDir, [0, 1, 0])
+        : vcross(fromDir, [1, 0, 0]);
+      if (vlen(ax) < 1e-6) return applyToDir; // extreme degenerate, bail
+    }
+    ax = vnorm(ax);
+    const r = rotateAroundAxis(applyToDir[0], applyToDir[1], applyToDir[2],
+      0, 0, 0, ax[0], ax[1], ax[2], ang);
+    return vnorm(r);
+  }
+
+  // Compute axis-angle rotation MATRIX from restDir to targetDir.
+  // Returns a 3x3 rotation matrix (flat array). Used for analytical limb composition.
+  function computeIKRotMatrix(restDir, targetDir) {
+    let ax = vcross(restDir, targetDir);
+    const axLen = vlen(ax);
+    const d = Math.max(-1, Math.min(1, vdot(restDir, targetDir)));
+    const ang = Math.acos(d);
+    if (Math.abs(ang) < 1e-4) return [1,0,0, 0,1,0, 0,0,1]; // identity
+    if (axLen < 1e-6) {
+      // Near-180° rotation: pick any perpendicular axis
+      ax = Math.abs(restDir[1]) < 0.9
+        ? vcross(restDir, [0, 1, 0])
+        : vcross(restDir, [1, 0, 0]);
+      if (vlen(ax) < 1e-6) return [1,0,0, 0,1,0, 0,0,1];
+    }
+    ax = vnorm(ax);
+    return mat3_rotAxis(ax[0], ax[1], ax[2], ang);
+  }
+
+  function vnorm(a){
+    const L = vlen(a);
+    return (L > 1e-12) ? [a[0]/L, a[1]/L, a[2]/L] : [1,0,0];
+  }
+
+  // Find shoulder joint center as average midpoint of K closest arm↔torso cage pairs.
+  // Returns { jointCenter, armAnchor, shoulderCi } where jointCenter is the driving pivot.
+  function findShoulderAnchorFromTorso(armIndices, torsoIndices, cageRest, K_PAIRS){
+    K_PAIRS = K_PAIRS || 5;
+    // Collect all arm↔torso distances
+    const pairs = [];
+    for (const ai of armIndices) {
+      const p = cageRest[ai];
+      for (const ti of torsoIndices) {
+        const q = cageRest[ti];
+        const dx = p[0]-q[0], dy = p[1]-q[1], dz = p[2]-q[2];
+        pairs.push({ ai, ti, d2: dx*dx + dy*dy + dz*dz });
+      }
+    }
+    pairs.sort((a,b) => a.d2 - b.d2);
+
+    // Average the midpoints of the K closest pairs
+    const N = Math.min(K_PAIRS, pairs.length);
+    let mx=0, my=0, mz=0, ax=0, ay=0, az=0;
+    for (let i = 0; i < N; i++) {
+      const ap = cageRest[pairs[i].ai], tp = cageRest[pairs[i].ti];
+      mx += (ap[0]+tp[0])*0.5;  my += (ap[1]+tp[1])*0.5;  mz += (ap[2]+tp[2])*0.5;
+      ax += ap[0]; ay += ap[1]; az += ap[2];
+    }
+    const jointCenter = [mx/N, my/N, mz/N];
+    const armAnchor = [ax/N, ay/N, az/N];
+    const shoulderCi = pairs[0] ? pairs[0].ai : (armIndices[0] ?? -1);
+    return { shoulder: jointCenter, armAnchor, shoulderCi, d2: pairs[0]?.d2 || 0 };
+  }
+
+  // Farthest arm cage point from shoulder (to define arm direction).
+  function farthestPointFrom(armIndices, origin, cageRest){
+    let bestCi = armIndices[0] ?? -1;
+    let bestD2 = -1;
+    for (const ci of armIndices) {
+      const p = cageRest[ci];
+      const dx = p[0]-origin[0], dy = p[1]-origin[1], dz = p[2]-origin[2];
+      const d2 = dx*dx + dy*dy + dz*dz;
+      if (d2 > bestD2) { bestD2 = d2; bestCi = ci; }
+    }
+    return cageRest[bestCi] ? [...cageRest[bestCi]] : [origin[0]+1, origin[1], origin[2]];
+  }
+
+  // Split arm cage verts by projection along arm axis into upper/forearm/hand.
+  function splitArmByProjection(allArmCage, shoulder, dir, upperArmLen, forearmLen, ridUpper, ridFore, ridHand, regionId, cageRest){
+    const upper=[], fore=[], hand=[];
+    for (const ci of allArmCage) {
+      const p = cageRest[ci];
+      const t = (p[0]-shoulder[0])*dir[0] + (p[1]-shoulder[1])*dir[1] + (p[2]-shoulder[2])*dir[2];
+      if (t <= upperArmLen) { upper.push(ci); regionId[ci]=ridUpper; }
+      else if (t <= upperArmLen + forearmLen) { fore.push(ci); regionId[ci]=ridFore; }
+      else { hand.push(ci); regionId[ci]=ridHand; }
+    }
+    return { upper, fore, hand };
+  }
+
+  // Projection-based arm region split using cage-derived shoulder anchors.
+  // Splits by projection along the arm axis (shoulder → farthest point),
+  // not radial distance. This is stable and mirror-consistent.
+  function resplitArmRegions() {
+    if (!cageRest || !allLeftArmCage.length || !allRightArmCage.length) return;
+
+    const upperArmLen = +$('upperArmLen').value;
+    const forearmLen  = +$('forearmLen').value;
+
+    // Torso cage indices (region 0)
+    const torsoIdx = regionIndices[0] || indicesByRegion(0);
+    if (!torsoIdx.length) return;
+
+    // Left: shoulder anchor + arm axis
+    const L = findShoulderAnchorFromTorso(allLeftArmCage, torsoIdx, cageRest);
+    const lFar = farthestPointFrom(allLeftArmCage, L.shoulder, cageRest);
+    let lDir = vnorm(vsub(lFar, L.shoulder));
+
+    // Right: shoulder anchor + arm axis
+    const Rr = findShoulderAnchorFromTorso(allRightArmCage, torsoIdx, cageRest);
+    const rFar = farthestPointFrom(allRightArmCage, Rr.shoulder, cageRest);
+    let rDir = vnorm(vsub(rFar, Rr.shoulder));
+
+    // Enforce mirror-consistency: left dir x<0, right dir x>0
+    if (lDir[0] > 0) lDir = vscale(lDir, -1);
+    if (rDir[0] < 0) rDir = vscale(rDir, -1);
+
+    // Store cage-derived anchors globally so arm driving uses the same pivots
+    cageShoulderL = L.shoulder;
+    cageShoulderR = Rr.shoulder;
+    cageArmDirL = lDir;
+    cageArmDirR = rDir;
+
+    // Split by projection along arm axis
+    const lSplit = splitArmByProjection(allLeftArmCage,  L.shoulder, lDir, upperArmLen, forearmLen, 7, 9, 12, regionId, cageRest);
+    const rSplit = splitArmByProjection(allRightArmCage, Rr.shoulder, rDir, upperArmLen, forearmLen, 8, 10, 13, regionId, cageRest);
+
+    R.l_upperarm = lSplit.upper;
+    R.l_forearm  = lSplit.fore;
+    R.l_hand     = lSplit.hand;
+
+    R.r_upperarm = rSplit.upper;
+    R.r_forearm  = rSplit.fore;
+    R.r_hand     = rSplit.hand;
+
+    regionIndices[7]  = R.l_upperarm;
+    regionIndices[8]  = R.r_upperarm;
+    regionIndices[9]  = R.l_forearm;
+    regionIndices[10] = R.r_forearm;
+    regionIndices[12] = R.l_hand;
+    regionIndices[13] = R.r_hand;
+
+    // Rebuild mesh bindings and region weights with updated regionId
+    const built = buildBindKNNRegion(meshRestPos, cageRest, regionId, null, 8);
+    K = built.K;
+    bindIdx = built.idx;
+    bindW = built.w;
+    meshVertRegions = precomputeMeshRegionWeights(meshRestPos, bindIdx, bindW, K, regionId);
+
+    console.log('ArmSplit L:', R.l_upperarm.length, R.l_forearm.length, R.l_hand.length,
+      'jointCenter', L.shoulder.map(v=>v.toFixed(4)), 'armAnchor', L.armAnchor.map(v=>v.toFixed(4)), 'dir', lDir.map(v=>v.toFixed(3)));
+    console.log('ArmSplit R:', R.r_upperarm.length, R.r_forearm.length, R.r_hand.length,
+      'jointCenter', Rr.shoulder.map(v=>v.toFixed(4)), 'armAnchor', Rr.armAnchor.map(v=>v.toFixed(4)), 'dir', rDir.map(v=>v.toFixed(3)));
+  }
+
+  // Rotate a direction vector around an axis (no origin offset)
+  function rotVec3(vx, vy, vz, ax, ay, az, angle) {
+    return rotateAroundAxis(vx, vy, vz, 0, 0, 0, ax, ay, az, angle);
+  }
+
+  // Apply rotation around an ARBITRARY axis to cage vertices
+  function applyRotAxis(indices, pivot, ax, ay, az, ang) {
+    const [px,py,pz] = pivot;
+    for (const i of indices) {
+      let x=cagePos[i*3], y=cagePos[i*3+1], z=cagePos[i*3+2];
+      [x,y,z] = rotateAroundAxis(x,y,z, px,py,pz, ax,ay,az, ang);
+      cagePos[i*3]=x; cagePos[i*3+1]=y; cagePos[i*3+2]=z;
+    }
+  }
+
+  function applyRotX(indices, pivot, ang){
+    const [px,py,pz]=pivot;
+    for(const i of indices){
+      let x=cagePos[i*3], y=cagePos[i*3+1], z=cagePos[i*3+2];
+      [x,y,z] = rotateAroundAxis(x,y,z, px,py,pz, 1,0,0, ang);
+      cagePos[i*3]=x; cagePos[i*3+1]=y; cagePos[i*3+2]=z;
+    }
+  }
+  function applyRotY(indices, pivot, ang){
+    const [px,py,pz]=pivot;
+    for(const i of indices){
+      let x=cagePos[i*3], y=cagePos[i*3+1], z=cagePos[i*3+2];
+      [x,y,z] = rotateAroundAxis(x,y,z, px,py,pz, 0,1,0, ang);
+      cagePos[i*3]=x; cagePos[i*3+1]=y; cagePos[i*3+2]=z;
+    }
+  }
+  function applyRotZ(indices, pivot, ang){
+    const [px,py,pz]=pivot;
+    for(const i of indices){
+      let x=cagePos[i*3], y=cagePos[i*3+1], z=cagePos[i*3+2];
+      [x,y,z] = rotateAroundAxis(x,y,z, px,py,pz, 0,0,1, ang);
+      cagePos[i*3]=x; cagePos[i*3+1]=y; cagePos[i*3+2]=z;
+    }
+  }
+  function translate(indices, dx,dy,dz){
+    for(const i of indices){
+      cagePos[i*3]+=dx; cagePos[i*3+1]+=dy; cagePos[i*3+2]+=dz;
+    }
+  }
+  function regionCenter(indices){
+    let sx=0,sy=0,sz=0;
+    const n=Math.max(1, indices.length);
+    for(const i of indices){
+      sx+=cagePos[i*3]; sy+=cagePos[i*3+1]; sz+=cagePos[i*3+2];
+    }
+    return [sx/n, sy/n, sz/n];
+  }
+
+  // ---------------- Quaternion Math ([x, y, z, w] format) ----------------
+  function quat_mul(a, b) {
+    return [
+      a[3]*b[0] + a[0]*b[3] + a[1]*b[2] - a[2]*b[1],
+      a[3]*b[1] - a[0]*b[2] + a[1]*b[3] + a[2]*b[0],
+      a[3]*b[2] + a[0]*b[1] - a[1]*b[0] + a[2]*b[3],
+      a[3]*b[3] - a[0]*b[0] - a[1]*b[1] - a[2]*b[2]
+    ];
+  }
+  function quat_conjugate(q) { return [-q[0], -q[1], -q[2], q[3]]; }
+
+  function quat_slerp(a, b, t) {
+    // Shortest-path: flip b if dot < 0
+    let dot = a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3];
+    const b2 = (dot < 0) ? [-b[0], -b[1], -b[2], -b[3]] : b;
+    dot = Math.abs(dot);
+    if (dot > 0.9995) {
+      // Nearly identical — lerp + normalize
+      const r = [
+        a[0] + (b2[0] - a[0]) * t,
+        a[1] + (b2[1] - a[1]) * t,
+        a[2] + (b2[2] - a[2]) * t,
+        a[3] + (b2[3] - a[3]) * t
+      ];
+      const inv = 1 / Math.hypot(r[0], r[1], r[2], r[3]);
+      return [r[0]*inv, r[1]*inv, r[2]*inv, r[3]*inv];
+    }
+    const theta = Math.acos(dot);
+    const sinTheta = Math.sin(theta);
+    const wa = Math.sin((1 - t) * theta) / sinTheta;
+    const wb = Math.sin(t * theta) / sinTheta;
+    return [
+      wa*a[0] + wb*b2[0], wa*a[1] + wb*b2[1],
+      wa*a[2] + wb*b2[2], wa*a[3] + wb*b2[3]
+    ];
+  }
+
+  // Swing-twist decomposition: given a delta quaternion and a twist axis,
+  // extract the signed twist angle (rotation around that axis).
+  function swingTwistDecompose(qDelta, twistAxis) {
+    // Project quaternion imaginary part onto twist axis
+    const proj = qDelta[0]*twistAxis[0] + qDelta[1]*twistAxis[1] + qDelta[2]*twistAxis[2];
+    // Twist quaternion = normalize([proj*ax, proj*ay, proj*az, w])
+    let tx = proj * twistAxis[0], ty = proj * twistAxis[1], tz = proj * twistAxis[2];
+    const tw = qDelta[3];
+    const len = Math.hypot(tx, ty, tz, tw);
+    if (len < 1e-10) return 0;
+    tx /= len; ty /= len; tz /= len;
+    const twn = tw / len;
+    // Signed angle: 2 * atan2(|imaginary|, w), with sign from projection direction
+    const sinHalf = Math.hypot(tx, ty, tz);
+    let angle = 2 * Math.atan2(sinHalf, Math.abs(twn));
+    // Sign: if proj is negative, twist is in opposite direction
+    if (proj < 0) angle = -angle;
+    // Handle w < 0 (angle > 180°)
+    if (twn < 0) angle = (angle > 0) ? angle - 2*Math.PI : angle + 2*Math.PI;
+    return angle;
+  }
+
+  // Convenience: extract twist angle of a bone between rest and current quaternions
+  // along the rest-pose bone direction.
+  function extractQuatTwist(restQ, curQ, boneDir) {
+    const qDelta = quat_mul(curQ, quat_conjugate(restQ));
+    return swingTwistDecompose(qDelta, boneDir);
+  }
+
+  // ---------------- 3x3 Matrix Math (row-major Float64Array[9]) ----------------
+  function mat3_create() { return new Float64Array(9); }
+  function mat3_identity() { const m = mat3_create(); m[0]=m[4]=m[8]=1; return m; }
+
+  function mat3_rotX(angle) {
+    const c = Math.cos(angle), s = Math.sin(angle), m = mat3_create();
+    m[0]=1; m[4]=c; m[5]=-s; m[7]=s; m[8]=c;
+    return m;
+  }
+
+  function mat3_rotY(angle) {
+    const c = Math.cos(angle), s = Math.sin(angle), m = mat3_create();
+    m[0]=c; m[2]=s; m[4]=1; m[6]=-s; m[8]=c;
+    return m;
+  }
+
+  function mat3_rotZ(angle) {
+    const c = Math.cos(angle), s = Math.sin(angle), m = mat3_create();
+    m[0]=c; m[1]=-s; m[3]=s; m[4]=c; m[8]=1;
+    return m;
+  }
+
+  // Rotation matrix around an arbitrary unit axis (Rodrigues)
+  function mat3_rotAxis(ax, ay, az, angle) {
+    const c = Math.cos(angle), s = Math.sin(angle), t = 1-c;
+    const len = Math.hypot(ax,ay,az) || 1;
+    ax/=len; ay/=len; az/=len;
+    return [
+      t*ax*ax+c,    t*ax*ay-s*az, t*ax*az+s*ay,
+      t*ax*ay+s*az, t*ay*ay+c,    t*ay*az-s*ax,
+      t*ax*az-s*ay, t*ay*az+s*ax, t*az*az+c
+    ];
+  }
+
+  function mat3_mul(A, B) {
+    const C = mat3_create();
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++)
+        C[i*3+j] = A[i*3]*B[j] + A[i*3+1]*B[3+j] + A[i*3+2]*B[6+j];
+    return C;
+  }
+
+  function mat3_transpose(A) {
+    const T = mat3_create();
+    for (let i = 0; i < 3; i++)
+      for (let j = 0; j < 3; j++)
+        T[i*3+j] = A[j*3+i];
+    return T;
+  }
+
+  function mat3_det(A) {
+    return A[0]*(A[4]*A[8]-A[5]*A[7])
+         - A[1]*(A[3]*A[8]-A[5]*A[6])
+         + A[2]*(A[3]*A[7]-A[4]*A[6]);
+  }
+
+  function mat3_mulVec3(M, x, y, z) {
+    return [
+      M[0]*x + M[1]*y + M[2]*z,
+      M[3]*x + M[4]*y + M[5]*z,
+      M[6]*x + M[7]*y + M[8]*z
+    ];
+  }
+
+  // Jacobi eigendecomposition for 3x3 symmetric matrix
+  // Returns {eigenvalues: [3], V: Float64Array(9)} where columns of V are eigenvectors
+  function symmetricEigen3x3(S) {
+    const A = Float64Array.from(S);
+    const V = mat3_identity();
+
+    for (let iter = 0; iter < 30; iter++) {
+      // Find largest off-diagonal element
+      let maxVal = 0, p = 0, q = 1;
+      for (let i = 0; i < 3; i++)
+        for (let j = i+1; j < 3; j++)
+          if (Math.abs(A[i*3+j]) > maxVal) { maxVal = Math.abs(A[i*3+j]); p = i; q = j; }
+
+      if (maxVal < 1e-12) break;
+
+      // Compute Jacobi rotation angle
+      const app = A[p*3+p], aqq = A[q*3+q], apq = A[p*3+q];
+      const theta = (Math.abs(app - aqq) < 1e-14)
+        ? Math.PI / 4
+        : 0.5 * Math.atan2(2 * apq, app - aqq);
+      const c = Math.cos(theta), s = Math.sin(theta);
+
+      // Right multiply: B = A * G(p,q,theta)
+      const B = Float64Array.from(A);
+      for (let i = 0; i < 3; i++) {
+        B[i*3+p] =  c*A[i*3+p] + s*A[i*3+q];
+        B[i*3+q] = -s*A[i*3+p] + c*A[i*3+q];
+      }
+      // Left multiply: A' = G^T * B
+      for (let j = 0; j < 3; j++) {
+        A[p*3+j] =  c*B[p*3+j] + s*B[q*3+j];
+        A[q*3+j] = -s*B[p*3+j] + c*B[q*3+j];
+      }
+
+      // Accumulate eigenvectors: V = V * G
+      for (let i = 0; i < 3; i++) {
+        const vip = V[i*3+p], viq = V[i*3+q];
+        V[i*3+p] =  c*vip + s*viq;
+        V[i*3+q] = -s*vip + c*viq;
+      }
+    }
+
+    return { eigenvalues: [A[0], A[4], A[8]], V };
+  }
+
+  // SVD for 3x3: H = U * diag(S) * V^T
+  function svd3x3(H) {
+    const Ht = mat3_transpose(H);
+    const HtH = mat3_mul(Ht, H);
+
+    const { eigenvalues, V } = symmetricEigen3x3(HtH);
+    const sigma = eigenvalues.map(e => Math.sqrt(Math.max(0, e)));
+
+    // U = H * V * diag(1/sigma)
+    const HV = mat3_mul(H, V);
+    const U = mat3_create();
+    for (let j = 0; j < 3; j++) {
+      const invS = sigma[j] > 1e-8 ? 1 / sigma[j] : 0;
+      for (let i = 0; i < 3; i++) {
+        U[i*3+j] = HV[i*3+j] * invS;
+      }
+    }
+
+    return { U, S: sigma, V };
+  }
+
+  // Gram-Schmidt orthonormalize a 3x3 matrix (row-major) to ensure it's a proper rotation.
+  // Returns a new Float64Array(9) with orthonormal rows forming a right-handed frame.
+  function mat3_orthonormalize(M) {
+    // Extract columns
+    let c0 = [M[0], M[3], M[6]];
+    let c1 = [M[1], M[4], M[7]];
+    let c2 = [M[2], M[5], M[8]];
+
+    // Normalize column 0
+    let len = Math.hypot(c0[0], c0[1], c0[2]);
+    if (len < 1e-12) { c0 = [1, 0, 0]; len = 1; }
+    c0 = [c0[0]/len, c0[1]/len, c0[2]/len];
+
+    // Column 1: subtract projection onto c0, normalize
+    let dot = c1[0]*c0[0] + c1[1]*c0[1] + c1[2]*c0[2];
+    c1 = [c1[0] - dot*c0[0], c1[1] - dot*c0[1], c1[2] - dot*c0[2]];
+    len = Math.hypot(c1[0], c1[1], c1[2]);
+    if (len < 1e-12) {
+      // c1 was parallel to c0, pick an arbitrary perpendicular
+      c1 = Math.abs(c0[0]) < 0.9 ? [1,0,0] : [0,1,0];
+      dot = c1[0]*c0[0] + c1[1]*c0[1] + c1[2]*c0[2];
+      c1 = [c1[0] - dot*c0[0], c1[1] - dot*c0[1], c1[2] - dot*c0[2]];
+      len = Math.hypot(c1[0], c1[1], c1[2]);
+    }
+    c1 = [c1[0]/len, c1[1]/len, c1[2]/len];
+
+    // Column 2: cross product of c0 and c1 (right-handed)
+    c2 = [
+      c0[1]*c1[2] - c0[2]*c1[1],
+      c0[2]*c1[0] - c0[0]*c1[2],
+      c0[0]*c1[1] - c0[1]*c1[0]
+    ];
+
+    const R = new Float64Array(9);
+    R[0]=c0[0]; R[1]=c1[0]; R[2]=c2[0];
+    R[3]=c0[1]; R[4]=c1[1]; R[5]=c2[1];
+    R[6]=c0[2]; R[7]=c1[2]; R[8]=c2[2];
+    return R;
+  }
+
+  // ---------------- Quaternion helpers for rotation blending ----------------
+  // q = [x, y, z, w] (Hamilton convention)
+
+  function mat3_to_quat(M) {
+    // Convert 3x3 row-major rotation matrix to unit quaternion
+    const m00=M[0], m01=M[1], m02=M[2];
+    const m10=M[3], m11=M[4], m12=M[5];
+    const m20=M[6], m21=M[7], m22=M[8];
+    const tr = m00 + m11 + m22;
+    let x, y, z, w;
+    if (tr > 0) {
+      const s = 0.5 / Math.sqrt(tr + 1.0);
+      w = 0.25 / s;
+      x = (m21 - m12) * s;
+      y = (m02 - m20) * s;
+      z = (m10 - m01) * s;
+    } else if (m00 > m11 && m00 > m22) {
+      const s = 2.0 * Math.sqrt(1.0 + m00 - m11 - m22);
+      w = (m21 - m12) / s;
+      x = 0.25 * s;
+      y = (m01 + m10) / s;
+      z = (m02 + m20) / s;
+    } else if (m11 > m22) {
+      const s = 2.0 * Math.sqrt(1.0 + m11 - m00 - m22);
+      w = (m02 - m20) / s;
+      x = (m01 + m10) / s;
+      y = 0.25 * s;
+      z = (m12 + m21) / s;
+    } else {
+      const s = 2.0 * Math.sqrt(1.0 + m22 - m00 - m11);
+      w = (m10 - m01) / s;
+      x = (m02 + m20) / s;
+      y = (m12 + m21) / s;
+      z = 0.25 * s;
+    }
+    const len = Math.hypot(x, y, z, w) || 1;
+    return [x/len, y/len, z/len, w/len];
+  }
+
+  // ---------------- Dual Quaternion Skinning (DQS) ----------------
+  // Encodes rigid transform (R, t) as dual quaternion [qr(4), qd(4)].
+  // Blends rotation + translation together — no volume loss at joints.
+
+  function rigid_to_dq(q, t) {
+    // q = rotation quaternion [x,y,z,w], t = translation [tx,ty,tz]
+    // dual part = 0.5 * (tx,ty,tz,0) * q_real (quaternion multiply)
+    const qx=q[0], qy=q[1], qz=q[2], qw=q[3];
+    const tx=t[0], ty=t[1], tz=t[2];
+    return {
+      qr: [qx, qy, qz, qw],
+      qd: [
+        0.5*( tx*qw + ty*qz - tz*qy),
+        0.5*(-tx*qz + ty*qw + tz*qx),
+        0.5*( tx*qy - ty*qx + tz*qw),
+        0.5*(-tx*qx - ty*qy - tz*qz)
+      ]
+    };
+  }
+
+  function dq_apply(qr, qd, vx, vy, vz) {
+    // Apply normalized dual quaternion to vertex.
+    // Rotation: q * v * conj(q)
+    const ax=qr[0], ay=qr[1], az=qr[2], aw=qr[3];
+    const tx2 = 2*(ay*vz - az*vy);
+    const ty2 = 2*(az*vx - ax*vz);
+    const tz2 = 2*(ax*vy - ay*vx);
+    const rx = vx + aw*tx2 + (ay*tz2 - az*ty2);
+    const ry = vy + aw*ty2 + (az*tx2 - ax*tz2);
+    const rz = vz + aw*tz2 + (ax*ty2 - ay*tx2);
+    // Translation: t = 2 * (qr.w * qd.xyz - qd.w * qr.xyz + cross(qr.xyz, qd.xyz))
+    const ttx = 2*( qd[0]*aw - qd[3]*ax + qd[2]*ay - qd[1]*az);
+    const tty = 2*( qd[1]*aw - qd[3]*ay + qd[0]*az - qd[2]*ax);
+    const ttz = 2*( qd[2]*aw - qd[3]*az + qd[1]*ax - qd[0]*ay);
+    return [rx + ttx, ry + tty, rz + ttz];
+  }
+
+  function quat_rotateVec3(q, vx, vy, vz) {
+    // Rotate vector by quaternion: q * v * q^-1
+    const qx=q[0], qy=q[1], qz=q[2], qw=q[3];
+    // t = 2 * cross(q.xyz, v)
+    const tx = 2*(qy*vz - qz*vy);
+    const ty = 2*(qz*vx - qx*vz);
+    const tz = 2*(qx*vy - qy*vx);
+    return [
+      vx + qw*tx + (qy*tz - qz*ty),
+      vy + qw*ty + (qz*tx - qx*tz),
+      vz + qw*tz + (qx*ty - qy*tx)
+    ];
+  }
+
+  // Kabsch algorithm: best-fit rigid transform (R, t) mapping rest → current
+  // for the cage vertices at given indices.
+  // Always produces a valid rotation — no fallbacks to identity.
+  function computeRigidTransformKabsch(indices, regionId) {
+    const n = indices.length;
+
+    // Compute centroids
+    let c0x=0, c0y=0, c0z=0, ctx=0, cty=0, ctz=0;
+    for (const i of indices) {
+      c0x += cageRest[i][0]; c0y += cageRest[i][1]; c0z += cageRest[i][2];
+      ctx += cagePos[i*3];   cty += cagePos[i*3+1]; ctz += cagePos[i*3+2];
+    }
+    c0x/=n; c0y/=n; c0z/=n;
+    ctx/=n; cty/=n; ctz/=n;
+
+    // Build covariance H = Σ (rest - c0)(current - ct)^T
+    const H = mat3_create();
+    for (const i of indices) {
+      const dx0 = cageRest[i][0]-c0x, dy0 = cageRest[i][1]-c0y, dz0 = cageRest[i][2]-c0z;
+      const dxt = cagePos[i*3]-ctx,   dyt = cagePos[i*3+1]-cty, dzt = cagePos[i*3+2]-ctz;
+
+      H[0] += dx0*dxt; H[1] += dx0*dyt; H[2] += dx0*dzt;
+      H[3] += dy0*dxt; H[4] += dy0*dyt; H[5] += dy0*dzt;
+      H[6] += dz0*dxt; H[7] += dz0*dyt; H[8] += dz0*dzt;
+    }
+
+    const { U, S, V } = svd3x3(H);
+
+    // Fix degenerate SVD: when points are nearly coplanar, one singular value
+    // is near zero, making that column of U all zeros (from invS=0 in svd3x3).
+    // Reconstruct it as the cross product of the other two columns.
+    const sMax = Math.max(S[0], S[1], S[2]);
+    if (sMax > 1e-10) {
+      let minI = 0;
+      if (S[1] < S[minI]) minI = 1;
+      if (S[2] < S[minI]) minI = 2;
+
+      if (S[minI] < sMax * 1e-3) {
+        const a = (minI + 1) % 3, b = (minI + 2) % 3;
+        U[0*3+minI] = U[1*3+a]*U[2*3+b] - U[2*3+a]*U[1*3+b];
+        U[1*3+minI] = U[2*3+a]*U[0*3+b] - U[0*3+a]*U[2*3+b];
+        U[2*3+minI] = U[0*3+a]*U[1*3+b] - U[1*3+a]*U[0*3+b];
+      }
+    }
+
+    // R = V * U^T
+    const Ut = mat3_transpose(U);
+    let R = mat3_mul(V, Ut);
+
+    // Fix reflection: ensure det(R) > 0
+    if (mat3_det(R) < 0) {
+      const Vfix = Float64Array.from(V);
+      let minI = 0;
+      if (S[1] < S[minI]) minI = 1;
+      if (S[2] < S[minI]) minI = 2;
+      Vfix[0*3+minI] *= -1;
+      Vfix[1*3+minI] *= -1;
+      Vfix[2*3+minI] *= -1;
+      R = mat3_mul(Vfix, Ut);
+    }
+
+    // Always orthonormalize R to guarantee a valid rotation matrix.
+    // This handles any numerical drift from SVD without ever falling back to identity.
+    R = mat3_orthonormalize(R);
+
+    // t = centroid_current - R * centroid_rest
+    const Rc0 = mat3_mulVec3(R, c0x, c0y, c0z);
+    const t = [ctx-Rc0[0], cty-Rc0[1], ctz-Rc0[2]];
+
+    return { R, t, cRest: [c0x, c0y, c0z], cCurr: [ctx, cty, ctz] };
+  }
+
+  // Compute world-space rigid transforms for all regions (independent Kabsch per region).
+  // Each region's cage verts are already driven with full hierarchical rotation by
+  // driveCageFromMixamo(), so world-space Kabsch recovers the composed transform directly.
+  function computeAllRegionTransforms() {
+    const transforms = {};
+    const posMode = armState && armState.positionBased;
+    const legAnalytical = legState && legState.positionBased;
+    for (const rid in regionIndices) {
+      const r = +rid;
+      if (r === 5 || r === 6) continue;   // feet use shin transform
+      // Arm regions ALWAYS use analytical composition (Kabsch unreliable on thin clusters)
+      if (r === 7 || r === 8) continue;
+      if (r === 9 || r === 10) continue;
+      if (r === 12 || r === 13) continue;
+      // Leg regions: use analytical in position mode (Kabsch gives bad results with
+      // asymmetric cage + diagonal rotation axes from delta retargeting)
+      if (legAnalytical && (r === 1 || r === 2)) continue;  // thighs
+      if (legAnalytical && (r === 3 || r === 4)) continue;  // shins
+      if (headState && r === 11) continue;  // head analytical in position mode
+      const indices = regionIndices[rid];
+      if (indices && indices.length) {
+        transforms[r] = computeRigidTransformKabsch(indices, r);
+      }
+    }
+
+    // ── ANALYTICAL LEG TRANSFORMS (position mode) ──
+    // Same approach as analytical arms: compose IK rotation with torso Kabsch,
+    // pinned at hip/knee pivots. Bypasses Kabsch for leg regions.
+    if (legAnalytical && transforms[0]) {
+      const R_t = transforms[0].R, t_t = transforms[0].t;
+
+      // Left thigh: R_thigh = R_thighIK * R_torso, pinned at hip
+      {
+        const R_thigh = mat3_mul(legState.lThighR, R_t);
+        const hip = P.l_hip;
+        const hipT = mat3_mulVec3(R_t, hip[0], hip[1], hip[2]);
+        const hipWorld = [hipT[0]+t_t[0], hipT[1]+t_t[1], hipT[2]+t_t[2]];
+        const Rth_hip = mat3_mulVec3(R_thigh, hip[0], hip[1], hip[2]);
+        transforms[1] = {
+          R: R_thigh,
+          t: [hipWorld[0]-Rth_hip[0], hipWorld[1]-Rth_hip[1], hipWorld[2]-Rth_hip[2]],
+          cRest: transforms[0].cRest, cCurr: transforms[0].cCurr
+        };
+
+        // Left shin: R_shin = R_kneeBend * R_thigh, pinned at knee
+        const Rb = mat3_rotAxis(legState.lKneeBendAxis[0], legState.lKneeBendAxis[1], legState.lKneeBendAxis[2], legState.lKneeBendAngle);
+        const R_shin = mat3_mul(Rb, R_thigh);
+        const t_thigh = transforms[1].t;
+        const knee = P.l_knee;
+        const kneeT = mat3_mulVec3(R_thigh, knee[0], knee[1], knee[2]);
+        const kneeWorld = [kneeT[0]+t_thigh[0], kneeT[1]+t_thigh[1], kneeT[2]+t_thigh[2]];
+        const Rsh_knee = mat3_mulVec3(R_shin, knee[0], knee[1], knee[2]);
+        transforms[3] = {
+          R: R_shin,
+          t: [kneeWorld[0]-Rsh_knee[0], kneeWorld[1]-Rsh_knee[1], kneeWorld[2]-Rsh_knee[2]],
+          cRest: transforms[0].cRest, cCurr: transforms[0].cCurr
+        };
+      }
+
+      // Right thigh: same pattern
+      {
+        const R_thigh = mat3_mul(legState.rThighR, R_t);
+        const hip = P.r_hip;
+        const hipT = mat3_mulVec3(R_t, hip[0], hip[1], hip[2]);
+        const hipWorld = [hipT[0]+t_t[0], hipT[1]+t_t[1], hipT[2]+t_t[2]];
+        const Rth_hip = mat3_mulVec3(R_thigh, hip[0], hip[1], hip[2]);
+        transforms[2] = {
+          R: R_thigh,
+          t: [hipWorld[0]-Rth_hip[0], hipWorld[1]-Rth_hip[1], hipWorld[2]-Rth_hip[2]],
+          cRest: transforms[0].cRest, cCurr: transforms[0].cCurr
+        };
+
+        const Rb = mat3_rotAxis(legState.rKneeBendAxis[0], legState.rKneeBendAxis[1], legState.rKneeBendAxis[2], legState.rKneeBendAngle);
+        const R_shin = mat3_mul(Rb, R_thigh);
+        const t_thigh = transforms[2].t;
+        const knee = P.r_knee;
+        const kneeT = mat3_mulVec3(R_thigh, knee[0], knee[1], knee[2]);
+        const kneeWorld = [kneeT[0]+t_thigh[0], kneeT[1]+t_thigh[1], kneeT[2]+t_thigh[2]];
+        const Rsh_knee = mat3_mulVec3(R_shin, knee[0], knee[1], knee[2]);
+        transforms[4] = {
+          R: R_shin,
+          t: [kneeWorld[0]-Rsh_knee[0], kneeWorld[1]-Rsh_knee[1], kneeWorld[2]-Rsh_knee[2]],
+          cRest: transforms[0].cRest, cCurr: transforms[0].cCurr
+        };
+      }
+    }
+
+    // Feet: analytical ankle rotation (position mode with toe data) or copy shin
+    if (legAnalytical && legState.lAnkleBendAngle > 1e-4 && transforms[3]) {
+      const Ra = mat3_rotAxis(legState.lAnkleBendAxis[0], legState.lAnkleBendAxis[1], legState.lAnkleBendAxis[2], legState.lAnkleBendAngle);
+      const R_foot = mat3_mul(Ra, transforms[3].R);
+      const ankle = P.l_ankle;
+      const ankleT = mat3_mulVec3(transforms[3].R, ankle[0], ankle[1], ankle[2]);
+      const ankleWorld = [ankleT[0]+transforms[3].t[0], ankleT[1]+transforms[3].t[1], ankleT[2]+transforms[3].t[2]];
+      const Rf_ankle = mat3_mulVec3(R_foot, ankle[0], ankle[1], ankle[2]);
+      transforms[5] = {
+        R: R_foot,
+        t: [ankleWorld[0]-Rf_ankle[0], ankleWorld[1]-Rf_ankle[1], ankleWorld[2]-Rf_ankle[2]],
+        cRest: transforms[0].cRest, cCurr: transforms[0].cCurr
+      };
+    } else if (transforms[3]) {
+      transforms[5] = transforms[3];
+    }
+    if (legAnalytical && legState.rAnkleBendAngle > 1e-4 && transforms[4]) {
+      const Ra = mat3_rotAxis(legState.rAnkleBendAxis[0], legState.rAnkleBendAxis[1], legState.rAnkleBendAxis[2], legState.rAnkleBendAngle);
+      const R_foot = mat3_mul(Ra, transforms[4].R);
+      const ankle = P.r_ankle;
+      const ankleT = mat3_mulVec3(transforms[4].R, ankle[0], ankle[1], ankle[2]);
+      const ankleWorld = [ankleT[0]+transforms[4].t[0], ankleT[1]+transforms[4].t[1], ankleT[2]+transforms[4].t[2]];
+      const Rf_ankle = mat3_mulVec3(R_foot, ankle[0], ankle[1], ankle[2]);
+      transforms[6] = {
+        R: R_foot,
+        t: [ankleWorld[0]-Rf_ankle[0], ankleWorld[1]-Rf_ankle[1], ankleWorld[2]-Rf_ankle[2]],
+        cRest: transforms[0].cRest, cCurr: transforms[0].cCurr
+      };
+    } else if (transforms[4]) {
+      transforms[6] = transforms[4];
+    }
+
+    // Head: analytical in position mode (R_headIK * R_torso, pinned at neck)
+    if (headState && transforms[0]) {
+      const R_t = transforms[0].R, t_t = transforms[0].t;
+      const R_head = mat3_mul(headState, R_t);
+      const neck = P.neck;
+      const neckT = mat3_mulVec3(R_t, neck[0], neck[1], neck[2]);
+      const neckWorld = [neckT[0]+t_t[0], neckT[1]+t_t[1], neckT[2]+t_t[2]];
+      const Rh_neck = mat3_mulVec3(R_head, neck[0], neck[1], neck[2]);
+      transforms[11] = {
+        R: R_head,
+        t: [neckWorld[0]-Rh_neck[0], neckWorld[1]-Rh_neck[1], neckWorld[2]-Rh_neck[2]],
+        cRest: transforms[0].cRest, cCurr: transforms[0].cCurr
+      };
+    }
+
+    // Upper arms: compose from torso Kabsch + analytical arm rotations.
+    // This guarantees torso and upper arm share the exact shoulder point.
+    // Euler mode:    R_upper = Rx(swing) * Rz(tPose) * R_torso
+    // Position mode: R_upper = R_IK * R_torso  (IK rotation from rest→target dir)
+    if (armState && transforms[0] && cageShoulderL && cageArmDirL) {
+      const R_t = transforms[0].R, t_t = transforms[0].t;
+      let R_u;
+      if (armState.positionBased) {
+        R_u = mat3_mul(armState.lUpperR, R_t);
+      } else {
+        const Rz = mat3_rotZ(armState.lTposeZ);
+        const Rx = mat3_rotX(armState.lArmSwing);
+        R_u = mat3_mul(Rx, mat3_mul(Rz, R_t));
+      }
+      const sh = cageShoulderL;
+      const as = mat3_mulVec3(R_t, sh[0], sh[1], sh[2]);
+      const actualSh = [as[0]+t_t[0], as[1]+t_t[1], as[2]+t_t[2]];
+      const Ru_sh = mat3_mulVec3(R_u, sh[0], sh[1], sh[2]);
+      transforms[7] = {
+        R: R_u,
+        t: [actualSh[0]-Ru_sh[0], actualSh[1]-Ru_sh[1], actualSh[2]-Ru_sh[2]],
+        cRest: transforms[0].cRest,
+        cCurr: transforms[0].cCurr
+      };
+    }
+    if (armState && transforms[0] && cageShoulderR && cageArmDirR) {
+      const R_t = transforms[0].R, t_t = transforms[0].t;
+      let R_u;
+      if (armState.positionBased) {
+        R_u = mat3_mul(armState.rUpperR, R_t);
+      } else {
+        const Rz = mat3_rotZ(armState.rTposeZ);
+        const Rx = mat3_rotX(armState.rArmSwing);
+        R_u = mat3_mul(Rx, mat3_mul(Rz, R_t));
+      }
+      const sh = cageShoulderR;
+      const as = mat3_mulVec3(R_t, sh[0], sh[1], sh[2]);
+      const actualSh = [as[0]+t_t[0], as[1]+t_t[1], as[2]+t_t[2]];
+      const Ru_sh = mat3_mulVec3(R_u, sh[0], sh[1], sh[2]);
+      transforms[8] = {
+        R: R_u,
+        t: [actualSh[0]-Ru_sh[0], actualSh[1]-Ru_sh[1], actualSh[2]-Ru_sh[2]],
+        cRest: transforms[0].cRest,
+        cCurr: transforms[0].cCurr
+      };
+    }
+
+    // Forearms: upper arm analytical + elbow bend + forearm twist.
+    // R_forearm = [R_forearmTwist *] R_bend * R_upper, pinned at elbow.
+    if (armState && transforms[7] && cageShoulderL && cageArmDirL && armState.lBendAxis) {
+      const ba = armState.lBendAxis;
+      const lBendAng = armState.positionBased ? armState.lBendAngle : armState.lElbowAngle;
+      const Rb = mat3_rotAxis(ba[0], ba[1], ba[2], lBendAng);
+      const R_u = transforms[7].R;
+      const t_u = transforms[7].t;
+      const uaLen = +$('upperArmLen').value;
+      const erx = cageShoulderL[0] + cageArmDirL[0]*uaLen;
+      const ery = cageShoulderL[1] + cageArmDirL[1]*uaLen;
+      const erz = cageShoulderL[2] + cageArmDirL[2]*uaLen;
+      const ae = mat3_mulVec3(R_u, erx, ery, erz);
+      const ep = [ae[0]+t_u[0], ae[1]+t_u[1], ae[2]+t_u[2]];
+      let R_f = mat3_mul(Rb, R_u);
+      // Forearm twist (pronation/supination around forearm axis) — DISABLED pending twist validation
+      // if (armState.positionBased && Math.abs(armState.lForearmTwist || 0) > 1e-4) {
+      //   const fd = vnorm(mat3_mulVec3(R_f, cageArmDirL[0], cageArmDirL[1], cageArmDirL[2]));
+      //   R_f = mat3_mul(mat3_rotAxis(fd[0], fd[1], fd[2], armState.lForearmTwist), R_f);
+      // }
+      const Rf_re = mat3_mulVec3(R_f, erx, ery, erz);
+      transforms[9] = {
+        R: R_f,
+        t: [ep[0] - Rf_re[0], ep[1] - Rf_re[1], ep[2] - Rf_re[2]],
+        cRest: transforms[7].cRest,
+        cCurr: transforms[7].cCurr
+      };
+    }
+    if (armState && transforms[8] && cageShoulderR && cageArmDirR && armState.rBendAxis) {
+      const ba = armState.rBendAxis;
+      const rBendAng = armState.positionBased ? armState.rBendAngle : armState.rElbowAngle;
+      const Rb = mat3_rotAxis(ba[0], ba[1], ba[2], rBendAng);
+      const R_u = transforms[8].R;
+      const t_u = transforms[8].t;
+      const uaLen = +$('upperArmLen').value;
+      const erx = cageShoulderR[0] + cageArmDirR[0]*uaLen;
+      const ery = cageShoulderR[1] + cageArmDirR[1]*uaLen;
+      const erz = cageShoulderR[2] + cageArmDirR[2]*uaLen;
+      const ae = mat3_mulVec3(R_u, erx, ery, erz);
+      const ep = [ae[0]+t_u[0], ae[1]+t_u[1], ae[2]+t_u[2]];
+      let R_f = mat3_mul(Rb, R_u);
+      // Forearm twist (right) — DISABLED pending twist validation
+      // if (armState.positionBased && Math.abs(armState.rForearmTwist || 0) > 1e-4) {
+      //   const fd = vnorm(mat3_mulVec3(R_f, cageArmDirR[0], cageArmDirR[1], cageArmDirR[2]));
+      //   R_f = mat3_mul(mat3_rotAxis(fd[0], fd[1], fd[2], armState.rForearmTwist), R_f);
+      // }
+      const Rf_re = mat3_mulVec3(R_f, erx, ery, erz);
+      transforms[10] = {
+        R: R_f,
+        t: [ep[0] - Rf_re[0], ep[1] - Rf_re[1], ep[2] - Rf_re[2]],
+        cRest: transforms[8].cRest,
+        cCurr: transforms[8].cCurr
+      };
+    }
+    // Hands: forearm transform + analytical wrist rotation around bone-local axis.
+    if (armState && transforms[9] && cageShoulderL && cageArmDirL && armState.lBendAxis) {
+      // Position mode: use real wrist flex from FBX finger data, or fallback to elbow counter-rotation
+      let ba, lWristAng;
+      if (armState.positionBased && armState.lWristFlexAxis && armState.lWristFlexAngle > 1e-4) {
+        ba = armState.lWristFlexAxis;
+        lWristAng = armState.lWristFlexAngle;
+      } else if (armState.positionBased) {
+        ba = armState.lBendAxis;
+        lWristAng = -armState.lBendAngle * 0.3;
+      } else {
+        ba = armState.lBendAxis;
+        lWristAng = armState.lWristAngle;
+      }
+      const Rb = mat3_rotAxis(ba[0], ba[1], ba[2], lWristAng);
+      const R_f = transforms[9].R;
+      const t_f = transforms[9].t;
+      const uaLen = +$('upperArmLen').value;
+      const faLen = +$('forearmLen').value;
+      const wrx = cageShoulderL[0] + cageArmDirL[0]*(uaLen+faLen);
+      const wry = cageShoulderL[1] + cageArmDirL[1]*(uaLen+faLen);
+      const wrz = cageShoulderL[2] + cageArmDirL[2]*(uaLen+faLen);
+      const aw = mat3_mulVec3(R_f, wrx, wry, wrz);
+      const wp = [aw[0]+t_f[0], aw[1]+t_f[1], aw[2]+t_f[2]];
+      const R_h = mat3_mul(Rb, R_f);
+      const Rb_tf = mat3_mulVec3(Rb, t_f[0], t_f[1], t_f[2]);
+      const Rb_wp = mat3_mulVec3(Rb, wp[0], wp[1], wp[2]);
+      transforms[12] = {
+        R: R_h,
+        t: [Rb_tf[0] + wp[0] - Rb_wp[0], Rb_tf[1] + wp[1] - Rb_wp[1], Rb_tf[2] + wp[2] - Rb_wp[2]],
+        cRest: transforms[9].cRest,
+        cCurr: transforms[9].cCurr
+      };
+    }
+    if (armState && transforms[10] && cageShoulderR && cageArmDirR && armState.rBendAxis) {
+      let ba, rWristAng;
+      if (armState.positionBased && armState.rWristFlexAxis && armState.rWristFlexAngle > 1e-4) {
+        ba = armState.rWristFlexAxis;
+        rWristAng = armState.rWristFlexAngle;
+      } else if (armState.positionBased) {
+        ba = armState.rBendAxis;
+        rWristAng = -armState.rBendAngle * 0.3;
+      } else {
+        ba = armState.rBendAxis;
+        rWristAng = armState.rWristAngle;
+      }
+      const Rb = mat3_rotAxis(ba[0], ba[1], ba[2], rWristAng);
+      const R_f = transforms[10].R;
+      const t_f = transforms[10].t;
+      const uaLen = +$('upperArmLen').value;
+      const faLen = +$('forearmLen').value;
+      const wrx = cageShoulderR[0] + cageArmDirR[0]*(uaLen+faLen);
+      const wry = cageShoulderR[1] + cageArmDirR[1]*(uaLen+faLen);
+      const wrz = cageShoulderR[2] + cageArmDirR[2]*(uaLen+faLen);
+      const aw = mat3_mulVec3(R_f, wrx, wry, wrz);
+      const wp = [aw[0]+t_f[0], aw[1]+t_f[1], aw[2]+t_f[2]];
+      const R_h = mat3_mul(Rb, R_f);
+      const Rb_tf = mat3_mulVec3(Rb, t_f[0], t_f[1], t_f[2]);
+      const Rb_wp = mat3_mulVec3(Rb, wp[0], wp[1], wp[2]);
+      transforms[13] = {
+        R: R_h,
+        t: [Rb_tf[0] + wp[0] - Rb_wp[0], Rb_tf[1] + wp[1] - Rb_wp[1], Rb_tf[2] + wp[2] - Rb_wp[2]],
+        cRest: transforms[10].cRest,
+        cCurr: transforms[10].cCurr
+      };
+    }
+    return transforms;
+  }
+
+  // Precompute per-mesh-vertex region weights from bind data
+  // Returns array of flat pairs: [rid1, w1, rid2, w2, ...] per vertex
+  function precomputeMeshRegionWeights(meshRestPos, bindIdx, bindW, K, regionId) {
+    const nMesh = meshRestPos.length / 3;
+    const result = new Array(nMesh);
+
+    for (let vi = 0; vi < nMesh; vi++) {
+      const rw = new Map();
+      const base = vi * K;
+      for (let j = 0; j < K; j++) {
+        const ci = bindIdx[base + j];
+        const w = bindW[base + j];
+        const rid = regionId[ci];
+        rw.set(rid, (rw.get(rid) || 0) + w);
+      }
+
+      // Smoothstep elbow weight override: replace KNN-derived upper/forearm split
+      // with smooth projection-based interpolation centered on the elbow.
+      if (cageShoulderL && cageArmDirL && cageShoulderR && cageArmDirR) {
+        const vx = meshRestPos[vi*3], vy = meshRestPos[vi*3+1], vz = meshRestPos[vi*3+2];
+        const uaLen = +$('upperArmLen').value;
+        const EBAND = 0.12 * uaLen;
+
+        // Left arm: regions 7 (upper) + 9 (forearm)
+        if (rw.has(7) && rw.has(9)) {
+          const sh = cageShoulderL, d = cageArmDirL;
+          const tp = (vx-sh[0])*d[0] + (vy-sh[1])*d[1] + (vz-sh[2])*d[2];
+          if (Math.abs(tp - uaLen) < EBAND * 2) {
+            const totalW = rw.get(7) + rw.get(9);
+            const f = clamp((tp - (uaLen - EBAND)) / (2 * EBAND), 0, 1);
+            const sf = f * f * (3 - 2 * f); // smoothstep
+            rw.set(7, totalW * (1 - sf));
+            rw.set(9, totalW * sf);
+          }
+        }
+        // Right arm: regions 8 (upper) + 10 (forearm)
+        if (rw.has(8) && rw.has(10)) {
+          const sh = cageShoulderR, d = cageArmDirR;
+          const tp = (vx-sh[0])*d[0] + (vy-sh[1])*d[1] + (vz-sh[2])*d[2];
+          if (Math.abs(tp - uaLen) < EBAND * 2) {
+            const totalW = rw.get(8) + rw.get(10);
+            const f = clamp((tp - (uaLen - EBAND)) / (2 * EBAND), 0, 1);
+            const sf = f * f * (3 - 2 * f); // smoothstep
+            rw.set(8, totalW * (1 - sf));
+            rw.set(10, totalW * sf);
+          }
+        }
+
+        // Shoulder smoothstep: torso (0) ↔ upper arm (7/8)
+        // Same idea as elbow — smooth projection-based weight at shoulder boundary.
+        const SBAND = 0.08 * uaLen;
+
+        // Left shoulder: regions 0 (torso) + 7 (upper arm)
+        if (rw.has(0) && rw.has(7)) {
+          const sh = cageShoulderL, d = cageArmDirL;
+          const tp = (vx-sh[0])*d[0] + (vy-sh[1])*d[1] + (vz-sh[2])*d[2];
+          if (Math.abs(tp) < SBAND * 2) {
+            const totalW = rw.get(0) + rw.get(7);
+            // t<0 = torso side, t>0 = arm side. Blend centered at t=0 (shoulder).
+            const f = clamp((tp + SBAND) / (2 * SBAND), 0, 1);
+            const sf = f * f * (3 - 2 * f);
+            rw.set(0, totalW * (1 - sf));
+            rw.set(7, totalW * sf);
+          }
+        }
+        // Right shoulder: regions 0 (torso) + 8 (upper arm)
+        if (rw.has(0) && rw.has(8)) {
+          const sh = cageShoulderR, d = cageArmDirR;
+          const tp = (vx-sh[0])*d[0] + (vy-sh[1])*d[1] + (vz-sh[2])*d[2];
+          if (Math.abs(tp) < SBAND * 2) {
+            const totalW = rw.get(0) + rw.get(8);
+            const f = clamp((tp + SBAND) / (2 * SBAND), 0, 1);
+            const sf = f * f * (3 - 2 * f);
+            rw.set(0, totalW * (1 - sf));
+            rw.set(8, totalW * sf);
+          }
+        }
+      }
+
+      // Smoothstep knee weight override: thigh (1/2) ↔ shin (3/4)
+      if (P.l_hip && P.l_knee && P.l_ankle) {
+        const vx = meshRestPos[vi*3], vy = meshRestPos[vi*3+1], vz = meshRestPos[vi*3+2];
+        // Left knee: regions 1 (thigh) + 3 (shin)
+        if (rw.has(1) && rw.has(3)) {
+          const hip = P.l_hip, knee = P.l_knee;
+          const thighLen = Math.sqrt((knee[0]-hip[0])**2 + (knee[1]-hip[1])**2 + (knee[2]-hip[2])**2);
+          const d = [(knee[0]-hip[0])/thighLen, (knee[1]-hip[1])/thighLen, (knee[2]-hip[2])/thighLen];
+          const tp = (vx-hip[0])*d[0] + (vy-hip[1])*d[1] + (vz-hip[2])*d[2];
+          const KBAND = 0.15 * thighLen;
+          if (Math.abs(tp - thighLen) < KBAND * 2) {
+            const totalW = rw.get(1) + rw.get(3);
+            const f = clamp((tp - (thighLen - KBAND)) / (2 * KBAND), 0, 1);
+            const sf = f * f * (3 - 2 * f);
+            rw.set(1, totalW * (1 - sf));
+            rw.set(3, totalW * sf);
+          }
+        }
+        // Right knee: regions 2 (thigh) + 4 (shin)
+        if (rw.has(2) && rw.has(4) && P.r_hip && P.r_knee) {
+          const hip = P.r_hip, knee = P.r_knee;
+          const thighLen = Math.sqrt((knee[0]-hip[0])**2 + (knee[1]-hip[1])**2 + (knee[2]-hip[2])**2);
+          const d = [(knee[0]-hip[0])/thighLen, (knee[1]-hip[1])/thighLen, (knee[2]-hip[2])/thighLen];
+          const tp = (vx-hip[0])*d[0] + (vy-hip[1])*d[1] + (vz-hip[2])*d[2];
+          const KBAND = 0.15 * thighLen;
+          if (Math.abs(tp - thighLen) < KBAND * 2) {
+            const totalW = rw.get(2) + rw.get(4);
+            const f = clamp((tp - (thighLen - KBAND)) / (2 * KBAND), 0, 1);
+            const sf = f * f * (3 - 2 * f);
+            rw.set(2, totalW * (1 - sf));
+            rw.set(4, totalW * sf);
+          }
+        }
+      }
+
+      // Smoothstep ankle weight override: shin (3/4) ↔ foot (5/6)
+      if (P.l_knee && P.l_ankle) {
+        const vx = meshRestPos[vi*3], vy = meshRestPos[vi*3+1], vz = meshRestPos[vi*3+2];
+        // Left ankle: regions 3 (shin) + 5 (foot)
+        if (rw.has(3) && rw.has(5)) {
+          const knee = P.l_knee, ankle = P.l_ankle;
+          const shinLen = Math.sqrt((ankle[0]-knee[0])**2 + (ankle[1]-knee[1])**2 + (ankle[2]-knee[2])**2);
+          const d = [(ankle[0]-knee[0])/shinLen, (ankle[1]-knee[1])/shinLen, (ankle[2]-knee[2])/shinLen];
+          const tp = (vx-knee[0])*d[0] + (vy-knee[1])*d[1] + (vz-knee[2])*d[2];
+          const ABAND = 0.15 * shinLen;
+          if (Math.abs(tp - shinLen) < ABAND * 2) {
+            const totalW = rw.get(3) + rw.get(5);
+            const f = clamp((tp - (shinLen - ABAND)) / (2 * ABAND), 0, 1);
+            const sf = f * f * (3 - 2 * f);
+            rw.set(3, totalW * (1 - sf));
+            rw.set(5, totalW * sf);
+          }
+        }
+        // Right ankle: regions 4 (shin) + 6 (foot)
+        if (rw.has(4) && rw.has(6) && P.r_knee && P.r_ankle) {
+          const knee = P.r_knee, ankle = P.r_ankle;
+          const shinLen = Math.sqrt((ankle[0]-knee[0])**2 + (ankle[1]-knee[1])**2 + (ankle[2]-knee[2])**2);
+          const d = [(ankle[0]-knee[0])/shinLen, (ankle[1]-knee[1])/shinLen, (ankle[2]-knee[2])/shinLen];
+          const tp = (vx-knee[0])*d[0] + (vy-knee[1])*d[1] + (vz-knee[2])*d[2];
+          const ABAND = 0.15 * shinLen;
+          if (Math.abs(tp - shinLen) < ABAND * 2) {
+            const totalW = rw.get(4) + rw.get(6);
+            const f = clamp((tp - (shinLen - ABAND)) / (2 * ABAND), 0, 1);
+            const sf = f * f * (3 - 2 * f);
+            rw.set(4, totalW * (1 - sf));
+            rw.set(6, totalW * sf);
+          }
+        }
+      }
+
+      // Smoothstep neck weight override: torso (0) ↔ head (11)
+      if (P.pelvis && P.neck) {
+        const vx = meshRestPos[vi*3], vy = meshRestPos[vi*3+1], vz = meshRestPos[vi*3+2];
+        if (rw.has(0) && rw.has(11)) {
+          const pelvis = P.pelvis, neck = P.neck;
+          const spineLen = Math.sqrt((neck[0]-pelvis[0])**2 + (neck[1]-pelvis[1])**2 + (neck[2]-pelvis[2])**2);
+          const d = [(neck[0]-pelvis[0])/spineLen, (neck[1]-pelvis[1])/spineLen, (neck[2]-pelvis[2])/spineLen];
+          const tp = (vx-pelvis[0])*d[0] + (vy-pelvis[1])*d[1] + (vz-pelvis[2])*d[2];
+          const NBAND = 0.08 * spineLen;
+          if (Math.abs(tp - spineLen) < NBAND * 2) {
+            const totalW = rw.get(0) + rw.get(11);
+            const f = clamp((tp - (spineLen - NBAND)) / (2 * NBAND), 0, 1);
+            const sf = f * f * (3 - 2 * f);
+            rw.set(0, totalW * (1 - sf));
+            rw.set(11, totalW * sf);
+          }
+        }
+      }
+
+      // Flatten to [rid, weight, rid, weight, ...] and normalize
+      const entries = [];
+      let sum = 0;
+      for (const [rid, w] of rw) {
+        entries.push(rid, w);
+        sum += w;
+      }
+      if (sum > 0) {
+        for (let i = 1; i < entries.length; i += 2) entries[i] /= sum;
+      }
+      result[vi] = entries;
+    }
+
+    return result;
+  }
+
+  // ---------------- Motion interpolation (from your old code) ----------------
+  function getRotationAtTime(boneName, t, axis = 'x_rot') {
+    if (!motionData || !motionData[boneName]) return 0;
+    const data = motionData[boneName];
+    const times = data.times;
+    const values = data[axis];
+    if (!values || values.length === 0) return 0;
+
+    const cycleT = t % cycleDuration;
+    const firstTime = times[0];
+    const lastTime = times[times.length - 1];
+
+    if (cycleT < firstTime || cycleT > lastTime) {
+      const v0 = values[values.length - 1];
+      const v1 = values[0];
+      const t0 = lastTime;
+      const t1 = firstTime + cycleDuration;
+      const adjustedT = cycleT < firstTime ? cycleT + cycleDuration : cycleT;
+      const frac = (adjustedT - t0) / (t1 - t0);
+      const degrees = v0 + (v1 - v0) * clamp(frac,0,1);
+      return degrees * Math.PI / 180;
+    }
+
+    let i = 0;
+    while (i < times.length - 1 && times[i + 1] < cycleT) i++;
+    const t0 = times[i], t1 = times[i + 1];
+    const v0 = values[i], v1 = values[i + 1];
+    const frac = (cycleT - t0) / (t1 - t0);
+    const degrees = v0 + (v1 - v0) * frac;
+    return degrees * Math.PI / 180;
+  }
+
+  function getArmRotationAtTime(boneName, t, axis = 'x_rot') {
+    if (!armMotionData || !armMotionData[boneName]) return 0;
+    const data = armMotionData[boneName];
+    const times = data.times;
+    const values = data[axis];
+    if (!values || values.length === 0) return 0;
+
+    const cycleT = t % cycleDuration;
+    const firstTime = times[0];
+    const lastTime = times[times.length - 1];
+    const n = values.length;
+
+    if (cycleT < firstTime || cycleT > lastTime) {
+      const v0 = values[n - 1];
+      const v1 = values[0];
+      const t0 = lastTime;
+      const t1 = firstTime + cycleDuration;
+      const adjustedT = cycleT < firstTime ? cycleT + cycleDuration : cycleT;
+      const frac = clamp((adjustedT - t0) / (t1 - t0), 0, 1);
+      // Catmull-Rom at cycle boundary
+      const p0 = values[n - 2];
+      const p3 = values[1];
+      const tt = frac, tt2 = tt*tt, tt3 = tt2*tt;
+      const degrees = 0.5*((2*v0)+(-p0+v1)*tt+(2*p0-5*v0+4*v1-p3)*tt2+(-p0+3*v0-3*v1+p3)*tt3);
+      return degrees * Math.PI / 180;
+    }
+
+    let i = 0;
+    while (i < times.length - 1 && times[i + 1] < cycleT) i++;
+    const t0 = times[i], t1 = times[i + 1];
+    const frac = (cycleT - t0) / (t1 - t0);
+
+    // Catmull-Rom spline: smooth velocity at each keyframe (no abrupt direction changes)
+    const p0 = values[i > 0 ? i - 1 : n - 1];
+    const p1 = values[i];
+    const p2 = values[i + 1 < n ? i + 1 : 0];
+    const p3 = values[i + 2 < n ? i + 2 : (i + 2) % n];
+    const tt = frac, tt2 = tt*tt, tt3 = tt2*tt;
+    const degrees = 0.5*((2*p1)+(-p0+p2)*tt+(2*p0-5*p1+4*p2-p3)*tt2+(-p0+3*p1-3*p2+p3)*tt3);
+    return degrees * Math.PI / 180;
+  }
+
+  function getSpineDataAtTime(boneName, t, axis = 'x_rot') {
+    if (!spineMotionData || !spineMotionData[boneName]) return 0;
+    const data = spineMotionData[boneName];
+    let times = data.times;
+    const values = data[axis];
+    if (!values || values.length === 0) return 0;
+
+    // Some bones (spine, neck, head) have only 2 time entries but 32 values.
+    // Generate uniform times from first to last when there's a mismatch.
+    if (values.length > times.length) {
+      const t0 = times[0], tN = times[times.length - 1];
+      times = [];
+      for (let k = 0; k < values.length; k++) {
+        times.push(t0 + (tN - t0) * k / (values.length - 1));
+      }
+    }
+
+    const cycleT = t % cycleDuration;
+    const firstTime = times[0];
+    const lastTime = times[times.length - 1];
+
+    if (cycleT < firstTime || cycleT > lastTime) {
+      const v0 = values[values.length - 1];
+      const v1 = values[0];
+      const t0 = lastTime;
+      const t1 = firstTime + cycleDuration;
+      const adjustedT = cycleT < firstTime ? cycleT + cycleDuration : cycleT;
+      const frac = (adjustedT - t0) / (t1 - t0);
+      return v0 + (v1 - v0) * clamp(frac,0,1);
+    }
+
+    let i = 0;
+    while (i < times.length - 1 && times[i + 1] < cycleT) i++;
+    const t0 = times[i], t1 = times[i + 1];
+    const v0 = values[i], v1 = values[i + 1];
+    const frac = (cycleT - t0) / (t1 - t0);
+    return v0 + (v1 - v0) * frac;
+  }
+
+  // ---------------- Position-based interpolation & limb IK ----------------
+
+  // Get hips-local joint position at time t (Catmull-Rom, cyclic)
+  // Returns [x, y, z] in hips-local cage-scale coordinates
+  function getJointPositionAtTime(jointName, t) {
+    if (!jointPosData || !jointPosData.joints[jointName]) return null;
+    const jd = jointPosData.joints[jointName];
+    const times = jd.times;
+    const positions = jd.positions;
+    const n = positions.length;
+    if (n === 0) return null;
+    if (n === 1) return positions[0].slice();
+
+    const duration = jointPosData.duration;
+    const cycleT = t % duration;
+
+    // Find bracketing frames
+    let i = 0;
+    while (i < n - 1 && times[i + 1] < cycleT) i++;
+
+    // Catmull-Rom with 4 control points (cyclic wrapping)
+    const i0 = (i - 1 + n) % n;
+    const i1 = i;
+    const i2 = (i + 1) % n;
+    const i3 = (i + 2) % n;
+
+    const t0 = times[i1];
+    const t1 = (i2 === 0) ? duration : times[i2];
+    let frac;
+    if (cycleT < t0) {
+      // Before first frame — interpolate from last to first
+      const tLast = times[n - 1];
+      frac = (cycleT + duration - tLast) / (times[0] + duration - tLast);
+      frac = Math.max(0, Math.min(1, frac));
+      // Use last→first segment
+      const p0 = positions[(n - 2 + n) % n];
+      const p1 = positions[n - 1];
+      const p2 = positions[0];
+      const p3 = positions[Math.min(1, n - 1)];
+      return catmullRomVec3(p0, p1, p2, p3, frac);
+    }
+
+    frac = (t1 > t0) ? (cycleT - t0) / (t1 - t0) : 0;
+    frac = Math.max(0, Math.min(1, frac));
+
+    return catmullRomVec3(positions[i0], positions[i1], positions[i2], positions[i3], frac);
+  }
+
+  function catmullRomVec3(p0, p1, p2, p3, t) {
+    const t2 = t * t, t3 = t2 * t;
+    const result = [0, 0, 0];
+    for (let c = 0; c < 3; c++) {
+      result[c] = 0.5 * (
+        (2 * p1[c]) +
+        (-p0[c] + p2[c]) * t +
+        (2*p0[c] - 5*p1[c] + 4*p2[c] - p3[c]) * t2 +
+        (-p0[c] + 3*p1[c] - 3*p2[c] + p3[c]) * t3
+      );
+    }
+    return result;
+  }
+
+  // Interpolate joint quaternion at time t using SLERP (cyclic)
+  function getJointQuaternionAtTime(jointName, t) {
+    if (!jointPosData || !jointPosData.joints[jointName]) return null;
+    const jd = jointPosData.joints[jointName];
+    const quats = jd.quaternions;
+    if (!quats || quats.length === 0) return null;
+    if (quats.length === 1) return quats[0].slice();
+
+    const times = jd.times;
+    const n = quats.length;
+    const duration = jointPosData.duration;
+    const cycleT = t % duration;
+
+    // Find bracketing frames
+    let i = 0;
+    while (i < n - 1 && times[i + 1] < cycleT) i++;
+
+    const i1 = i;
+    const i2 = (i + 1) % n;
+
+    const t0 = times[i1];
+    const t1 = (i2 === 0) ? duration : times[i2];
+    let frac;
+    if (cycleT < t0) {
+      const tLast = times[n - 1];
+      frac = (cycleT + duration - tLast) / (times[0] + duration - tLast);
+      frac = Math.max(0, Math.min(1, frac));
+      return quat_slerp(quats[n - 1], quats[0], frac);
+    }
+    frac = (t1 > t0) ? (cycleT - t0) / (t1 - t0) : 0;
+    frac = Math.max(0, Math.min(1, frac));
+    return quat_slerp(quats[i1], quats[i2], frac);
+  }
+
+  // Get twist angle for a bone at time t using quaternion swing-twist decomposition.
+  // boneName: the joint whose twist we want (e.g. 'l_shoulder')
+  // childName: the child joint, used to compute rest bone direction
+  function getJointTwistAtTime(boneName, childName, t) {
+    const curQ = getJointQuaternionAtTime(boneName, t);
+    if (!curQ || !jointPosData.rest_quats[boneName]) return 0;
+    const restQ = jointPosData.rest_quats[boneName];
+    // Bone direction from rest-pose positions (already X-mirrored & scaled)
+    const rp = jointPosData.rest_pose;
+    if (!rp[boneName] || !rp[childName]) return 0;
+    const boneDir = vnorm(vsub(rp[childName], rp[boneName]));
+    return extractQuatTwist(restQ, curQ, boneDir);
+  }
+
+  // Transform hips-local position to world via torso Kabsch transform
+  function hipsLocalToWorld(localPos, torsoR, torsoT) {
+    const w = mat3_mulVec3(torsoR, localPos[0], localPos[1], localPos[2]);
+    return [w[0] + torsoT[0], w[1] + torsoT[1], w[2] + torsoT[2]];
+  }
+
+  // Interpolate root (hips world) position at time t — for body bob/sway
+  function getRootPositionAtTime(t) {
+    if (!jointPosData || !jointPosData.root_positions) return null;
+    const rp = jointPosData.root_positions;
+    const n = rp.length;
+    if (n === 0) return null;
+    if (n === 1) return rp[0].slice();
+
+    const duration = jointPosData.duration;
+    const cycleT = t % duration;
+    const fps = jointPosData.fps;
+
+    const fExact = cycleT * fps;
+    const i1 = Math.min(Math.floor(fExact), n - 1);
+    const i2 = Math.min(i1 + 1, n - 1);
+    const frac = fExact - Math.floor(fExact);
+
+    return [
+      rp[i1][0] + (rp[i2][0] - rp[i1][0]) * frac,
+      rp[i1][1] + (rp[i2][1] - rp[i1][1]) * frac,
+      rp[i1][2] + (rp[i2][2] - rp[i1][2]) * frac
+    ];
+  }
+
+  // Helper: cross product
+  function vcross(a, b) {
+    return [
+      a[1]*b[2] - a[2]*b[1],
+      a[2]*b[0] - a[0]*b[2],
+      a[0]*b[1] - a[1]*b[0]
+    ];
+  }
+
+  // Stable bend axis: returns normalized cross product of two directions,
+  // falling back to previous frame's axis when the cross product is degenerate
+  // (near-straight or near-180° limb). Updates prevBendAxis[key] in-place.
+  function stableBendAxis(dir1, dir2, key, fallback) {
+    const c = vcross(dir1, dir2);
+    const len = vlen(c);
+    if (len > 1e-4) {
+      const axis = vnorm(c);
+      // Ensure consistent sign with previous frame (prevent 180° flips)
+      if (prevBendAxis[key] && vdot(axis, prevBendAxis[key]) < 0) {
+        const flipped = [-axis[0], -axis[1], -axis[2]];
+        prevBendAxis[key] = flipped;
+        return flipped;
+      }
+      prevBendAxis[key] = axis;
+      return axis;
+    }
+    // Degenerate: use previous frame or fallback
+    if (prevBendAxis[key]) return prevBendAxis[key];
+    return fallback || [0, 1, 0];
+  }
+
+  // Extract twist around a bone axis by comparing actual vs expected bend plane normals.
+  // The bend plane normal (cross product of parent and child bone directions) encodes
+  // the axial rotation that position-only retargeting misses (e.g. forearm pronation,
+  // thigh internal rotation). Returns signed twist angle in radians.
+  function extractBoneTwist(restBoneDir, curBoneDir, restChildDir, curChildDir) {
+    const restCross = vcross(restBoneDir, restChildDir);
+    const curCross = vcross(curBoneDir, curChildDir);
+
+    // Need both normals to be non-degenerate (bend > ~0.3°)
+    // T-pose always has a tiny natural bend, giving a clean reference
+    if (vlen(restCross) < 0.002 || vlen(curCross) < 0.05) return 0;
+
+    const restBendN = vnorm(restCross);
+    const curBendN = vnorm(curCross);
+
+    // Expected bend normal if NO twist occurred (just swing from rest to current)
+    const expectedBendN = applyDeltaRotation(restBoneDir, curBoneDir, restBendN);
+
+    // Project both onto plane perpendicular to current bone direction
+    const projE = vsub(expectedBendN, vscale(curBoneDir, vdot(expectedBendN, curBoneDir)));
+    const projC = vsub(curBendN, vscale(curBoneDir, vdot(curBendN, curBoneDir)));
+
+    if (vlen(projE) < 1e-6 || vlen(projC) < 1e-6) return 0;
+
+    const pE = vnorm(projE), pC = vnorm(projC);
+    const dotTw = Math.max(-1, Math.min(1, vdot(pE, pC)));
+    let twist = Math.acos(dotTw);
+    const crossTw = vcross(pE, pC);
+    if (vdot(crossTw, curBoneDir) < 0) twist = -twist;
+    return twist;
+  }
+
+  // For position-based driving: given target world positions of 3 joints,
+  // rotate cage vertices so the limb matches. Works by computing the full
+  // rotation chain: rest→T-pose→target for each segment.
+  //
+  // This replaces the Euler-based applyRotZ(tPose)+applyRotX(swing)+applyRotAxis(bend) chain.
+  function driveArmFromPositions_world(
+    shoulderW, elbowW, wristW,    // target world positions
+    shoulderRest,                   // rest-pose shoulder position [x,y,z]
+    restArmDir,                     // rest-pose arm direction (±X normalized)
+    upperLen, foreLen,              // segment lengths
+    upperIdx, foreIdx, handIdx      // cage vert index arrays
+  ) {
+    const allIdx = [].concat(upperIdx, foreIdx, handIdx || []);
+    const foreHandIdx = [].concat(foreIdx, handIdx || []);
+
+    // Target upper arm direction
+    const targetUpperDir = vnorm(vsub(elbowW, shoulderW));
+
+    // Rest-pose upper arm direction (from cage)
+    // The rest-pose arm points along restArmDir from shoulderRest
+    const restDir = restArmDir;
+
+    // Rotation from rest direction to target direction (axis-angle)
+    let axis1 = vcross(restDir, targetUpperDir);
+    const axis1Len = vlen(axis1);
+    const dot1 = Math.max(-1, Math.min(1, vdot(restDir, targetUpperDir)));
+    const angle1 = Math.acos(dot1);
+
+    if (axis1Len > 1e-6 && Math.abs(angle1) > 1e-4) {
+      axis1 = vnorm(axis1);
+      applyRotAxis(allIdx, shoulderRest, axis1[0], axis1[1], axis1[2], angle1);
+    }
+
+    // Elbow pivot after upper rotation
+    const elbowPivot = [
+      shoulderRest[0] + targetUpperDir[0] * upperLen,
+      shoulderRest[1] + targetUpperDir[1] * upperLen,
+      shoulderRest[2] + targetUpperDir[2] * upperLen
+    ];
+
+    // Forearm bend: angle between upper and lower segments
+    const targetLowerDir = vnorm(vsub(wristW, elbowW));
+    const dotBend = Math.max(-1, Math.min(1, vdot(targetUpperDir, targetLowerDir)));
+    const bendAngle = Math.acos(dotBend);
+
+    if (Math.abs(bendAngle) > 1e-4) {
+      let bendAxis = vcross(targetUpperDir, targetLowerDir);
+      if (vlen(bendAxis) < 1e-6) {
+        // Try two perpendicular directions; at least one won't be parallel
+        bendAxis = vcross(targetUpperDir, [0, 1, 0]);
+        if (vlen(bendAxis) < 1e-6) bendAxis = vcross(targetUpperDir, [1, 0, 0]);
+        if (vlen(bendAxis) < 1e-6) bendAxis = vcross(targetUpperDir, [0, 0, 1]);
+      }
+      bendAxis = vnorm(bendAxis);
+      applyRotAxis(foreHandIdx, elbowPivot, bendAxis[0], bendAxis[1], bendAxis[2], bendAngle);
+    }
+
+    // Wrist pivot after all rotations
+    const wristPivot = [
+      elbowPivot[0] + targetLowerDir[0] * foreLen,
+      elbowPivot[1] + targetLowerDir[1] * foreLen,
+      elbowPivot[2] + targetLowerDir[2] * foreLen
+    ];
+
+    return {
+      shoulderPivot: shoulderRest,
+      elbowPivot,
+      wristPivot,
+      upperDir: targetUpperDir,
+      lowerDir: targetLowerDir,
+      bendAngle,
+      bendAxis: (Math.abs(bendAngle) > 1e-4) ? vnorm(vcross(targetUpperDir, targetLowerDir)) : [0,1,0]
+    };
+  }
+
+  // Drive a leg from positions: hip→knee→ankle, plus foot
+  function driveLegFromPositions_world(
+    hipW, kneeW, ankleW,
+    hipRest, restLegDir,
+    thighLen, shinLen,
+    thighIdx, shinIdx, footIdx
+  ) {
+    const allIdx = [].concat(thighIdx, shinIdx, footIdx);
+    const shinFootIdx = [].concat(shinIdx, footIdx);
+
+    // Target thigh direction
+    const targetThighDir = vnorm(vsub(kneeW, hipW));
+    const restDir = restLegDir; // should be [0, -1, 0] (straight down)
+
+    // Rotation from rest to target for whole leg
+    let axis1 = vcross(restDir, targetThighDir);
+    const axis1Len = vlen(axis1);
+    const dot1 = Math.max(-1, Math.min(1, vdot(restDir, targetThighDir)));
+    const angle1 = Math.acos(dot1);
+
+    if (axis1Len > 1e-6 && Math.abs(angle1) > 1e-4) {
+      axis1 = vnorm(axis1);
+      applyRotAxis(allIdx, hipRest, axis1[0], axis1[1], axis1[2], angle1);
+    }
+
+    // Knee pivot
+    const kneePivot = [
+      hipRest[0] + targetThighDir[0] * thighLen,
+      hipRest[1] + targetThighDir[1] * thighLen,
+      hipRest[2] + targetThighDir[2] * thighLen
+    ];
+
+    // Shin bend
+    const targetShinDir = vnorm(vsub(ankleW, kneeW));
+    const dotBend = Math.max(-1, Math.min(1, vdot(targetThighDir, targetShinDir)));
+    const bendAngle = Math.acos(dotBend);
+
+    if (Math.abs(bendAngle) > 1e-4) {
+      let bendAxis = vcross(targetThighDir, targetShinDir);
+      if (vlen(bendAxis) < 1e-6) {
+        bendAxis = [1, 0, 0]; // default: bend forward
+      }
+      bendAxis = vnorm(bendAxis);
+      applyRotAxis(shinFootIdx, kneePivot, bendAxis[0], bendAxis[1], bendAxis[2], bendAngle);
+    }
+
+    const anklePivot = [
+      kneePivot[0] + targetShinDir[0] * shinLen,
+      kneePivot[1] + targetShinDir[1] * shinLen,
+      kneePivot[2] + targetShinDir[2] * shinLen
+    ];
+
+    return {
+      hipPivot: hipRest, kneePivot, anklePivot,
+      thighDir: targetThighDir, shinDir: targetShinDir,
+      bendAngle
+    };
+  }
+
+  // ---------------- Cage -> Mesh deformation (Kabsch rigid-per-region) ----------------
+  let lastRegionTransforms = null; // cached for debug logging
+  let armDiagDone = false;         // one-shot arm comparison diagnostic
+
+  // Region color map for debug visualization
+  const REGION_COLORS = {
+    0:  [0.5, 0.5, 0.5],  // torso: gray
+    1:  [1.0, 0.5, 0.0],  // l_thigh: orange
+    2:  [1.0, 0.5, 0.0],  // r_thigh: orange
+    3:  [0.0, 1.0, 1.0],  // l_shin: cyan
+    4:  [0.0, 1.0, 1.0],  // r_shin: cyan
+    5:  [1.0, 0.0, 1.0],  // l_foot: magenta
+    6:  [1.0, 0.0, 1.0],  // r_foot: magenta
+    7:  [1.0, 0.0, 0.0],  // l_upperarm: red
+    8:  [1.0, 0.0, 0.0],  // r_upperarm: red
+    9:  [0.0, 1.0, 0.0],  // l_forearm: green
+    10: [0.0, 1.0, 0.0],  // r_forearm: green
+    11: [1.0, 1.0, 1.0],  // head: white
+    12: [1.0, 1.0, 0.0],  // l_hand: yellow
+    13: [1.0, 1.0, 0.0],  // r_hand: yellow
+  };
+
+  function deformMesh(){
+    if (!meshVertRegions) return;
+    const alpha = +$('alpha').value;
+    const pos = meshGeo.attributes.position.array;
+    const nMesh = meshRestPos.length / 3;
+
+    // Debug region coloring
+    const debugRegions = $('debugRegions').checked;
+    const colors = meshGeo.attributes.color ? meshGeo.attributes.color.array : null;
+    if (meshObj) {
+      meshObj.material.vertexColors = debugRegions;
+      meshObj.material.needsUpdate = true;
+    }
+
+    // Compute best-fit rigid transform per region from current cage state
+    const transforms = computeAllRegionTransforms();
+    lastRegionTransforms = transforms;
+
+    // One-shot diagnostic: dump all Kabsch transforms
+    if (window._posDiagDone && !window._kabschDiagDone) {
+      window._kabschDiagDone = true;
+      const posMode = armState && armState.positionBased;
+      console.log('=== REGION TRANSFORMS (posMode=' + posMode + ', arms=analytical) ===');
+      const regionNames = {0:'torso',1:'l_thigh',2:'r_thigh',3:'l_shin',4:'r_shin',5:'l_foot',6:'r_foot',7:'l_uarm',8:'r_uarm',9:'l_farm',10:'r_farm',11:'head',12:'l_hand',13:'r_hand'};
+      for (let r = 0; r <= 13; r++) {
+        const tf = transforms[r];
+        if (!tf) { console.log('  ' + (regionNames[r]||r) + ': MISSING'); continue; }
+        const det = mat3_det(tf.R);
+        const tMag = Math.sqrt(tf.t[0]*tf.t[0]+tf.t[1]*tf.t[1]+tf.t[2]*tf.t[2]);
+        const hasNaN = Array.from(tf.R).some(v=>isNaN(v)) || tf.t.some(v=>isNaN(v));
+        console.log('  ' + (regionNames[r]||r) + ': det=' + det.toFixed(4) + ' |t|=' + tMag.toFixed(4) + ' t=[' + tf.t.map(v=>v.toFixed(4)).join(',') + ']' + (hasNaN?' NaN!':''));
+      }
+    }
+
+    const useDQS = $('useDQS').checked;
+    const hardRegions = $('hardRegions').checked;
+
+    // Pre-convert each region's (R, t) to dual quaternion once per frame (DQS mode)
+    const regionDQs = {};
+    if (useDQS && !hardRegions) {
+      for (const rid in transforms) {
+        const tf = transforms[rid];
+        if (!tf) continue;
+        const q = mat3_to_quat(tf.R);
+        regionDQs[rid] = rigid_to_dq(q, tf.t);
+      }
+    }
+
+    for (let i = 0; i < nMesh; i++) {
+      const rx = meshRestPos[i*3];
+      const ry = meshRestPos[i*3+1];
+      const rz = meshRestPos[i*3+2];
+
+      const entries = meshVertRegions[i]; // flat pairs: [rid, w, rid, w, ...]
+      let dominantRid = 0, dominantW = -1;
+      // Find dominant region first (needed for hard mode and debug color)
+      for (let e = 0; e < entries.length; e += 2) {
+        if (entries[e + 1] > dominantW) { dominantRid = entries[e]; dominantW = entries[e + 1]; }
+      }
+      let px, py, pz;
+
+      if (hardRegions) {
+        // --- Hard assignment: dominant region only, zero blending ---
+        const tf = transforms[dominantRid];
+        if (tf) {
+          const R = tf.R, t = tf.t;
+          px = R[0]*rx + R[1]*ry + R[2]*rz + t[0];
+          py = R[3]*rx + R[4]*ry + R[5]*rz + t[1];
+          pz = R[6]*rx + R[7]*ry + R[8]*rz + t[2];
+        } else { px = rx; py = ry; pz = rz; }
+      } else if (useDQS) {
+        // --- DQS blend ---
+        let bqr0 = 0, bqr1 = 0, bqr2 = 0, bqr3 = 0;
+        let bqd0 = 0, bqd1 = 0, bqd2 = 0, bqd3 = 0;
+        let firstQr = null;
+
+        for (let e = 0; e < entries.length; e += 2) {
+          const rid = entries[e];
+          const w   = entries[e + 1];
+          if (w > dominantW) { dominantRid = rid; dominantW = w; }
+          const dq  = regionDQs[rid];
+          if (!dq) continue;
+
+          let qr = dq.qr, qd = dq.qd;
+
+          // Hemisphere check: flip sign if this DQ's real part
+          // points opposite to the first one (prevents interpolation artifacts)
+          if (!firstQr) {
+            firstQr = qr;
+          } else {
+            const dot = firstQr[0]*qr[0] + firstQr[1]*qr[1] + firstQr[2]*qr[2] + firstQr[3]*qr[3];
+            if (dot < 0) {
+              qr = [-qr[0], -qr[1], -qr[2], -qr[3]];
+              qd = [-qd[0], -qd[1], -qd[2], -qd[3]];
+            }
+          }
+
+          bqr0 += w * qr[0]; bqr1 += w * qr[1]; bqr2 += w * qr[2]; bqr3 += w * qr[3];
+          bqd0 += w * qd[0]; bqd1 += w * qd[1]; bqd2 += w * qd[2]; bqd3 += w * qd[3];
+        }
+
+        // Normalize blended DQ by real part length
+        const len = Math.sqrt(bqr0*bqr0 + bqr1*bqr1 + bqr2*bqr2 + bqr3*bqr3);
+        if (len < 1e-8) {
+          px = rx; py = ry; pz = rz;
+        } else {
+          const inv = 1.0 / len;
+          const nqr = [bqr0*inv, bqr1*inv, bqr2*inv, bqr3*inv];
+          const nqd = [bqd0*inv, bqd1*inv, bqd2*inv, bqd3*inv];
+          const p = dq_apply(nqr, nqd, rx, ry, rz);
+          px = p[0]; py = p[1]; pz = p[2];
+        }
+      } else {
+        // --- LBS blend ---
+        px = 0; py = 0; pz = 0;
+        for (let e = 0; e < entries.length; e += 2) {
+          const rid = entries[e];
+          const w   = entries[e + 1];
+          if (w > dominantW) { dominantRid = rid; dominantW = w; }
+          const tf  = transforms[rid];
+          if (!tf) continue;
+          const R = tf.R, t = tf.t;
+          px += w * (R[0]*rx + R[1]*ry + R[2]*rz + t[0]);
+          py += w * (R[3]*rx + R[4]*ry + R[5]*rz + t[1]);
+          pz += w * (R[6]*rx + R[7]*ry + R[8]*rz + t[2]);
+        }
+      }
+
+      // Lerp with alpha stiffness (0 = rest, 1 = fully deformed)
+      pos[i*3]   = rx + alpha * (px - rx);
+      pos[i*3+1] = ry + alpha * (py - ry);
+      pos[i*3+2] = rz + alpha * (pz - rz);
+
+      // Set debug color from dominant region
+      if (debugRegions && colors) {
+        const c = REGION_COLORS[dominantRid] || [0.5, 0.5, 0.5];
+        colors[i*3]   = c[0];
+        colors[i*3+1] = c[1];
+        colors[i*3+2] = c[2];
+      }
+    }
+
+    meshGeo.attributes.position.needsUpdate = true;
+    if (debugRegions && colors) meshGeo.attributes.color.needsUpdate = true;
+    meshGeo.computeVertexNormals();
+  }
+
+  function updateCageMesh(){
+    if(!cageMesh) return;
+    const arr = cageMesh.geometry.attributes.position.array;
+    for(let i=0;i<cageRest.length;i++){
+      arr[i*3]   = cagePos[i*3];
+      arr[i*3+1] = cagePos[i*3+1];
+      arr[i*3+2] = cagePos[i*3+2];
+    }
+    cageMesh.geometry.attributes.position.needsUpdate = true;
+  }
+
+  function applyCageSmoothing(){
+    if(!ENABLE_CAGE_SMOOTHING || CAGE_SMOOTHING <= 0) return;
+    if(!cageSmoothed || cageSmoothed.length !== cagePos.length){
+      cageSmoothed = new Float32Array(cagePos.length);
+      cageSmoothed.set(cagePos);
+    }
+    const s = clamp(CAGE_SMOOTHING, 0, 1);
+    for(let i=0;i<cagePos.length;i++){
+      cageSmoothed[i] = cageSmoothed[i] * (1 - s) + cagePos[i] * s;
+      cagePos[i] = cageSmoothed[i];
+    }
+  }
+
+  // ---------------- Foot plant correction ----------------
+  function footLockCorrection(t){
+    const plantStrength = +$('plant').value;
+    if(plantStrength <= 0) { lockL=null; lockR=null; return; }
+
+    const stanceThresh = +$('stanceKnee').value; // degrees
+    const lKdeg = Math.abs(getRotationAtTime('l_knee', t, 'x_rot') * 180/Math.PI);
+    const rKdeg = Math.abs(getRotationAtTime('r_knee', t, 'x_rot') * 180/Math.PI);
+
+    const lStance = lKdeg < stanceThresh;
+    const rStance = rKdeg < stanceThresh;
+
+    const lFootC = regionCenter(R.l_foot);
+    const rFootC = regionCenter(R.r_foot);
+
+    if(lStance && !lockL) lockL = lFootC.slice();
+    if(!lStance) lockL = null;
+
+    if(rStance && !lockR) lockR = rFootC.slice();
+    if(!rStance) lockR = null;
+
+    if(lockL){
+      const dx = (lockL[0]-lFootC[0]) * plantStrength;
+      const dy = (lockL[1]-lFootC[1]) * plantStrength;
+      const dz = (lockL[2]-lFootC[2]) * plantStrength;
+      translate([].concat(R.l_thigh, R.l_shin, R.l_foot), dx,dy,dz);
+    }
+    if(lockR){
+      const dx = (lockR[0]-rFootC[0]) * plantStrength;
+      const dy = (lockR[1]-rFootC[1]) * plantStrength;
+      const dz = (lockR[2]-rFootC[2]) * plantStrength;
+      translate([].concat(R.r_thigh, R.r_shin, R.r_foot), dx,dy,dz);
+    }
+  }
+
+  // ---------------- Cage driver: Mixamo -> cage ----------------
+  function driveCageFromMixamo(t){
+    // Spine direction (hoisted for head correction — set in position-mode body rotation)
+    let restSpineDir = [0, 1, 0], curSpineDir = [0, 1, 0];
+    // reset cage to rest
+    for(let i=0;i<cageRest.length;i++){
+      cagePos[i*3]=cageRest[i][0];
+      cagePos[i*3+1]=cageRest[i][1];
+      cagePos[i*3+2]=cageRest[i][2];
+    }
+
+    // All cage vertex indices for body-wide transforms
+    const allIdx = [].concat(
+      R.torso,
+      R.l_thigh, R.r_thigh,
+      R.l_shin, R.r_shin,
+      R.l_foot, R.r_foot,
+      R.l_upperarm, R.r_upperarm,
+      R.l_forearm, R.r_forearm,
+      R.l_hand || [], R.r_hand || [],
+      R.head
+    );
+
+    // ----- BODY motion (affects everything) -----
+    if ($('enableBody').checked && P.pelvis) {
+      if (jointPosData) {
+        // Position mode: body ROTATIONS are already embedded in the hips-centered
+        // joint positions (we only subtracted translation, not rotation).
+        // Only apply pelvis TRANSLATION delta (bob/sway) from FBX root positions.
+        const rootPos = getRootPositionAtTime(t);
+        const restRoot = jointPosData.root_positions[0];
+        if (rootPos && restRoot) {
+          const hipBobScale = +$('hipBob').value;
+          const hipSwayScale = +$('hipSway').value;
+          const dy = (rootPos[1] - restRoot[1]) * hipBobScale;
+          const dx = (rootPos[0] - restRoot[0]) * hipSwayScale;
+          const dz = (rootPos[2] - restRoot[2]) * hipSwayScale;
+          translate(allIdx, dx, dy, dz);
+        }
+      } else if (spineMotionData) {
+        // Euler fallback: body motion from spine_keyframes.json
+        const hipBobScale = +$('hipBob').value;
+        const hipSwayScale = +$('hipSway').value;
+        const forwardLean = +$('forwardLean').value * Math.PI/180;
+        const spineTwistScale = +$('spineTwist').value;
+
+        const rawBob = getSpineDataAtTime('hips', t, 'y_trans');
+        const hipBob = (rawBob - 0.4) * hipBobScale;
+
+        const hipSwayZ = getSpineDataAtTime('hips', t, 'z_rot') * Math.PI/180 * hipSwayScale;
+        const hipTwistY = getSpineDataAtTime('hips', t, 'y_rot') * Math.PI/180 * hipSwayScale;
+        const spineTwist = getSpineDataAtTime('spine1', t, 'y_rot') * Math.PI/180 * spineTwistScale;
+
+        applyRotX(allIdx, P.pelvis, forwardLean);
+        applyRotZ(allIdx, P.pelvis, hipSwayZ);
+        applyRotY(allIdx, P.pelvis, hipTwistY);
+        translate(allIdx, 0, hipBob, 0);
+
+        // upper body counter twist (torso + head + arms)
+        const upperIdx = [].concat(R.torso, R.head, R.l_upperarm, R.r_upperarm, R.l_forearm, R.r_forearm, R.l_hand || [], R.r_hand || []);
+        const spineP = [P.pelvis[0], P.pelvis[1]+0.10, P.pelvis[2]];
+        applyRotY(upperIdx, spineP, spineTwist);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // POSITION-BASED DRIVING (when joint_positions.json is loaded)
+    // Bypasses all Euler decomposition — uses hips-local joint positions
+    // directly, with 2-segment IK for each limb.
+    // ═══════════════════════════════════════════════════════════
+    if (jointPosData) {
+      // Get hips-local positions for all joints at time t
+      const jp = {};
+      for (const jn of Object.keys(jointPosData.joints)) {
+        jp[jn] = getJointPositionAtTime(jn, t);
+      }
+
+      // --- Body rotation from FBX spine direction ---
+      // Compute rotation from rest spine direction to current spine direction.
+      // Apply to ALL cage verts so torso Kabsch shares body rotation with limbs,
+      // preventing transform discontinuity at body-limb boundaries.
+      let bodyAxis = [0, 1, 0], bodyAngle = 0;
+      const rpChest = jointPosData.rest_pose.chest;
+      const rpPelvis = jointPosData.rest_pose.pelvis || [0, 0, 0];
+      if (rpChest && jp.chest) {
+        restSpineDir = vnorm(vsub(rpChest, rpPelvis));
+        curSpineDir = vnorm(vsub(jp.chest, jp.pelvis || [0, 0, 0]));
+        const bAxis = vcross(restSpineDir, curSpineDir);
+        const bAxisLen = vlen(bAxis);
+        const bDot = Math.max(-1, Math.min(1, vdot(restSpineDir, curSpineDir)));
+        bodyAngle = Math.acos(bDot);
+        if (bAxisLen > 1e-6 && Math.abs(bodyAngle) > 1e-4) {
+          bodyAxis = vnorm(bAxis);
+          applyRotAxis(allIdx, P.pelvis, bodyAxis[0], bodyAxis[1], bodyAxis[2], bodyAngle);
+        } else {
+          bodyAngle = 0;
+        }
+      }
+
+      // --- Spine twist from shoulder axis ---
+      // After lean, extract the twist component: rotation around the spine axis
+      // detected from the change in shoulder-to-shoulder direction.
+      let twistAngle = 0;
+      const rpLS_tw = jointPosData.rest_pose.l_shoulder;
+      const rpRS_tw = jointPosData.rest_pose.r_shoulder;
+      if (rpLS_tw && rpRS_tw && jp.l_shoulder && jp.r_shoulder) {
+        const restShAxis = vnorm(vsub(rpRS_tw, rpLS_tw));
+        const curShAxis = vnorm(vsub(jp.r_shoulder, jp.l_shoulder));
+        // Lean-rotate the rest shoulder axis
+        let leanedRestSh = restShAxis;
+        if (Math.abs(bodyAngle) > 1e-4) {
+          const r = rotateAroundAxis(restShAxis[0], restShAxis[1], restShAxis[2], 0, 0, 0,
+            bodyAxis[0], bodyAxis[1], bodyAxis[2], bodyAngle);
+          leanedRestSh = vnorm(r);
+        }
+        // Project both onto plane perpendicular to current spine direction
+        const dotR = vdot(leanedRestSh, curSpineDir);
+        const dotC = vdot(curShAxis, curSpineDir);
+        let projR = vsub(leanedRestSh, vscale(curSpineDir, dotR));
+        let projC = vsub(curShAxis, vscale(curSpineDir, dotC));
+        if (vlen(projR) > 1e-6 && vlen(projC) > 1e-6) {
+          projR = vnorm(projR);
+          projC = vnorm(projC);
+          const dotP = Math.max(-1, Math.min(1, vdot(projR, projC)));
+          twistAngle = Math.acos(dotP);
+          const cross = vcross(projR, projC);
+          if (vdot(cross, curSpineDir) < 0) twistAngle = -twistAngle;
+          // Apply twist scale from UI slider
+          const twistScale = +$('spineTwist').value;
+          twistAngle *= twistScale;
+        }
+      }
+      // Apply spine twist to upper body cage verts only (not legs)
+      if (Math.abs(twistAngle) > 1e-4) {
+        const upperIdx = [].concat(R.torso, R.head,
+          R.l_upperarm, R.r_upperarm, R.l_forearm, R.r_forearm,
+          R.l_hand || [], R.r_hand || []);
+        applyRotAxis(upperIdx, P.pelvis, curSpineDir[0], curSpineDir[1], curSpineDir[2], twistAngle);
+      }
+
+      // --- Hip twist from hip-to-hip axis ---
+      // Same approach as spine twist but from pelvis rotation detected via hip joint axis.
+      // Applied to lower body only (thighs, shins, feet).
+      let hipTwistAngle = 0;
+      const rpLH_tw = jointPosData.rest_pose.l_hip;
+      const rpRH_tw = jointPosData.rest_pose.r_hip;
+      if (rpLH_tw && rpRH_tw && jp.l_hip && jp.r_hip) {
+        const restHipAxis = vnorm(vsub(rpRH_tw, rpLH_tw));
+        const curHipAxis = vnorm(vsub(jp.r_hip, jp.l_hip));
+        let leanedRestHip = restHipAxis;
+        if (Math.abs(bodyAngle) > 1e-4) {
+          const r = rotateAroundAxis(restHipAxis[0], restHipAxis[1], restHipAxis[2], 0, 0, 0,
+            bodyAxis[0], bodyAxis[1], bodyAxis[2], bodyAngle);
+          leanedRestHip = vnorm(r);
+        }
+        const dotR = vdot(leanedRestHip, curSpineDir);
+        const dotC = vdot(curHipAxis, curSpineDir);
+        let projR = vsub(leanedRestHip, vscale(curSpineDir, dotR));
+        let projC = vsub(curHipAxis, vscale(curSpineDir, dotC));
+        if (vlen(projR) > 1e-6 && vlen(projC) > 1e-6) {
+          projR = vnorm(projR);
+          projC = vnorm(projC);
+          const dotP = Math.max(-1, Math.min(1, vdot(projR, projC)));
+          hipTwistAngle = Math.acos(dotP);
+          const cross = vcross(projR, projC);
+          if (vdot(cross, curSpineDir) < 0) hipTwistAngle = -hipTwistAngle;
+          const twistScale = +$('spineTwist').value;
+          hipTwistAngle *= twistScale;
+        }
+      }
+      // Apply hip twist to lower body cage verts
+      if (Math.abs(hipTwistAngle) > 1e-4) {
+        const lowerIdx = [].concat(R.l_thigh, R.r_thigh, R.l_shin, R.r_shin, R.l_foot, R.r_foot);
+        applyRotAxis(lowerIdx, P.pelvis, curSpineDir[0], curSpineDir[1], curSpineDir[2], hipTwistAngle);
+      }
+
+      // Helper: rotate a direction vector by body rotation (lean + twist).
+      // Uses spine twist for upper body (arms), hip twist for lower body (legs).
+      function bodyRotDir(dir, isLeg) {
+        let d = dir;
+        if (Math.abs(bodyAngle) > 1e-4) {
+          const r = rotateAroundAxis(d[0], d[1], d[2], 0, 0, 0,
+            bodyAxis[0], bodyAxis[1], bodyAxis[2], bodyAngle);
+          d = vnorm(r);
+        }
+        const tw = isLeg ? hipTwistAngle : twistAngle;
+        if (Math.abs(tw) > 1e-4) {
+          const r = rotateAroundAxis(d[0], d[1], d[2], 0, 0, 0,
+            curSpineDir[0], curSpineDir[1], curSpineDir[2], tw);
+          d = vnorm(r);
+        }
+        return d;
+      }
+
+      // One-shot diagnostic: log sample FBX positions at first frame
+      if (!window._posDiagDone) {
+        window._posDiagDone = true;
+        console.log('=== POS-DRIVE DIAGNOSTIC at t=' + t.toFixed(3) + ' ===');
+        console.log('Body rotation: angle=' + (bodyAngle * 180 / Math.PI).toFixed(2) + '° axis=[' + bodyAxis.map(v=>v.toFixed(3)).join(',') + ']');
+        console.log('Spine twist: angle=' + (twistAngle * 180 / Math.PI).toFixed(2) + '°');
+        console.log('Hip twist: angle=' + (hipTwistAngle * 180 / Math.PI).toFixed(2) + '°');
+        console.log('FBX joint positions (hips-centered, X-mirrored):');
+        for (const jn of ['pelvis','l_hip','l_knee','l_ankle','r_hip','r_knee','r_ankle','l_shoulder','l_elbow','l_wrist','r_shoulder','r_elbow','r_wrist','chest','neck','head']) {
+          if (jp[jn]) console.log('  ' + jn + ': [' + jp[jn].map(v => v.toFixed(4)).join(', ') + ']');
+        }
+        console.log('Cage pivots (rest pose):');
+        for (const pn of ['pelvis','l_hip','l_knee','l_ankle','r_hip','r_knee','r_ankle','l_shoulder','l_elbow','l_wrist','r_shoulder','r_elbow','r_wrist','neck','head']) {
+          if (P[pn]) console.log('  P.' + pn + ': [' + P[pn].map(v => v.toFixed(4)).join(', ') + ']');
+        }
+        // Root position delta
+        const rootPos = getRootPositionAtTime(t);
+        const restRoot = jointPosData.root_positions[0];
+        if (rootPos && restRoot) {
+          console.log('Root pos at t: [' + rootPos.map(v=>v.toFixed(4)).join(', ') + ']');
+          console.log('Root pos rest: [' + restRoot.map(v=>v.toFixed(4)).join(', ') + ']');
+          console.log('Root delta: [' + [rootPos[0]-restRoot[0], rootPos[1]-restRoot[1], rootPos[2]-restRoot[2]].map(v=>v.toFixed(4)).join(', ') + ']');
+        }
+        // Leg directions + delta retargeting info (now using T-pose as rest)
+        if (jp.l_hip && jp.l_knee) {
+          const fbxCur = vnorm(vsub(jp.l_knee, jp.l_hip));
+          const fpLH = jointPosData.rest_pose.l_hip, fpLK = jointPosData.rest_pose.l_knee;
+          const fbxTpose = fpLH && fpLK ? vnorm(vsub(fpLK, fpLH)) : null;
+          console.log('FBX l_thigh T-pose: [' + (fbxTpose ? fbxTpose.map(v=>v.toFixed(4)).join(', ') : 'N/A') + ']');
+          console.log('FBX l_thigh cur:    [' + fbxCur.map(v=>v.toFixed(4)).join(', ') + ']');
+          if (fbxTpose) {
+            const deltaAng = Math.acos(Math.max(-1, Math.min(1, vdot(fbxTpose, fbxCur)))) * 180/Math.PI;
+            console.log('FBX l_thigh delta (from T-pose): ' + deltaAng.toFixed(1) + '°');
+          }
+        }
+        const restLegDirL = P.l_knee ? vnorm(vsub(P.l_knee, P.l_hip)) : null;
+        if (restLegDirL) console.log('Cage rest leg dir L: [' + restLegDirL.map(v=>v.toFixed(4)).join(', ') + ']');
+        // Show retargeted result
+        if (jp.l_hip && jp.l_knee && restLegDirL) {
+          const fpLH = jointPosData.rest_pose.l_hip, fpLK = jointPosData.rest_pose.l_knee;
+          if (fpLH && fpLK) {
+            const fbxTpose = vnorm(vsub(fpLK, fpLH));
+            const fbxCur = vnorm(vsub(jp.l_knee, jp.l_hip));
+            const retargeted = applyDeltaRotation(fbxTpose, fbxCur, restLegDirL);
+            const retargetAng = Math.acos(Math.max(-1, Math.min(1, vdot(restLegDirL, retargeted)))) * 180/Math.PI;
+            console.log('Retargeted l_thigh dir: [' + retargeted.map(v=>v.toFixed(4)).join(', ') + '] (delta=' + retargetAng.toFixed(1) + '° from cage rest)');
+          }
+        }
+        // Show knee bend angles from FBX and cage rest (to verify fix)
+        if (jp.l_hip && jp.l_knee && jp.l_ankle) {
+          const thighD = vnorm(vsub(jp.l_knee, jp.l_hip));
+          const shinD = vnorm(vsub(jp.l_ankle, jp.l_knee));
+          const kneeBend = Math.acos(Math.max(-1, Math.min(1, vdot(thighD, shinD)))) * 180/Math.PI;
+          console.log('FBX l_knee bend angle: ' + kneeBend.toFixed(1) + '°');
+          // Cage rest knee angle (should be used as reference, NOT added to animation bend)
+          const cThighD = vnorm(vsub(P.l_knee, P.l_hip));
+          const cShinD = vnorm(vsub(P.l_ankle, P.l_knee));
+          const cageKnee = Math.acos(Math.max(-1, Math.min(1, vdot(cThighD, cShinD)))) * 180/Math.PI;
+          console.log('Cage rest L knee angle: ' + cageKnee.toFixed(1) + '° (NOT added to FBX bend)');
+          const cThighDR = vnorm(vsub(P.r_knee, P.r_hip));
+          const cShinDR = vnorm(vsub(P.r_ankle, P.r_knee));
+          const cageKneeR = Math.acos(Math.max(-1, Math.min(1, vdot(cThighDR, cShinDR)))) * 180/Math.PI;
+          console.log('Cage rest R knee angle: ' + cageKneeR.toFixed(1) + '°');
+        }
+      }
+
+      // Update FBX joint debug spheres: show FBX skeleton mapped to cage space.
+      // Each FBX joint is hips-centered, so we place it at P.pelvis + jp[joint].
+      // If the skeleton matches the cage, spheres align with mesh joints.
+      const showFBXJoints = $('debugFBXJoints').checked;
+      const pelvis = P.pelvis || [0, 0, 0];
+      for (const jn of fbxJointNames) {
+        const s = fbxJointSpheres[jn];
+        if (!s) continue;
+        if (showFBXJoints && jp[jn]) {
+          s.position.set(
+            pelvis[0] + jp[jn][0],
+            pelvis[1] + jp[jn][1],
+            pelvis[2] + jp[jn][2]
+          );
+          s.visible = true;
+        } else {
+          s.visible = false;
+        }
+      }
+
+      // ----- LEGS from positions (DELTA RETARGETED) -----
+      // Uses T-pose bind pose as FBX rest reference. Computes animation deltas
+      // (T-pose → current frame) and applies them to cage rest directions.
+      // This preserves the cage's own proportions while transferring the animation.
+      const rp = jointPosData.rest_pose;  // T-pose (bind pose) positions
+
+      let lThighTwist = 0, rThighTwist = 0;
+
+      if (jp.l_hip && jp.l_knee && jp.l_ankle
+          && vlen(vsub(P.l_knee, P.l_hip)) > 1e-6 && vlen(vsub(P.l_ankle, P.l_knee)) > 1e-6) {
+        const restLegDirL = bodyRotDir(vnorm(vsub(P.l_knee, P.l_hip)), true);
+        const lThighLen = vlen(vsub(P.l_knee, P.l_hip));
+        const lShinLen  = vlen(vsub(P.l_ankle, P.l_knee));
+
+        // FBX T-pose (bind) thigh direction
+        const fbxTPoseThighL = vnorm(vsub(rp.l_knee, rp.l_hip));
+
+        // FBX current (animated) directions
+        const fbxCurThighL = vnorm(vsub(jp.l_knee, jp.l_hip));
+        const fbxCurShinL  = vnorm(vsub(jp.l_ankle, jp.l_knee));
+
+        // Thigh twist — extracted but NOT applied (diagnostic only for now)
+        // lThighTwist = getJointTwistAtTime('l_hip', 'l_knee', t);
+
+        // Delta-retarget THIGH: apply (T-pose → current) rotation to cage rest thigh
+        const targetThighDirL = applyDeltaRotation(fbxTPoseThighL, fbxCurThighL, restLegDirL);
+
+        // KNEE BEND: use FBX animation's knee bend angle directly (NOT delta-retarget shin).
+        // The cage has pre-existing knee angles in rest pose (up to 48° on left leg!).
+        // Independently retargeting shin would ADD FBX bend on top of cage rest angle.
+        // Instead: take FBX knee bend angle + map bend axis to cage frame.
+        const fbxKneeBendL = Math.acos(Math.max(-1, Math.min(1, vdot(fbxCurThighL, fbxCurShinL))));
+        const fbxKneeBendAxisL = stableBendAxis(fbxCurThighL, fbxCurShinL, 'lKnee', [1, 0, 0]);
+
+        // Map FBX bend axis to cage thigh frame
+        const cageKneeBendAxisL = applyDeltaRotation(fbxCurThighL, targetThighDirL, fbxKneeBendAxisL);
+
+        // Compute shin direction by bending from retargeted thigh direction
+        let targetShinDirL = targetThighDirL;
+        if (Math.abs(fbxKneeBendL) > 1e-4) {
+          const rf = rotateAroundAxis(targetThighDirL[0], targetThighDirL[1], targetThighDirL[2],
+            0, 0, 0, cageKneeBendAxisL[0], cageKneeBendAxisL[1], cageKneeBendAxisL[2], fbxKneeBendL);
+          targetShinDirL = vnorm(rf);
+        }
+
+        // Construct target positions using cage segment lengths
+        const lKneeW  = vadd(P.l_hip, vscale(targetThighDirL, lThighLen));
+        const lAnkleW = vadd(lKneeW, vscale(targetShinDirL, lShinLen));
+
+        const lLegResult = driveLegFromPositions_world(
+          P.l_hip, lKneeW, lAnkleW,
+          P.l_hip, restLegDirL,
+          lThighLen, lShinLen,
+          R.l_thigh, R.l_shin, R.l_foot
+        );
+
+        // Ankle/foot rotation DELTA from T-pose (not absolute angle!)
+        // In T-pose, shin is vertical and foot is horizontal (~60-90° angle).
+        // We only want the CHANGE from T-pose ankle orientation.
+        if (lLegResult && jp.l_toe && rp.l_ankle && rp.l_knee && rp.l_toe) {
+          const fbxRestShinL = vnorm(vsub(rp.l_ankle, rp.l_knee));
+          const fbxRestFootL = vnorm(vsub(rp.l_toe, rp.l_ankle));
+          const fbxCurFootL = vnorm(vsub(jp.l_toe, jp.l_ankle));
+          // Expected foot dir if ankle didn't move (foot follows shin rotation)
+          const expectedFootL = applyDeltaRotation(fbxRestShinL, fbxCurShinL, fbxRestFootL);
+          // Ankle-LOCAL delta: expected → actual
+          const ankleDeltaL = Math.acos(Math.max(-1, Math.min(1, vdot(expectedFootL, fbxCurFootL))));
+          if (Math.abs(ankleDeltaL) > 1e-4) {
+            // Use raw cross product (NOT stableBendAxis) — ankle flex direction
+            // legitimately reverses between dorsi/plantarflexion, sign must be preserved
+            let ankleAxisL = vcross(expectedFootL, fbxCurFootL);
+            if (vlen(ankleAxisL) > 1e-6) {
+              ankleAxisL = vnorm(ankleAxisL);
+              const cageAnkleAxisL = applyDeltaRotation(fbxCurShinL, targetShinDirL, ankleAxisL);
+              applyRotAxis(R.l_foot, lLegResult.anklePivot,
+                cageAnkleAxisL[0], cageAnkleAxisL[1], cageAnkleAxisL[2], ankleDeltaL);
+            }
+          }
+        }
+
+        // Thigh twist applied via analytical lThighR in legState (not cage verts)
+      }
+
+      if (jp.r_hip && jp.r_knee && jp.r_ankle
+          && vlen(vsub(P.r_knee, P.r_hip)) > 1e-6 && vlen(vsub(P.r_ankle, P.r_knee)) > 1e-6) {
+        const restLegDirR = bodyRotDir(vnorm(vsub(P.r_knee, P.r_hip)), true);
+        const rThighLen = vlen(vsub(P.r_knee, P.r_hip));
+        const rShinLen  = vlen(vsub(P.r_ankle, P.r_knee));
+
+        const fbxTPoseThighR = vnorm(vsub(rp.r_knee, rp.r_hip));
+
+        const fbxCurThighR = vnorm(vsub(jp.r_knee, jp.r_hip));
+        const fbxCurShinR  = vnorm(vsub(jp.r_ankle, jp.r_knee));
+
+        // Thigh twist — extracted but NOT applied (diagnostic only for now)
+        // rThighTwist = getJointTwistAtTime('r_hip', 'r_knee', t);
+
+        const targetThighDirR = applyDeltaRotation(fbxTPoseThighR, fbxCurThighR, restLegDirR);
+
+        const fbxKneeBendR = Math.acos(Math.max(-1, Math.min(1, vdot(fbxCurThighR, fbxCurShinR))));
+        const fbxKneeBendAxisR = stableBendAxis(fbxCurThighR, fbxCurShinR, 'rKnee', [1, 0, 0]);
+
+        const cageKneeBendAxisR = applyDeltaRotation(fbxCurThighR, targetThighDirR, fbxKneeBendAxisR);
+
+        let targetShinDirR = targetThighDirR;
+        if (Math.abs(fbxKneeBendR) > 1e-4) {
+          const rf = rotateAroundAxis(targetThighDirR[0], targetThighDirR[1], targetThighDirR[2],
+            0, 0, 0, cageKneeBendAxisR[0], cageKneeBendAxisR[1], cageKneeBendAxisR[2], fbxKneeBendR);
+          targetShinDirR = vnorm(rf);
+        }
+
+        const rKneeW  = vadd(P.r_hip, vscale(targetThighDirR, rThighLen));
+        const rAnkleW = vadd(rKneeW, vscale(targetShinDirR, rShinLen));
+
+        const rLegResult = driveLegFromPositions_world(
+          P.r_hip, rKneeW, rAnkleW,
+          P.r_hip, restLegDirR,
+          rThighLen, rShinLen,
+          R.r_thigh, R.r_shin, R.r_foot
+        );
+
+        // Ankle/foot rotation DELTA from T-pose
+        if (rLegResult && jp.r_toe && rp.r_ankle && rp.r_knee && rp.r_toe) {
+          const fbxRestShinR = vnorm(vsub(rp.r_ankle, rp.r_knee));
+          const fbxRestFootR = vnorm(vsub(rp.r_toe, rp.r_ankle));
+          const fbxCurFootR = vnorm(vsub(jp.r_toe, jp.r_ankle));
+          const expectedFootR = applyDeltaRotation(fbxRestShinR, fbxCurShinR, fbxRestFootR);
+          const ankleDeltaR = Math.acos(Math.max(-1, Math.min(1, vdot(expectedFootR, fbxCurFootR))));
+          if (Math.abs(ankleDeltaR) > 1e-4) {
+            let ankleAxisR = vcross(expectedFootR, fbxCurFootR);
+            if (vlen(ankleAxisR) > 1e-6) {
+              ankleAxisR = vnorm(ankleAxisR);
+              const cageAnkleAxisR = applyDeltaRotation(fbxCurShinR, targetShinDirR, ankleAxisR);
+              applyRotAxis(R.r_foot, rLegResult.anklePivot,
+                cageAnkleAxisR[0], cageAnkleAxisR[1], cageAnkleAxisR[2], ankleDeltaR);
+            }
+          }
+        }
+
+        // Thigh twist applied via analytical rThighR in legState (not cage verts)
+      }
+
+      // Store leg IK state for analytical transforms in computeAllRegionTransforms.
+      // This bypasses Kabsch for thigh/shin regions (same approach as arms).
+      {
+        // Recompute what we need for analytical composition
+        const rpL = jointPosData.rest_pose;
+        // Left leg
+        let lThighR = [1,0,0, 0,1,0, 0,0,1]; // identity
+        let lKneeBendAxisC = [1, 0, 0], lKneeBendAngleC = 0;
+        let lAnkleBendAxisC = [1, 0, 0], lAnkleBendAngleC = 0;
+        if (jp.l_hip && jp.l_knee && jp.l_ankle) {
+          const restLegDirL = bodyRotDir(vnorm(vsub(P.l_knee, P.l_hip)), true);
+          const fbxTPoseThighL = vnorm(vsub(rpL.l_knee, rpL.l_hip));
+          const fbxCurThighL = vnorm(vsub(jp.l_knee, jp.l_hip));
+          const fbxCurShinL  = vnorm(vsub(jp.l_ankle, jp.l_knee));
+          const targetThighDirL = applyDeltaRotation(fbxTPoseThighL, fbxCurThighL, restLegDirL);
+          const lSwingThigh = computeIKRotMatrix(restLegDirL, targetThighDirL);
+          lThighR = (Math.abs(lThighTwist) > 1e-4)
+            ? mat3_mul(mat3_rotAxis(targetThighDirL[0], targetThighDirL[1], targetThighDirL[2], lThighTwist), lSwingThigh)
+            : lSwingThigh;
+
+          lKneeBendAngleC = Math.acos(Math.max(-1, Math.min(1, vdot(fbxCurThighL, fbxCurShinL))));
+          const fbxKBA_L = stableBendAxis(fbxCurThighL, fbxCurShinL, 'lKnee', [1, 0, 0]);
+          lKneeBendAxisC = applyDeltaRotation(fbxCurThighL, targetThighDirL, fbxKBA_L);
+
+          // Ankle DELTA from T-pose (not absolute shin→foot angle!)
+          if (jp.l_toe && rpL.l_ankle && rpL.l_knee && rpL.l_toe) {
+            const fbxRestShinL = vnorm(vsub(rpL.l_ankle, rpL.l_knee));
+            const fbxRestFootL = vnorm(vsub(rpL.l_toe, rpL.l_ankle));
+            const fbxCurFootL = vnorm(vsub(jp.l_toe, jp.l_ankle));
+            const expectedFootL = applyDeltaRotation(fbxRestShinL, fbxCurShinL, fbxRestFootL);
+            lAnkleBendAngleC = Math.acos(Math.max(-1, Math.min(1, vdot(expectedFootL, fbxCurFootL))));
+            if (lAnkleBendAngleC > 1e-4) {
+              let fbxABA = vcross(expectedFootL, fbxCurFootL);
+              if (vlen(fbxABA) > 1e-6) {
+                fbxABA = vnorm(fbxABA);
+                let cageShinDirL = targetThighDirL;
+                if (lKneeBendAngleC > 1e-4) {
+                  const rf = rotateAroundAxis(targetThighDirL[0], targetThighDirL[1], targetThighDirL[2],
+                    0, 0, 0, lKneeBendAxisC[0], lKneeBendAxisC[1], lKneeBendAxisC[2], lKneeBendAngleC);
+                  cageShinDirL = vnorm(rf);
+                }
+                lAnkleBendAxisC = applyDeltaRotation(fbxCurShinL, cageShinDirL, fbxABA);
+              }
+            }
+          }
+        }
+        // Right leg
+        let rThighR = [1,0,0, 0,1,0, 0,0,1];
+        let rKneeBendAxisC = [1, 0, 0], rKneeBendAngleC = 0;
+        let rAnkleBendAxisC = [1, 0, 0], rAnkleBendAngleC = 0;
+        if (jp.r_hip && jp.r_knee && jp.r_ankle) {
+          const restLegDirR = bodyRotDir(vnorm(vsub(P.r_knee, P.r_hip)), true);
+          const fbxTPoseThighR = vnorm(vsub(rpL.r_knee, rpL.r_hip));
+          const fbxCurThighR = vnorm(vsub(jp.r_knee, jp.r_hip));
+          const fbxCurShinR  = vnorm(vsub(jp.r_ankle, jp.r_knee));
+          const targetThighDirR = applyDeltaRotation(fbxTPoseThighR, fbxCurThighR, restLegDirR);
+          const rSwingThigh = computeIKRotMatrix(restLegDirR, targetThighDirR);
+          rThighR = (Math.abs(rThighTwist) > 1e-4)
+            ? mat3_mul(mat3_rotAxis(targetThighDirR[0], targetThighDirR[1], targetThighDirR[2], rThighTwist), rSwingThigh)
+            : rSwingThigh;
+
+          rKneeBendAngleC = Math.acos(Math.max(-1, Math.min(1, vdot(fbxCurThighR, fbxCurShinR))));
+          const fbxKBA_R = stableBendAxis(fbxCurThighR, fbxCurShinR, 'rKnee', [1, 0, 0]);
+          rKneeBendAxisC = applyDeltaRotation(fbxCurThighR, targetThighDirR, fbxKBA_R);
+
+          // Ankle DELTA from T-pose
+          if (jp.r_toe && rpL.r_ankle && rpL.r_knee && rpL.r_toe) {
+            const fbxRestShinR = vnorm(vsub(rpL.r_ankle, rpL.r_knee));
+            const fbxRestFootR = vnorm(vsub(rpL.r_toe, rpL.r_ankle));
+            const fbxCurFootR = vnorm(vsub(jp.r_toe, jp.r_ankle));
+            const expectedFootR = applyDeltaRotation(fbxRestShinR, fbxCurShinR, fbxRestFootR);
+            rAnkleBendAngleC = Math.acos(Math.max(-1, Math.min(1, vdot(expectedFootR, fbxCurFootR))));
+            if (rAnkleBendAngleC > 1e-4) {
+              let fbxABA = vcross(expectedFootR, fbxCurFootR);
+              if (vlen(fbxABA) > 1e-6) {
+                fbxABA = vnorm(fbxABA);
+                let cageShinDirR = targetThighDirR;
+                if (rKneeBendAngleC > 1e-4) {
+                  const rf = rotateAroundAxis(targetThighDirR[0], targetThighDirR[1], targetThighDirR[2],
+                    0, 0, 0, rKneeBendAxisC[0], rKneeBendAxisC[1], rKneeBendAxisC[2], rKneeBendAngleC);
+                  cageShinDirR = vnorm(rf);
+                }
+                rAnkleBendAxisC = applyDeltaRotation(fbxCurShinR, cageShinDirR, fbxABA);
+              }
+            }
+          }
+        }
+
+        legState = {
+          positionBased: true,
+          lThighR, rThighR,
+          lKneeBendAxis: lKneeBendAxisC, rKneeBendAxis: rKneeBendAxisC,
+          lKneeBendAngle: lKneeBendAngleC, rKneeBendAngle: rKneeBendAngleC,
+          lAnkleBendAxis: lAnkleBendAxisC, rAnkleBendAxis: rAnkleBendAxisC,
+          lAnkleBendAngle: lAnkleBendAngleC, rAnkleBendAngle: rAnkleBendAngleC
+        };
+      }
+
+      // ----- ARMS from positions (RETARGETED) -----
+      if ($('enableArms').checked && P.l_shoulder && P.r_shoulder) {
+        if (cageShoulderL) P.l_shoulder = cageShoulderL.slice();
+        if (cageShoulderR) P.r_shoulder = cageShoulderR.slice();
+
+        // Arm rest directions: body-rotated cage arm directions
+        const lDir = bodyRotDir(cageArmDirL || [-1, 0, 0]);
+        const rDir = bodyRotDir(cageArmDirR || [ 1, 0, 0]);
+        const upperArmLenL = (P.l_shoulder && P.l_elbow) ? vlen(vsub(P.l_elbow, P.l_shoulder)) : +$('upperArmLen').value;
+        const forearmLenL  = (P.l_elbow && P.l_wrist) ? vlen(vsub(P.l_wrist, P.l_elbow)) : +$('forearmLen').value;
+        const upperArmLenR = (P.r_shoulder && P.r_elbow) ? vlen(vsub(P.r_elbow, P.r_shoulder)) : +$('upperArmLen').value;
+        const forearmLenR  = (P.r_elbow && P.r_wrist) ? vlen(vsub(P.r_wrist, P.r_elbow)) : +$('forearmLen').value;
+
+        // Left arm — retargeted with animation deltas
+        let lResult = null, lElbowPivot = null, lWristPivot = null, lBendAxis = null;
+        let lUpperTwist = 0, lTargetArmDir = null;
+        if (jp.l_shoulder && jp.l_elbow && jp.l_wrist && upperArmLenL > 1e-6 && forearmLenL > 1e-6) {
+          // FBX rest and current upper arm directions
+          const fpLS = jointPosData.rest_pose.l_shoulder, fpLE = jointPosData.rest_pose.l_elbow;
+          const fbxRestArmL = vnorm(vsub(fpLE, fpLS));
+          const fbxCurArmL = vnorm(vsub(jp.l_elbow, jp.l_shoulder));
+
+          // Apply FBX arm animation delta to cage rest arm direction
+          const targetArmDirL = applyDeltaRotation(fbxRestArmL, fbxCurArmL, lDir);
+          lTargetArmDir = targetArmDirL;
+
+          // FBX current forearm and bend
+          const fbxCurForeL = vnorm(vsub(jp.l_wrist, jp.l_elbow));
+          const fbxArmBendL = Math.acos(Math.max(-1, Math.min(1, vdot(fbxCurArmL, fbxCurForeL))));
+          const fbxArmBendAxisL = stableBendAxis(fbxCurArmL, fbxCurForeL, 'lArm', [0, 1, 0]);
+
+          // Upper arm twist — extracted but NOT applied (diagnostic only for now)
+          // lUpperTwist = getJointTwistAtTime('l_shoulder', 'l_elbow', t);
+
+          // Map bend axis to cage target arm frame
+          const cageArmBendAxisL = applyDeltaRotation(fbxCurArmL, targetArmDirL, fbxArmBendAxisL);
+
+          // Target forearm direction
+          let targetForeDirL = targetArmDirL;
+          if (Math.abs(fbxArmBendL) > 1e-4) {
+            const rf = rotateAroundAxis(targetArmDirL[0], targetArmDirL[1], targetArmDirL[2],
+              0, 0, 0, cageArmBendAxisL[0], cageArmBendAxisL[1], cageArmBendAxisL[2], fbxArmBendL);
+            targetForeDirL = vnorm(rf);
+          }
+
+          // Construct target positions with cage segment lengths
+          const lElbowW = vadd(P.l_shoulder, vscale(targetArmDirL, upperArmLenL));
+          const lWristW = vadd(lElbowW, vscale(targetForeDirL, forearmLenL));
+
+          lResult = driveArmFromPositions_world(
+            P.l_shoulder, lElbowW, lWristW,
+            P.l_shoulder, lDir, upperArmLenL, forearmLenL,
+            R.l_upperarm, R.l_forearm, R.l_hand || []
+          );
+
+          if (lResult) {
+            lElbowPivot = lResult.elbowPivot;
+            lWristPivot = lResult.wristPivot;
+            lBendAxis = lResult.bendAxis;
+          }
+
+          // Upper arm twist applied via analytical lUpperR in armState (not cage verts)
+        }
+
+        // Right arm — retargeted with animation deltas
+        let rResult = null, rElbowPivot = null, rWristPivot = null, rBendAxis = null;
+        let rUpperTwist = 0, rTargetArmDir = null;
+        if (jp.r_shoulder && jp.r_elbow && jp.r_wrist && upperArmLenR > 1e-6 && forearmLenR > 1e-6) {
+          const fpRS = jointPosData.rest_pose.r_shoulder, fpRE = jointPosData.rest_pose.r_elbow;
+          const fbxRestArmR = vnorm(vsub(fpRE, fpRS));
+          const fbxCurArmR = vnorm(vsub(jp.r_elbow, jp.r_shoulder));
+          const targetArmDirR = applyDeltaRotation(fbxRestArmR, fbxCurArmR, rDir);
+          rTargetArmDir = targetArmDirR;
+
+          const fbxCurForeR = vnorm(vsub(jp.r_wrist, jp.r_elbow));
+          const fbxArmBendR = Math.acos(Math.max(-1, Math.min(1, vdot(fbxCurArmR, fbxCurForeR))));
+          const fbxArmBendAxisR = stableBendAxis(fbxCurArmR, fbxCurForeR, 'rArm', [0, -1, 0]);
+
+          // Upper arm twist — extracted but NOT applied (diagnostic only for now)
+          // rUpperTwist = getJointTwistAtTime('r_shoulder', 'r_elbow', t);
+
+          const cageArmBendAxisR = applyDeltaRotation(fbxCurArmR, targetArmDirR, fbxArmBendAxisR);
+
+          let targetForeDirR = targetArmDirR;
+          if (Math.abs(fbxArmBendR) > 1e-4) {
+            const rf = rotateAroundAxis(targetArmDirR[0], targetArmDirR[1], targetArmDirR[2],
+              0, 0, 0, cageArmBendAxisR[0], cageArmBendAxisR[1], cageArmBendAxisR[2], fbxArmBendR);
+            targetForeDirR = vnorm(rf);
+          }
+
+          const rElbowW = vadd(P.r_shoulder, vscale(targetArmDirR, upperArmLenR));
+          const rWristW = vadd(rElbowW, vscale(targetForeDirR, forearmLenR));
+
+          rResult = driveArmFromPositions_world(
+            P.r_shoulder, rElbowW, rWristW,
+            P.r_shoulder, rDir, upperArmLenR, forearmLenR,
+            R.r_upperarm, R.r_forearm, R.r_hand || []
+          );
+
+          if (rResult) {
+            rElbowPivot = rResult.elbowPivot;
+            rWristPivot = rResult.wristPivot;
+            rBendAxis = rResult.bendAxis;
+          }
+
+          // Upper arm twist applied via analytical rUpperR in armState (not cage verts)
+        }
+
+        // Left upper arm: delta-retargeted direction
+        let lTargetUpper = lDir;
+        if (jp.l_shoulder && jp.l_elbow) {
+          const fpLS = jointPosData.rest_pose.l_shoulder, fpLE = jointPosData.rest_pose.l_elbow;
+          const fbxRestL = vnorm(vsub(fpLE, fpLS));
+          const fbxCurL = vnorm(vsub(jp.l_elbow, jp.l_shoulder));
+          lTargetUpper = applyDeltaRotation(fbxRestL, fbxCurL, lDir);
+        }
+        const lSwingR = computeIKRotMatrix(lDir, lTargetUpper);
+        const lUpperR = (Math.abs(lUpperTwist) > 1e-4)
+          ? mat3_mul(mat3_rotAxis(lTargetUpper[0], lTargetUpper[1], lTargetUpper[2], lUpperTwist), lSwingR)
+          : lSwingR;
+
+        // Right upper arm: delta-retargeted direction
+        let rTargetUpper = rDir;
+        if (jp.r_shoulder && jp.r_elbow) {
+          const fpRS = jointPosData.rest_pose.r_shoulder, fpRE = jointPosData.rest_pose.r_elbow;
+          const fbxRestR = vnorm(vsub(fpRE, fpRS));
+          const fbxCurR = vnorm(vsub(jp.r_elbow, jp.r_shoulder));
+          rTargetUpper = applyDeltaRotation(fbxRestR, fbxCurR, rDir);
+        }
+        const rSwingR = computeIKRotMatrix(rDir, rTargetUpper);
+        const rUpperR = (Math.abs(rUpperTwist) > 1e-4)
+          ? mat3_mul(mat3_rotAxis(rTargetUpper[0], rTargetUpper[1], rTargetUpper[2], rUpperTwist), rSwingR)
+          : rSwingR;
+
+        // Elbow bend angles
+        let lBendAngleVal = 0, rBendAngleVal = 0;
+        if (lResult) lBendAngleVal = lResult.bendAngle || 0;
+        if (rResult) rBendAngleVal = rResult.bendAngle || 0;
+
+        let lWristFlexAngle = 0, lWristFlexAxis = null;
+        let rWristFlexAngle = 0, rWristFlexAxis = null;
+        let lForearmTwist = 0, rForearmTwist = 0;
+        const rpLMK = jointPosData.rest_pose.l_mid_knuckle;
+        const rpRMK = jointPosData.rest_pose.r_mid_knuckle;
+
+        // Left forearm twist + wrist flex (position-based from mid-knuckle)
+        if (rpLMK && jp.l_mid_knuckle && jp.l_elbow && jp.l_wrist) {
+          const rpLE = jointPosData.rest_pose.l_elbow, rpLW = jointPosData.rest_pose.l_wrist;
+          if (rpLE && rpLW) {
+            const fbxRestFore = vnorm(vsub(rpLW, rpLE));
+            const fbxRestHand = vnorm(vsub(rpLMK, rpLW));
+            const fbxCurFore = vnorm(vsub(jp.l_wrist, jp.l_elbow));
+            const fbxCurHand = vnorm(vsub(jp.l_mid_knuckle, jp.l_wrist));
+            const expectedHand = applyDeltaRotation(fbxRestFore, fbxCurFore, fbxRestHand);
+
+            // Forearm twist: project expected/actual hand onto plane perp to forearm
+            const projExpH = vsub(expectedHand, vscale(fbxCurFore, vdot(expectedHand, fbxCurFore)));
+            const projCurH = vsub(fbxCurHand, vscale(fbxCurFore, vdot(fbxCurHand, fbxCurFore)));
+            if (vlen(projExpH) > 1e-6 && vlen(projCurH) > 1e-6) {
+              const pE = vnorm(projExpH), pC = vnorm(projCurH);
+              const dt = Math.max(-1, Math.min(1, vdot(pE, pC)));
+              lForearmTwist = Math.acos(dt);
+              if (vdot(vcross(pE, pC), fbxCurFore) < 0) lForearmTwist = -lForearmTwist;
+            }
+
+            // Wrist flex: remove twist component, remaining is pure flex
+            let untwistedHand = fbxCurHand;
+            if (Math.abs(lForearmTwist) > 1e-4) {
+              const r = rotateAroundAxis(fbxCurHand[0], fbxCurHand[1], fbxCurHand[2],
+                0, 0, 0, fbxCurFore[0], fbxCurFore[1], fbxCurFore[2], -lForearmTwist);
+              untwistedHand = vnorm(r);
+            }
+            const wDot = Math.max(-1, Math.min(1, vdot(expectedHand, untwistedHand)));
+            lWristFlexAngle = Math.acos(wDot);
+            if (lWristFlexAngle > 1e-4) {
+              let wAxis = vcross(expectedHand, untwistedHand);
+              if (vlen(wAxis) > 1e-6) {
+                wAxis = vnorm(wAxis);
+                const cageForeL = lResult ? lResult.lowerDir : (lTargetArmDir || lDir);
+                lWristFlexAxis = applyDeltaRotation(fbxCurFore, cageForeL, wAxis);
+              }
+            }
+          }
+        }
+
+        // Right forearm twist + wrist flex (position-based from mid-knuckle)
+        if (rpRMK && jp.r_mid_knuckle && jp.r_elbow && jp.r_wrist) {
+          const rpRE = jointPosData.rest_pose.r_elbow, rpRW = jointPosData.rest_pose.r_wrist;
+          if (rpRE && rpRW) {
+            const fbxRestFore = vnorm(vsub(rpRW, rpRE));
+            const fbxRestHand = vnorm(vsub(rpRMK, rpRW));
+            const fbxCurFore = vnorm(vsub(jp.r_wrist, jp.r_elbow));
+            const fbxCurHand = vnorm(vsub(jp.r_mid_knuckle, jp.r_wrist));
+            const expectedHand = applyDeltaRotation(fbxRestFore, fbxCurFore, fbxRestHand);
+
+            // Forearm twist: project expected/actual hand onto plane perp to forearm
+            const projExpH = vsub(expectedHand, vscale(fbxCurFore, vdot(expectedHand, fbxCurFore)));
+            const projCurH = vsub(fbxCurHand, vscale(fbxCurFore, vdot(fbxCurHand, fbxCurFore)));
+            if (vlen(projExpH) > 1e-6 && vlen(projCurH) > 1e-6) {
+              const pE = vnorm(projExpH), pC = vnorm(projCurH);
+              const dt = Math.max(-1, Math.min(1, vdot(pE, pC)));
+              rForearmTwist = Math.acos(dt);
+              if (vdot(vcross(pE, pC), fbxCurFore) < 0) rForearmTwist = -rForearmTwist;
+            }
+
+            // Wrist flex: remove twist component, remaining is pure flex
+            let untwistedHand = fbxCurHand;
+            if (Math.abs(rForearmTwist) > 1e-4) {
+              const r = rotateAroundAxis(fbxCurHand[0], fbxCurHand[1], fbxCurHand[2],
+                0, 0, 0, fbxCurFore[0], fbxCurFore[1], fbxCurFore[2], -rForearmTwist);
+              untwistedHand = vnorm(r);
+            }
+            const wDot = Math.max(-1, Math.min(1, vdot(expectedHand, untwistedHand)));
+            rWristFlexAngle = Math.acos(wDot);
+            if (rWristFlexAngle > 1e-4) {
+              let wAxis = vcross(expectedHand, untwistedHand);
+              if (vlen(wAxis) > 1e-6) {
+                wAxis = vnorm(wAxis);
+                const cageForeR = rResult ? rResult.lowerDir : (rTargetArmDir || rDir);
+                rWristFlexAxis = applyDeltaRotation(fbxCurFore, cageForeR, wAxis);
+              }
+            }
+          }
+        }
+
+        // Forearm twist NOT applied to cage verts or analytically (disabled pending validation)
+
+        // Twist diagnostic: extract quaternion twist values (NOT applied — diagnostic only)
+        if (!window._twistDiagCount) window._twistDiagCount = 0;
+        if (window._twistDiagCount < 5) {
+          window._twistDiagCount++;
+          const _dLU = getJointTwistAtTime('l_shoulder', 'l_elbow', t);
+          const _dRU = getJointTwistAtTime('r_shoulder', 'r_elbow', t);
+          const _dLF = getJointTwistAtTime('l_elbow', 'l_wrist', t);
+          const _dRF = getJointTwistAtTime('r_elbow', 'r_wrist', t);
+          const _dLT = getJointTwistAtTime('l_hip', 'l_knee', t);
+          const _dRT = getJointTwistAtTime('r_hip', 'r_knee', t);
+          console.log('[TWIST DIAG t=' + t.toFixed(3) + '] (quat, NOT applied) upperArm L=' +
+            (_dLU*180/Math.PI).toFixed(1) + '° R=' + (_dRU*180/Math.PI).toFixed(1) +
+            '° | forearm L=' + (_dLF*180/Math.PI).toFixed(1) + '° R=' + (_dRF*180/Math.PI).toFixed(1) +
+            '° | thigh L=' + (_dLT*180/Math.PI).toFixed(1) + '° R=' + (_dRT*180/Math.PI).toFixed(1) +
+            '° | hip=' + (hipTwistAngle*180/Math.PI).toFixed(1) + '°');
+        }
+
+        // One-shot diagnostic for analytical arm composition (delta from T-pose)
+        if (!window._armAnalyticalDiagDone) {
+          window._armAnalyticalDiagDone = true;
+          console.log('=== ARM ANALYTICAL (delta from T-pose) ===');
+          // Show FBX T-pose arm direction for verification
+          const rpLS = jointPosData.rest_pose.l_shoulder, rpLE = jointPosData.rest_pose.l_elbow;
+          const rpRS = jointPosData.rest_pose.r_shoulder, rpRE = jointPosData.rest_pose.r_elbow;
+          if (rpLS && rpLE) console.log('  FBX T-pose L arm: [' + vnorm(vsub(rpLE, rpLS)).map(v=>v.toFixed(4)).join(', ') + ']');
+          if (rpRS && rpRE) console.log('  FBX T-pose R arm: [' + vnorm(vsub(rpRE, rpRS)).map(v=>v.toFixed(4)).join(', ') + ']');
+          console.log('  lDir (cage rest, body-rot): [' + lDir.map(v=>v.toFixed(4)).join(', ') + ']');
+          console.log('  lTargetUpper (delta from T-pose): [' + lTargetUpper.map(v=>v.toFixed(4)).join(', ') + ']');
+          const lArmAng = Math.acos(Math.max(-1, Math.min(1, vdot(lDir, lTargetUpper)))) * 180/Math.PI;
+          console.log('  lArm delta angle: ' + lArmAng.toFixed(1) + '°');
+          console.log('  rDir (cage rest, body-rot): [' + rDir.map(v=>v.toFixed(4)).join(', ') + ']');
+          console.log('  rTargetUpper (delta from T-pose): [' + rTargetUpper.map(v=>v.toFixed(4)).join(', ') + ']');
+          const rArmAng = Math.acos(Math.max(-1, Math.min(1, vdot(rDir, rTargetUpper)))) * 180/Math.PI;
+          console.log('  rArm delta angle: ' + rArmAng.toFixed(1) + '°');
+          console.log('  lBendAngle=' + (lBendAngleVal*180/Math.PI).toFixed(1) + '° rBendAngle=' + (rBendAngleVal*180/Math.PI).toFixed(1) + '°');
+        }
+
+        armState = {
+          positionBased: true,
+          lShoulder: P.l_shoulder.slice(), rShoulder: P.r_shoulder.slice(),
+          lElbowPivot: lElbowPivot || P.l_shoulder,
+          rElbowPivot: rElbowPivot || P.r_shoulder,
+          lWristPivot: lWristPivot || P.l_shoulder,
+          rWristPivot: rWristPivot || P.r_shoulder,
+          lBendAxis: lBendAxis || [0,1,0],
+          rBendAxis: rBendAxis || [0,-1,0],
+          // IK rotation matrices for analytical composition
+          lUpperR: lUpperR,
+          rUpperR: rUpperR,
+          lBendAngle: lBendAngleVal,
+          rBendAngle: rBendAngleVal,
+          // Forearm twist (pronation/supination)
+          lForearmTwist: lForearmTwist,
+          rForearmTwist: rForearmTwist,
+          // Real wrist flex from FBX finger positions (or fallback to 0)
+          lWristFlexAngle: lWristFlexAngle,
+          rWristFlexAngle: rWristFlexAngle,
+          lWristFlexAxis: lWristFlexAxis,
+          rWristFlexAxis: rWristFlexAxis,
+          // Dummy Euler values (not used in position mode)
+          lTposeZ: 0, rTposeZ: 0, lArmSwing: 0, rArmSwing: 0,
+          lElbowAngle: 0, rElbowAngle: 0,
+          lWristAngle: 0, rWristAngle: 0
+        };
+
+        // Update debug pivot spheres
+        if ($('debugPivots').checked) {
+          pivotSpheres.lShoulder.position.set(P.l_shoulder[0], P.l_shoulder[1], P.l_shoulder[2]);
+          pivotSpheres.rShoulder.position.set(P.r_shoulder[0], P.r_shoulder[1], P.r_shoulder[2]);
+          if (lElbowPivot) pivotSpheres.lElbow.position.set(lElbowPivot[0], lElbowPivot[1], lElbowPivot[2]);
+          if (rElbowPivot) pivotSpheres.rElbow.position.set(rElbowPivot[0], rElbowPivot[1], rElbowPivot[2]);
+          if (lWristPivot) pivotSpheres.lWrist.position.set(lWristPivot[0], lWristPivot[1], lWristPivot[2]);
+          if (rWristPivot) pivotSpheres.rWrist.position.set(rWristPivot[0], rWristPivot[1], rWristPivot[2]);
+        }
+        for (const s of Object.values(pivotSpheres)) s.visible = $('debugPivots').checked;
+      } else {
+        armState = null;
+        for (const s of Object.values(pivotSpheres)) s.visible = false;
+      }
+
+      // ----- HEAD IK for analytical transform (position mode) -----
+      // Same approach as arms/legs: compute IK rotation matrix, compose with torso.
+      // Avoids the pivot-mismatch problem from vert-level rotation around rest P.neck.
+      headState = null;
+      if (P.neck && P.head) {
+        const cageRestHead = vnorm(vsub(P.head, P.neck));
+        const headRestDir = bodyRotDir(cageRestHead);
+        const jpNeck = getJointPositionAtTime('neck', t);
+        const jpHead = getJointPositionAtTime('head', t);
+        const fpNeck = jointPosData.rest_pose.neck, fpHead = jointPosData.rest_pose.head;
+        if (jpNeck && jpHead && fpNeck && fpHead) {
+          const fbxRestDir = vnorm(vsub(fpHead, fpNeck));
+          const fbxCurDir = vnorm(vsub(jpHead, jpNeck));
+          // FULL delta (same as arms — no body rotation subtraction needed
+          // because analytical composition R_headIK * R_torso handles it)
+          const headTarget = applyDeltaRotation(fbxRestDir, fbxCurDir, headRestDir);
+          headState = computeIKRotMatrix(headRestDir, headTarget);
+        }
+      }
+
+    } else {
+    // ═══════════════════════════════════════════════════════════
+    // EULER-BASED DRIVING (fallback when no joint_positions.json)
+    legState = null;  // no analytical legs in Euler mode
+    headState = null;
+    // ═══════════════════════════════════════════════════════════
+
+    // ----- Leg angles from Mixamo -----
+    const flipHip   = $('flipHip').checked ? -1 : 1;
+    const flipKnee  = $('flipKnee').checked ? -1 : 1;
+    const flipAnkle = $('flipAnkleX').checked ? -1 : 1;
+
+    const lHipX   = getRotationAtTime('l_hip',   t, 'x_rot') * flipHip;
+    const lHipY   = getRotationAtTime('l_hip',   t, 'y_rot');
+    const lKneeX  = getRotationAtTime('l_knee',  t, 'x_rot') * flipKnee;
+    const lKneeY  = getRotationAtTime('l_knee',  t, 'y_rot');
+    const lAnkleX = getRotationAtTime('l_ankle', t, 'x_rot') * flipAnkle;
+    const lAnkleY = getRotationAtTime('l_ankle', t, 'y_rot');
+    const lAnkleZ = getRotationAtTime('l_ankle', t, 'z_rot');
+
+    const rHipX   = getRotationAtTime('r_hip',   t, 'x_rot') * flipHip;
+    const rHipY   = getRotationAtTime('r_hip',   t, 'y_rot');
+    const rKneeX  = getRotationAtTime('r_knee',  t, 'x_rot') * flipKnee;
+    const rKneeY  = getRotationAtTime('r_knee',  t, 'y_rot');
+    const rAnkleX = getRotationAtTime('r_ankle', t, 'x_rot') * flipAnkle;
+    const rAnkleY = getRotationAtTime('r_ankle', t, 'y_rot');
+    const rAnkleZ = getRotationAtTime('r_ankle', t, 'z_rot');
+
+    // ----- LEFT LEG with propagated pivots -----
+    const lLeg = [].concat(R.l_thigh, R.l_shin, R.l_foot);
+    applyRotX(lLeg, P.l_hip, lHipX);
+    applyRotY(lLeg, P.l_hip, lHipY);
+
+    let lKneePivot = rotateAroundAxis(
+      P.l_knee[0], P.l_knee[1], P.l_knee[2],
+      P.l_hip[0], P.l_hip[1], P.l_hip[2], 1,0,0, lHipX);
+    lKneePivot = rotateAroundAxis(
+      lKneePivot[0], lKneePivot[1], lKneePivot[2],
+      P.l_hip[0], P.l_hip[1], P.l_hip[2], 0,1,0, lHipY);
+    const lShinFoot = [].concat(R.l_shin, R.l_foot);
+    applyRotX(lShinFoot, lKneePivot, lKneeX);
+    applyRotY(lShinFoot, lKneePivot, lKneeY);
+
+    let lAnklePivot = rotateAroundAxis(
+      P.l_ankle[0], P.l_ankle[1], P.l_ankle[2],
+      P.l_hip[0], P.l_hip[1], P.l_hip[2], 1,0,0, lHipX);
+    lAnklePivot = rotateAroundAxis(
+      lAnklePivot[0], lAnklePivot[1], lAnklePivot[2],
+      P.l_hip[0], P.l_hip[1], P.l_hip[2], 0,1,0, lHipY);
+    lAnklePivot = rotateAroundAxis(
+      lAnklePivot[0], lAnklePivot[1], lAnklePivot[2],
+      lKneePivot[0], lKneePivot[1], lKneePivot[2], 1,0,0, lKneeX);
+    lAnklePivot = rotateAroundAxis(
+      lAnklePivot[0], lAnklePivot[1], lAnklePivot[2],
+      lKneePivot[0], lKneePivot[1], lKneePivot[2], 0,1,0, lKneeY);
+    const ankleRestL = (+$('ankleOffL').value) * Math.PI/180;
+    applyRotX(R.l_foot, lAnklePivot, lAnkleX - ankleRestL);
+    applyRotY(R.l_foot, lAnklePivot, lAnkleY);
+    applyRotZ(R.l_foot, lAnklePivot, lAnkleZ);
+
+    // ----- RIGHT LEG with propagated pivots -----
+    const rLeg = [].concat(R.r_thigh, R.r_shin, R.r_foot);
+    applyRotX(rLeg, P.r_hip, rHipX);
+    applyRotY(rLeg, P.r_hip, rHipY);
+
+    let rKneePivot = rotateAroundAxis(
+      P.r_knee[0], P.r_knee[1], P.r_knee[2],
+      P.r_hip[0], P.r_hip[1], P.r_hip[2], 1,0,0, rHipX);
+    rKneePivot = rotateAroundAxis(
+      rKneePivot[0], rKneePivot[1], rKneePivot[2],
+      P.r_hip[0], P.r_hip[1], P.r_hip[2], 0,1,0, rHipY);
+    const rShinFoot = [].concat(R.r_shin, R.r_foot);
+    applyRotX(rShinFoot, rKneePivot, rKneeX);
+    applyRotY(rShinFoot, rKneePivot, rKneeY);
+
+    let rAnklePivot = rotateAroundAxis(
+      P.r_ankle[0], P.r_ankle[1], P.r_ankle[2],
+      P.r_hip[0], P.r_hip[1], P.r_hip[2], 1,0,0, rHipX);
+    rAnklePivot = rotateAroundAxis(
+      rAnklePivot[0], rAnklePivot[1], rAnklePivot[2],
+      P.r_hip[0], P.r_hip[1], P.r_hip[2], 0,1,0, rHipY);
+    rAnklePivot = rotateAroundAxis(
+      rAnklePivot[0], rAnklePivot[1], rAnklePivot[2],
+      rKneePivot[0], rKneePivot[1], rKneePivot[2], 1,0,0, rKneeX);
+    rAnklePivot = rotateAroundAxis(
+      rAnklePivot[0], rAnklePivot[1], rAnklePivot[2],
+      rKneePivot[0], rKneePivot[1], rKneePivot[2], 0,1,0, rKneeY);
+    const ankleRestR = (+$('ankleOffR').value) * Math.PI/180;
+    applyRotX(R.r_foot, rAnklePivot, rAnkleX - ankleRestR);
+    applyRotY(R.r_foot, rAnklePivot, rAnkleY);
+    applyRotZ(R.r_foot, rAnklePivot, rAnkleZ);
+
+    // ----- ARMS (Euler-based, actual Mixamo data + T-pose base) -----
+    if($('enableArms').checked && P.l_shoulder && P.r_shoulder){
+      const shoulderX = +$('shoulderX').value;
+      if (cageShoulderL) { P.l_shoulder = cageShoulderL.slice(); }
+      else { P.l_shoulder = [-shoulderX, 0.20, -0.03]; }
+      if (cageShoulderR) { P.r_shoulder = cageShoulderR.slice(); }
+      else { P.r_shoulder = [ shoulderX, 0.20, -0.03]; }
+
+      const tPoseDown = +$('tposeAngle').value * Math.PI/180;
+      const flipShoulder = $('flipShoulder').checked ? -1 : 1;
+      const flipElbow = $('flipElbow').checked ? -1 : 1;
+      const armSwingScale = +$('armSwing').value * flipShoulder;
+      const elbowBendScale = +$('elbowBend').value * flipElbow;
+      const upperArmLen = +$('upperArmLen').value;
+      const forearmLen = +$('forearmLen').value;
+      const lDir = cageArmDirL || [-1, 0, 0];
+      const rDir = cageArmDirR || [ 1, 0, 0];
+
+      let lArmSwing, rArmSwing, lElbowBend, rElbowBend, lWristCounter, rWristCounter;
+      let lTposeZ, rTposeZ;
+
+      if (armMotionData && armBaseline) {
+        const lShX = getArmRotationAtTime('l_shoulder', t, 'x_rot');
+        const rShX = getArmRotationAtTime('r_shoulder', t, 'x_rot');
+        lArmSwing = (lShX - armBaseline.l_shoulder.x) * armSwingScale;
+        rArmSwing = (rShX - armBaseline.r_shoulder.x) * armSwingScale;
+        lTposeZ = tPoseDown;
+        rTposeZ = -tPoseDown;
+        const lElZ = getArmRotationAtTime('l_elbow', t, 'z_rot');
+        const rElZ = getArmRotationAtTime('r_elbow', t, 'z_rot');
+        lElbowBend = (lElZ - armBaseline.l_elbow.z) * elbowBendScale;
+        rElbowBend = -(rElZ - armBaseline.r_elbow.z) * elbowBendScale;
+        const lWrZ = getArmRotationAtTime('l_wrist', t, 'z_rot');
+        const rWrZ = getArmRotationAtTime('r_wrist', t, 'z_rot');
+        lWristCounter = (lWrZ - armBaseline.l_wrist.z);
+        rWristCounter = -(rWrZ - armBaseline.r_wrist.z);
+      } else {
+        lArmSwing = rHipX * armSwingScale;
+        rArmSwing = lHipX * armSwingScale;
+        lTposeZ = tPoseDown;
+        rTposeZ = -tPoseDown;
+        lElbowBend = Math.max(0, -lArmSwing) * elbowBendScale;
+        rElbowBend = Math.max(0, -rArmSwing) * elbowBendScale;
+        lWristCounter = -lElbowBend * 0.5;
+        rWristCounter = -rElbowBend * 0.5;
+      }
+
+      // LEFT ARM
+      const lArmAll = [].concat(R.l_upperarm, R.l_forearm, R.l_hand || []);
+      applyRotZ(lArmAll, P.l_shoulder, lTposeZ);
+      applyRotX(lArmAll, P.l_shoulder, lArmSwing);
+      let lBendAxis = rotVec3(0, 1, 0, 0, 0, 1, lTposeZ);
+      lBendAxis = rotVec3(lBendAxis[0], lBendAxis[1], lBendAxis[2], 1, 0, 0, lArmSwing);
+      let lElbowPivot = [
+        P.l_shoulder[0] + lDir[0] * upperArmLen,
+        P.l_shoulder[1] + lDir[1] * upperArmLen,
+        P.l_shoulder[2] + lDir[2] * upperArmLen
+      ];
+      lElbowPivot = rotateAroundAxis(lElbowPivot[0], lElbowPivot[1], lElbowPivot[2],
+        P.l_shoulder[0], P.l_shoulder[1], P.l_shoulder[2], 0,0,1, lTposeZ);
+      lElbowPivot = rotateAroundAxis(lElbowPivot[0], lElbowPivot[1], lElbowPivot[2],
+        P.l_shoulder[0], P.l_shoulder[1], P.l_shoulder[2], 1,0,0, lArmSwing);
+      const lForearmHand = [].concat(R.l_forearm, R.l_hand || []);
+      if(lForearmHand.length && Math.abs(lElbowBend) > 0.001) {
+        applyRotAxis(lForearmHand, lElbowPivot, lBendAxis[0], lBendAxis[1], lBendAxis[2], lElbowBend);
+      }
+      let lWristPivot = [
+        P.l_shoulder[0] + lDir[0] * (upperArmLen + forearmLen),
+        P.l_shoulder[1] + lDir[1] * (upperArmLen + forearmLen),
+        P.l_shoulder[2] + lDir[2] * (upperArmLen + forearmLen)
+      ];
+      lWristPivot = rotateAroundAxis(lWristPivot[0], lWristPivot[1], lWristPivot[2],
+        P.l_shoulder[0], P.l_shoulder[1], P.l_shoulder[2], 0,0,1, lTposeZ);
+      lWristPivot = rotateAroundAxis(lWristPivot[0], lWristPivot[1], lWristPivot[2],
+        P.l_shoulder[0], P.l_shoulder[1], P.l_shoulder[2], 1,0,0, lArmSwing);
+      lWristPivot = rotateAroundAxis(lWristPivot[0], lWristPivot[1], lWristPivot[2],
+        lElbowPivot[0], lElbowPivot[1], lElbowPivot[2], lBendAxis[0], lBendAxis[1], lBendAxis[2], lElbowBend);
+      if((R.l_hand||[]).length && Math.abs(lWristCounter) > 0.001) {
+        applyRotAxis(R.l_hand, lWristPivot, lBendAxis[0], lBendAxis[1], lBendAxis[2], lWristCounter);
+      }
+
+      // RIGHT ARM
+      const rArmAll = [].concat(R.r_upperarm, R.r_forearm, R.r_hand || []);
+      applyRotZ(rArmAll, P.r_shoulder, rTposeZ);
+      applyRotX(rArmAll, P.r_shoulder, rArmSwing);
+      let rBendAxis = rotVec3(0, -1, 0, 0, 0, 1, rTposeZ);
+      rBendAxis = rotVec3(rBendAxis[0], rBendAxis[1], rBendAxis[2], 1, 0, 0, rArmSwing);
+      let rElbowPivot = [
+        P.r_shoulder[0] + rDir[0] * upperArmLen,
+        P.r_shoulder[1] + rDir[1] * upperArmLen,
+        P.r_shoulder[2] + rDir[2] * upperArmLen
+      ];
+      rElbowPivot = rotateAroundAxis(rElbowPivot[0], rElbowPivot[1], rElbowPivot[2],
+        P.r_shoulder[0], P.r_shoulder[1], P.r_shoulder[2], 0,0,1, rTposeZ);
+      rElbowPivot = rotateAroundAxis(rElbowPivot[0], rElbowPivot[1], rElbowPivot[2],
+        P.r_shoulder[0], P.r_shoulder[1], P.r_shoulder[2], 1,0,0, rArmSwing);
+      const rForearmHand = [].concat(R.r_forearm, R.r_hand || []);
+      if(rForearmHand.length && Math.abs(rElbowBend) > 0.001) {
+        applyRotAxis(rForearmHand, rElbowPivot, rBendAxis[0], rBendAxis[1], rBendAxis[2], rElbowBend);
+      }
+      let rWristPivot = [
+        P.r_shoulder[0] + rDir[0] * (upperArmLen + forearmLen),
+        P.r_shoulder[1] + rDir[1] * (upperArmLen + forearmLen),
+        P.r_shoulder[2] + rDir[2] * (upperArmLen + forearmLen)
+      ];
+      rWristPivot = rotateAroundAxis(rWristPivot[0], rWristPivot[1], rWristPivot[2],
+        P.r_shoulder[0], P.r_shoulder[1], P.r_shoulder[2], 0,0,1, rTposeZ);
+      rWristPivot = rotateAroundAxis(rWristPivot[0], rWristPivot[1], rWristPivot[2],
+        P.r_shoulder[0], P.r_shoulder[1], P.r_shoulder[2], 1,0,0, rArmSwing);
+      rWristPivot = rotateAroundAxis(rWristPivot[0], rWristPivot[1], rWristPivot[2],
+        rElbowPivot[0], rElbowPivot[1], rElbowPivot[2], rBendAxis[0], rBendAxis[1], rBendAxis[2], rElbowBend);
+      if((R.r_hand||[]).length && Math.abs(rWristCounter) > 0.001) {
+        applyRotAxis(R.r_hand, rWristPivot, rBendAxis[0], rBendAxis[1], rBendAxis[2], rWristCounter);
+      }
+
+      armState = {
+        lTposeZ, rTposeZ, lArmSwing, rArmSwing,
+        lShoulder: P.l_shoulder.slice(), rShoulder: P.r_shoulder.slice(),
+        lElbowAngle: lElbowBend, rElbowAngle: rElbowBend,
+        lElbowPivot, rElbowPivot,
+        lWristAngle: lWristCounter, rWristAngle: rWristCounter,
+        lWristPivot, rWristPivot,
+        lBendAxis, rBendAxis
+      };
+
+      if ($('debugPivots').checked) {
+        pivotSpheres.lShoulder.position.set(P.l_shoulder[0], P.l_shoulder[1], P.l_shoulder[2]);
+        pivotSpheres.rShoulder.position.set(P.r_shoulder[0], P.r_shoulder[1], P.r_shoulder[2]);
+        pivotSpheres.lElbow.position.set(lElbowPivot[0], lElbowPivot[1], lElbowPivot[2]);
+        pivotSpheres.rElbow.position.set(rElbowPivot[0], rElbowPivot[1], rElbowPivot[2]);
+        pivotSpheres.lWrist.position.set(lWristPivot[0], lWristPivot[1], lWristPivot[2]);
+        pivotSpheres.rWrist.position.set(rWristPivot[0], rWristPivot[1], rWristPivot[2]);
+      }
+      for (const s of Object.values(pivotSpheres)) s.visible = $('debugPivots').checked;
+    } else {
+      armState = null;
+      for (const s of Object.values(pivotSpheres)) s.visible = false;
+    }
+
+    } // end Euler fallback
+
+    // ----- HEAD/NECK motion -----
+    // Position mode: handled analytically via headState (computed above).
+    // No vert-level rotation needed — avoids pivot-mismatch at P.neck after body rotation.
+    // Euler fallback: vert-level rotation from spine_keyframes.json.
+    if (!jointPosData && spineMotionData && P.neck && P.head && R.head && R.head.length) {
+      // Euler fallback: head from spine_keyframes.json
+      const neckX = getSpineDataAtTime('neck', t, 'x_rot') * Math.PI/180;
+      const neckY = getSpineDataAtTime('neck', t, 'y_rot') * Math.PI/180;
+      const neckZ = getSpineDataAtTime('neck', t, 'z_rot') * Math.PI/180;
+
+      applyRotX(R.head, P.neck, neckX);
+      applyRotY(R.head, P.neck, neckY);
+      applyRotZ(R.head, P.neck, neckZ);
+
+      let headPivot = rotateAroundAxis(
+        P.head[0], P.head[1], P.head[2],
+        P.neck[0], P.neck[1], P.neck[2], 1,0,0, neckX);
+      headPivot = rotateAroundAxis(
+        headPivot[0], headPivot[1], headPivot[2],
+        P.neck[0], P.neck[1], P.neck[2], 0,1,0, neckY);
+      headPivot = rotateAroundAxis(
+        headPivot[0], headPivot[1], headPivot[2],
+        P.neck[0], P.neck[1], P.neck[2], 0,0,1, neckZ);
+
+      const headX = getSpineDataAtTime('head', t, 'x_rot') * Math.PI/180;
+      const headY = getSpineDataAtTime('head', t, 'y_rot') * Math.PI/180;
+      const headZ = getSpineDataAtTime('head', t, 'z_rot') * Math.PI/180;
+
+      applyRotX(R.head, headPivot, headX);
+      applyRotY(R.head, headPivot, headY);
+      applyRotZ(R.head, headPivot, headZ);
+    }
+
+    // ----- Foot lock correction LAST (only with Euler data) -----
+    if (!jointPosData) footLockCorrection(t);
+    applyCageSmoothing();
+  }
+
+
+function normalizeRegionId(regionIdInput, cageLen) {
+  if (!Array.isArray(regionIdInput)) {
+    console.warn("regions.regionId missing or invalid. Filling with zeros.");
+    return new Array(cageLen).fill(0);
+  }
+  if (regionIdInput.length === cageLen) return regionIdInput.slice();
+  if (regionIdInput.length > cageLen) {
+    console.warn(`regions.regionId longer than cageRest (${regionIdInput.length} > ${cageLen}). Truncating.`);
+    return regionIdInput.slice(0, cageLen);
+  }
+  console.warn(`regions.regionId shorter than cageRest (${regionIdInput.length} < ${cageLen}). Padding.`);
+  const padded = regionIdInput.slice();
+  const fillVal = regionIdInput.length ? regionIdInput[regionIdInput.length - 1] : 0;
+  while (padded.length < cageLen) padded.push(fillVal);
+  return padded;
+}
+
+const REGION_ADJ = {
+  0: [0, 1, 2, 7, 8],   // torso can blend to upper legs/arms
+  1: [1, 3, 0],         // l_thigh -> l_shin + torso
+  2: [2, 4, 0],         // r_thigh -> r_shin + torso
+  3: [3, 5, 1],         // l_shin -> l_foot + l_thigh
+  4: [4, 6, 2],         // r_shin -> r_foot + r_thigh
+  5: [5, 3],            // l_foot -> l_shin
+  6: [6, 4],            // r_foot -> r_shin
+  7: [7, 9, 0],         // l_upperarm -> l_forearm + torso
+  8: [8, 10, 0],        // r_upperarm -> r_forearm + torso
+  9: [9, 7, 12],        // l_forearm -> l_upperarm + l_hand
+  10: [10, 8, 13],      // r_forearm -> r_upperarm + r_hand
+  11: [11],             // head/neck (if present)
+  12: [12, 9],          // l_hand -> l_forearm
+  13: [13, 10]          // r_hand -> r_forearm
+};
+
+function classifyMeshRegion(meta, x, y, z){
+  // Always return null to use nearest-cage-vert classification.
+  // The cage regions are properly classified using joint positions (regenerate_cage.py).
+  // Assigning each mesh vert the region of its nearest cage vert guarantees consistency.
+  return null;
+}
+
+function buildBindKNNRegion(meshRestPos, cageRest, regionIdInput, regionMeta, K = 8) {
+  const nMesh = meshRestPos.length / 3;
+  const nCage = cageRest.length;
+  const regionIdLocal = normalizeRegionId(regionIdInput, nCage);
+
+  const regionToIndices = new Map();
+  for (let ci = 0; ci < nCage; ci++) {
+    const r = regionIdLocal[ci];
+    if (!regionToIndices.has(r)) regionToIndices.set(r, []);
+    regionToIndices.get(r).push(ci);
+  }
+
+  const idx = new Int32Array(nMesh * K);
+  const w   = new Float32Array(nMesh * K);
+  let reclassCount = 0, clampCount = 0;
+
+  for (let vi = 0; vi < nMesh; vi++) {
+    const x = meshRestPos[vi*3], y = meshRestPos[vi*3+1], z = meshRestPos[vi*3+2];
+
+    let meshRegion = classifyMeshRegion(regionMeta, x, y, z);
+    if (meshRegion === null) {
+      let nearestRegion = 0;
+      let nearestD2 = 1e30;
+      for (let ci = 0; ci < nCage; ci++) {
+        const cx = cageRest[ci][0], cy = cageRest[ci][1], cz = cageRest[ci][2];
+        const dx = x - cx, dy = y - cy, dz = z - cz;
+        const d2 = dx*dx + dy*dy + dz*dz;
+        if (d2 < nearestD2) {
+          nearestD2 = d2;
+          nearestRegion = regionIdLocal[ci];
+        }
+      }
+      meshRegion = nearestRegion;
+    }
+
+    let allowedRegions = REGION_ADJ[meshRegion] || [meshRegion];
+
+    // Geometry-based arm detection + torso clamp (Fix A + Fix B).
+    // Catches bicep verts misclassified as torso by nearest-cage-vert.
+    // Uses point-to-arm-axis distance + projection range to detect arm verts,
+    // then clamps torso influence past a shoulder band.
+    if (cageShoulderL && cageShoulderR && cageArmDirL && cageArmDirR) {
+      const uaLen = +$('upperArmLen').value;
+      const faLen = +$('forearmLen').value;
+      const totalArmLen = uaLen + faLen;
+      const ARM_RADIUS = 0.06;              // 6cm from axis = "on the arm"
+      const SHOULDER_BAND = 0.06 * uaLen;   // torso blending only within this narrow band
+      const ELBOW_BAND = 0.12 * uaLen;      // cross-arm blending zone around elbow (smoothstep-weighted)
+
+      // Check left arm
+      const lsh = cageShoulderL, ld = cageArmDirL;
+      const ltProj = (x-lsh[0])*ld[0] + (y-lsh[1])*ld[1] + (z-lsh[2])*ld[2];
+      if (ltProj > 0 && ltProj < totalArmLen) {
+        const lpx = lsh[0]+ld[0]*ltProj, lpy = lsh[1]+ld[1]*ltProj, lpz = lsh[2]+ld[2]*ltProj;
+        const lAxDist = Math.sqrt((x-lpx)*(x-lpx) + (y-lpy)*(y-lpy) + (z-lpz)*(z-lpz));
+        if (lAxDist < ARM_RADIUS) {
+          if (meshRegion === 0) {
+            meshRegion = (ltProj <= uaLen) ? 7 : 9;
+            allowedRegions = REGION_ADJ[meshRegion] || [meshRegion];
+            reclassCount++;
+          }
+          // Shoulder clamp: no torso past shoulder band
+          if (ltProj > SHOULDER_BAND) {
+            allowedRegions = allowedRegions.filter(r => r !== 0);
+            clampCount++;
+          }
+          // Elbow clamp: upper arm verts far from elbow -> no forearm
+          if (meshRegion === 7 && ltProj < uaLen - ELBOW_BAND) {
+            allowedRegions = allowedRegions.filter(r => r !== 9);
+            clampCount++;
+          }
+          // Elbow clamp: forearm verts far from elbow -> no upper arm
+          if (meshRegion === 9 && ltProj > uaLen + ELBOW_BAND) {
+            allowedRegions = allowedRegions.filter(r => r !== 7);
+            clampCount++;
+          }
+        }
+      }
+
+      // Check right arm
+      const rsh = cageShoulderR, rd = cageArmDirR;
+      const rtProj = (x-rsh[0])*rd[0] + (y-rsh[1])*rd[1] + (z-rsh[2])*rd[2];
+      if (rtProj > 0 && rtProj < totalArmLen) {
+        const rpx = rsh[0]+rd[0]*rtProj, rpy = rsh[1]+rd[1]*rtProj, rpz = rsh[2]+rd[2]*rtProj;
+        const rAxDist = Math.sqrt((x-rpx)*(x-rpx) + (y-rpy)*(y-rpy) + (z-rpz)*(z-rpz));
+        if (rAxDist < ARM_RADIUS) {
+          if (meshRegion === 0) {
+            meshRegion = (rtProj <= uaLen) ? 8 : 10;
+            allowedRegions = REGION_ADJ[meshRegion] || [meshRegion];
+            reclassCount++;
+          }
+          if (rtProj > SHOULDER_BAND) {
+            allowedRegions = allowedRegions.filter(r => r !== 0);
+            clampCount++;
+          }
+          // Elbow clamp: upper arm far from elbow -> no forearm
+          if (meshRegion === 8 && rtProj < uaLen - ELBOW_BAND) {
+            allowedRegions = allowedRegions.filter(r => r !== 10);
+            clampCount++;
+          }
+          // Elbow clamp: forearm far from elbow -> no upper arm
+          if (meshRegion === 10 && rtProj > uaLen + ELBOW_BAND) {
+            allowedRegions = allowedRegions.filter(r => r !== 8);
+            clampCount++;
+          }
+        }
+      }
+    }
+
+    const candidateIndices = [];
+    for (const r of allowedRegions) {
+      const list = regionToIndices.get(r);
+      if (list) candidateIndices.push(...list);
+    }
+
+    if (!candidateIndices.length) {
+      for (let ci = 0; ci < nCage; ci++) candidateIndices.push(ci);
+    }
+
+    const bestD2 = new Float32Array(K);
+    const bestI  = new Int32Array(K);
+    for (let k = 0; k < K; k++) { bestD2[k] = 1e30; bestI[k] = candidateIndices[0] ?? 0; }
+
+    for (const ci of candidateIndices) {
+      const cx = cageRest[ci][0], cy = cageRest[ci][1], cz = cageRest[ci][2];
+      const dx = x - cx, dy = y - cy, dz = z - cz;
+      const d2 = dx*dx + dy*dy + dz*dz;
+
+      let worst = 0;
+      for (let k = 1; k < K; k++) if (bestD2[k] > bestD2[worst]) worst = k;
+
+      if (d2 < bestD2[worst]) {
+        bestD2[worst] = d2;
+        bestI[worst]  = ci;
+      }
+    }
+
+    let sum = 0;
+    for (let k = 0; k < K; k++) {
+      const d = Math.sqrt(bestD2[k]) + 1e-6;
+      const ww = 1.0 / d;
+      w[vi*K + k] = ww;
+      idx[vi*K + k] = bestI[k];
+      sum += ww;
+    }
+    for (let k = 0; k < K; k++) w[vi*K + k] /= sum;
+  }
+
+  if (reclassCount > 0 || clampCount > 0) {
+    console.log('Arm geometry clamp: reclassified', reclassCount, 'torso→arm verts, clamped torso on', clampCount, 'arm verts');
+  }
+  return { K, idx, w, regionId: regionIdLocal };
+}
+
+  // ---------------- Init ----------------
+  (async function init(){
+    statusEl.textContent = "Loading mesh.glb…";
+    const gltf = await new Promise((res,rej)=> new THREE.GLTFLoader().load("mesh.glb", res, undefined, rej));
+    gltf.scene.traverse(o=>{
+      if(o.isMesh && !meshObj){
+        meshObj=o;
+        meshGeo=o.geometry;
+        meshRestPos = meshGeo.attributes.position.array.slice();
+
+        // Add vertex colors for debug region visualization
+        const numVerts = meshRestPos.length / 3;
+        const colors = new Float32Array(numVerts * 3);
+        for (let i = 0; i < numVerts * 3; i++) colors[i] = 1.0;
+        meshGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        if(o.material){ o.material.metalness=0; o.material.roughness=0.85; o.material.side=THREE.DoubleSide; o.material.vertexColors=false; o.material.needsUpdate=true; }
+      }
+    });
+    scene.add(gltf.scene);
+
+    const box = new THREE.Box3().setFromObject(gltf.scene);
+    const size = box.getSize(new THREE.Vector3());
+    meshHeight = Math.max(1e-6, size.y);
+    const center = box.getCenter(new THREE.Vector3());
+    controls.target.copy(center);
+    camera.position.set(center.x, center.y + 0.35*meshHeight, center.z + 1.6*meshHeight);
+    controls.update();
+statusEl.textContent = "Loading cage/bind/regions/motion…";
+
+let cage, bind, regions, anchorData, legMotion, armMotion, spineMotion;
+
+try {
+  [
+    cage,
+    bind,
+    regions,
+    anchorData,
+    legMotion,
+    armMotion,
+    spineMotion
+  ] = await Promise.all([
+    loadJSON("cage.json"),
+    loadJSON("bind.json"),
+    loadJSON("regions.json"),
+    loadJSON("discovered_anchors.json"),
+    loadJSON("leg_keyframes.json"),
+    loadJSON("arm_keyframes.json"),
+    loadJSON("spine_keyframes.json")
+  ]);
+} catch (err) {
+  console.error(err);
+  statusEl.textContent = `Load failed: ${err.message}`;
+  throw err; // stop init
+}
+
+// Try to load joint_positions.json (optional — enables position-based driving)
+try {
+  jointPosData = await loadJSON("joint_positions.json");
+  console.log("Loaded joint_positions.json:", jointPosData.frame_count, "frames,",
+    Object.keys(jointPosData.joints).length, "joints,",
+    jointPosData.duration.toFixed(3) + "s @" + jointPosData.fps + "fps");
+  // Use position data's duration as cycle duration
+  cycleDuration = jointPosData.duration;
+} catch (e) {
+  console.log("No joint_positions.json found — using Euler-based driving");
+  jointPosData = null;
+}
+
+// Debug
+console.log("regionId length =", regions.regionId?.length);
+console.log("region meta =", regions.meta);
+
+    // cage
+    cageRest = cage.verts;
+    cageFaces = cage.faces;
+    cagePos = new Float32Array(cageRest.length*3);
+    for(let i=0;i<cageRest.length;i++){
+      cagePos[i*3]=cageRest[i][0];
+      cagePos[i*3+1]=cageRest[i][1];
+      cagePos[i*3+2]=cageRest[i][2];
+    }
+
+    // regions (validate length to match cage vertices)
+    regionId = normalizeRegionId(regions.regionId, cageRest.length);
+
+    console.log("cageRest length =", cageRest.length);
+    console.log("regions.regionId length =", regions.regionId?.length);
+    console.log("mesh vert count =", meshRestPos.length / 3);
+
+    // TEMP TEST: ignore bind.json and build a clean bind (region constrained)
+    const built = buildBindKNNRegion(meshRestPos, cageRest, regionId, regions.meta, 8);
+    K = built.K;
+    bindIdx = built.idx;
+    bindW = built.w;
+    regionId = built.regionId;
+
+    // SAFE max calc (no spread)
+    let maxBindIdx = -1;
+    for (let i = 0; i < bindIdx.length; i++) {
+      if (bindIdx[i] > maxBindIdx) maxBindIdx = bindIdx[i];
+    }
+    if (maxBindIdx >= cageRest.length) {
+      console.warn("bindIdx range exceeds cageRest length:", maxBindIdx, cageRest.length);
+    }
+
+    // Count mesh verts per region (from nearest-cage-vert classification)
+    const meshRegionCounts = {};
+    const nMeshVerts = meshRestPos.length / 3;
+    for (let vi = 0; vi < nMeshVerts; vi++) {
+      // Find the dominant region for this mesh vert from its bindings
+      const rw = new Map();
+      for (let j = 0; j < K; j++) {
+        const ci = bindIdx[vi*K+j];
+        const w = bindW[vi*K+j];
+        const rid = regionId[ci];
+        rw.set(rid, (rw.get(rid)||0) + w);
+      }
+      let bestR = 0, bestW = -1;
+      for (const [rid, w] of rw) { if (w > bestW) { bestR = rid; bestW = w; } }
+      meshRegionCounts[bestR] = (meshRegionCounts[bestR]||0) + 1;
+    }
+    const names = {0:'torso',1:'l_thigh',2:'r_thigh',3:'l_shin',4:'r_shin',
+                   5:'l_foot',6:'r_foot',7:'l_uarm',8:'r_uarm',9:'l_farm',10:'r_farm',11:'head'};
+    console.log("Mesh vert region counts (dominant):");
+    for (const rid of Object.keys(meshRegionCounts).sort((a,b)=>a-b)) {
+      console.log(`  ${names[rid]||rid}: ${meshRegionCounts[rid]}`);
+    }
+
+    console.log("Built bind:", {
+      K,
+      cageVerts: cageRest.length,
+      meshVerts: meshRestPos.length / 3,
+      maxBindIdx
+    });
+
+
+    R.torso = indicesByRegion(0);
+    R.l_thigh = indicesByRegion(1);
+    R.r_thigh = indicesByRegion(2);
+    R.l_shin  = indicesByRegion(3);
+    R.r_shin  = indicesByRegion(4);
+    R.l_foot  = indicesByRegion(5);
+    R.r_foot  = indicesByRegion(6);
+    R.l_upperarm = indicesByRegion(7);
+    R.r_upperarm = indicesByRegion(8);
+    R.l_forearm  = indicesByRegion(9);
+    R.r_forearm  = indicesByRegion(10);
+    R.head       = indicesByRegion(11);
+
+    // Save combined arm cage vert pools (before re-split)
+    allLeftArmCage  = [].concat(R.l_upperarm, R.l_forearm);
+    allRightArmCage = [].concat(R.r_upperarm, R.r_forearm);
+
+    console.log("Baked cage arm sizes: l_uarm=" + R.l_upperarm.length +
+      " l_farm=" + R.l_forearm.length + " r_uarm=" + R.r_upperarm.length +
+      " r_farm=" + R.r_forearm.length);
+
+    // Build regionIndices lookup for Kabsch transforms (non-arm regions)
+    regionIndices[0]  = R.torso;
+    regionIndices[1]  = R.l_thigh;
+    regionIndices[2]  = R.r_thigh;
+    regionIndices[3]  = R.l_shin;
+    regionIndices[4]  = R.r_shin;
+    regionIndices[5]  = R.l_foot;
+    regionIndices[6]  = R.r_foot;
+    if (R.head.length) regionIndices[11] = R.head;
+
+    // Re-split arm cage verts by distance from shoulder (matching reference)
+    // This also rebuilds mesh bindings and region weights
+    resplitArmRegions();
+
+    // Hook up slider to re-split when adjusted
+    $('upperArmLen').addEventListener('input', resplitArmRegions);
+    $('forearmLen').addEventListener('input', resplitArmRegions);
+    $('shoulderX').addEventListener('input', resplitArmRegions);
+
+    // anchors + bounds
+    anchors = anchorData.anchors;
+    bounds = anchorData.mesh_bounds;
+
+    // motion JSON
+    motionData = legMotion.keyframes;
+    // Only use leg duration if joint_positions.json didn't already set it
+    if (!jointPosData) cycleDuration = legMotion.duration || 1.0;
+    armMotionData = armMotion.keyframes || null;
+    spineMotionData = spineMotion.keyframes || null;
+
+    // Post-process arm keyframe data for smooth animation.
+    if (armMotionData) {
+      // Smooth elbow/wrist data (8 passes removes micro-oscillations while
+      // preserving the bend shape; elbows have more complex motion than shoulders).
+      for (const boneName of Object.keys(armMotionData)) {
+        if (boneName.includes('shoulder')) continue; // shoulders handled below
+        const bone = armMotionData[boneName];
+        for (const axis of ['x_rot', 'y_rot', 'z_rot']) {
+          if (bone[axis] && bone[axis].length > 3) {
+            bone[axis] = smoothArray(bone[axis], 8);
+          }
+        }
+      }
+
+      // Replace shoulder x_rot with sinusoidal fit for perfectly smooth pendulum.
+      // Walking arm swing IS fundamentally a pendulum — the Mixamo data has a
+      // 10-frame plateau/wobble region from Euler decomposition artifacts that
+      // causes visible jerkiness. Fitting a cosine preserves timing and amplitude
+      // while eliminating all micro-reversals.
+      for (const boneName of ['l_shoulder', 'r_shoulder']) {
+        const bone = armMotionData[boneName];
+        if (!bone || !bone.x_rot || bone.x_rot.length < 4) continue;
+        const arr = bone.x_rot;
+        const n = arr.length;
+        const meanVal = arr.reduce((a,b) => a+b, 0) / n;
+        const maxV = Math.max(...arr);
+        const minV = Math.min(...arr);
+        const amplitude = (maxV - minV) / 2;
+        const peakIdx = arr.indexOf(maxV);
+        // Replace with cosine: peaks at peakIdx, troughs half a cycle away
+        for (let i = 0; i < n; i++) {
+          arr[i] = meanVal + amplitude * Math.cos(2 * Math.PI * (i - peakIdx) / n);
+        }
+      }
+    }
+
+    // Compute arm baselines for delta computation.
+    // Shoulder: MEAN-based baseline → symmetric forward/backward swing.
+    // Elbow/Wrist: MIN-bend baseline → deltas are always >= 0, no hyperextension.
+    //   Left z_rot is positive (more = more bend), so baseline = min(z_rot).
+    //   Right z_rot is negative (more negative = more bend), so baseline = max(z_rot).
+    if (armMotionData) {
+      const deg = Math.PI / 180;
+      const mean = (bone, axis) => {
+        const d = armMotionData[bone];
+        if (!d || !d[axis] || !d[axis].length) return 0;
+        const arr = d[axis];
+        return (arr.reduce((a,b) => a+b, 0) / arr.length) * deg;
+      };
+      const first = (bone, axis) => {
+        const d = armMotionData[bone];
+        return d && d[axis] && d[axis].length ? d[axis][0] * deg : 0;
+      };
+      const minVal = (bone, axis) => {
+        const d = armMotionData[bone];
+        return d && d[axis] && d[axis].length ? Math.min(...d[axis]) * deg : 0;
+      };
+      const maxVal = (bone, axis) => {
+        const d = armMotionData[bone];
+        return d && d[axis] && d[axis].length ? Math.max(...d[axis]) * deg : 0;
+      };
+      armBaseline = {
+        // Shoulder: mean for symmetric swing
+        l_shoulder: { x: mean('l_shoulder','x_rot'), y: mean('l_shoulder','y_rot'), z: mean('l_shoulder','z_rot') },
+        r_shoulder: { x: mean('r_shoulder','x_rot'), y: mean('r_shoulder','y_rot'), z: mean('r_shoulder','z_rot') },
+        // Elbow: min-bend baseline (left=min z_rot, right=max z_rot i.e. closest to 0)
+        l_elbow:    { x: first('l_elbow','x_rot'), y: first('l_elbow','y_rot'), z: minVal('l_elbow','z_rot') },
+        r_elbow:    { x: first('r_elbow','x_rot'), y: first('r_elbow','y_rot'), z: maxVal('r_elbow','z_rot') },
+        // Wrist: same min-bend approach
+        l_wrist:    { x: first('l_wrist','x_rot'), y: first('l_wrist','y_rot'), z: minVal('l_wrist','z_rot') },
+        r_wrist:    { x: first('r_wrist','x_rot'), y: first('r_wrist','y_rot'), z: maxVal('r_wrist','z_rot') },
+      };
+    }
+
+    // pivots from anchors (CRITICAL)
+    // if any are missing, we fallback to reasonable guesses
+    function pickPos(path, fallback){
+      // path like anchors.l_hip.pos
+      try{
+        const parts = path.split('.');
+        let cur = window;
+        // not using window; we want anchors object:
+        cur = {anchors};
+        for(const p of parts){
+          cur = cur[p];
+        }
+        if(Array.isArray(cur) && cur.length===3) return cur;
+      }catch(e){}
+      return fallback;
+    }
+
+    // direct mapping (based on your previous JSON usage)
+    P.l_hip   = (anchors.l_hip && anchors.l_hip.pos) ? anchors.l_hip.pos : [-0.08, bounds.min[1] + bounds.height*0.38, 0];
+    P.r_hip   = (anchors.r_hip && anchors.r_hip.pos) ? anchors.r_hip.pos : [ 0.08, bounds.min[1] + bounds.height*0.38, 0];
+    P.l_knee  = (anchors.l_knee && anchors.l_knee.pos) ? anchors.l_knee.pos : [-0.08, bounds.min[1] + bounds.height*0.22, 0.02];
+    P.r_knee  = (anchors.r_knee && anchors.r_knee.pos) ? anchors.r_knee.pos : [ 0.08, bounds.min[1] + bounds.height*0.22, 0.02];
+    P.l_ankle = (anchors.l_ankle && anchors.l_ankle.pos) ? anchors.l_ankle.pos : [-0.08, bounds.min[1] + bounds.height*0.06, 0.02];
+    P.r_ankle = (anchors.r_ankle && anchors.r_ankle.pos) ? anchors.r_ankle.pos : [ 0.08, bounds.min[1] + bounds.height*0.06, 0.02];
+
+    P.pelvis  = (anchors.pelvis && anchors.pelvis.pos) ? anchors.pelvis.pos : [bounds.center_x, bounds.min[1] + bounds.height*0.45, 0];
+
+    // Shoulder pivots: hardcoded joint positions matching mixamo_motion_test.html.
+    // X=±0.15 is the joint (where arm meets torso), not the surface anchor (mid-arm).
+    // Y=0.20, Z=-0.03 match the reference exactly.
+    P.l_shoulder = [-0.15, 0.20, -0.03];
+    P.r_shoulder = [ 0.15, 0.20, -0.03];
+
+    // Neck/head pivots from discovered anchors
+    P.neck = (anchors.neck && anchors.neck.pos) ? anchors.neck.pos : [0, bounds.min[1] + bounds.height*0.78, 0];
+    P.head = (anchors.head && anchors.head.pos) ? anchors.head.pos : [0, bounds.min[1] + bounds.height*0.90, 0];
+
+    // cage mesh wireframe
+    const cgeom = new THREE.BufferGeometry();
+    const carr = new Float32Array(cageRest.length*3);
+    for(let i=0;i<cageRest.length;i++){
+      carr[i*3]=cageRest[i][0];
+      carr[i*3+1]=cageRest[i][1];
+      carr[i*3+2]=cageRest[i][2];
+    }
+    cgeom.setAttribute('position', new THREE.BufferAttribute(carr,3));
+    const cidx = new Uint32Array(cageFaces.length*3);
+    for(let i=0;i<cageFaces.length;i++){
+      cidx[i*3]=cageFaces[i][0];
+      cidx[i*3+1]=cageFaces[i][1];
+      cidx[i*3+2]=cageFaces[i][2];
+    }
+    cgeom.setIndex(new THREE.BufferAttribute(cidx,1));
+    cageMesh = new THREE.Mesh(
+      cgeom,
+      new THREE.MeshBasicMaterial({color:0x4ecdc4, wireframe:true, transparent:true, opacity:0.5})
+    );
+    scene.add(cageMesh);
+
+    statusEl.textContent = "Ready.";
+  })().catch(err=>{
+    console.error(err);
+    statusEl.textContent = "Load failed. Make sure you're using a local server (not file://).";
+  });
+
+  // ---------------- Animate (real dt from performance.now) ----------------
+  let time = 0;
+  let lastNow = performance.now();
+  let detLogTimer = 0;
+
+  function tick(){
+    requestAnimationFrame(tick);
+
+    const now = performance.now();
+    const rawDt = (now - lastNow) / 1000;
+    lastNow = now;
+    const dt = Math.min(rawDt, 0.05); // clamp to 50ms max
+
+    if($('play').checked && cageRest && (motionData || jointPosData)){
+      time += dt * (+$('speed').value);
+      driveCageFromMixamo(time);
+      deformMesh();
+      if(cageMesh){
+        cageMesh.visible = $('showCage').checked;
+        updateCageMesh();
+      }
+
+      // ONE-SHOT EULER DIAGNOSTIC — dumps everything needed to find the bug
+      if (!window._eulerDiagDone && time > 0.05 && !jointPosData && armState && lastRegionTransforms) {
+        window._eulerDiagDone = true;
+        console.log('=== EULER MODE FULL DIAGNOSTIC (t=' + time.toFixed(4) + ') ===');
+        console.log('armState:', JSON.stringify({
+          lTposeZ: armState.lTposeZ, rTposeZ: armState.rTposeZ,
+          lArmSwing: armState.lArmSwing, rArmSwing: armState.rArmSwing,
+          lElbowAngle: armState.lElbowAngle, rElbowAngle: armState.rElbowAngle,
+          lWristAngle: armState.lWristAngle, rWristAngle: armState.rWristAngle,
+          lBendAxis: armState.lBendAxis, rBendAxis: armState.rBendAxis,
+          positionBased: armState.positionBased
+        }));
+        const tf = lastRegionTransforms;
+        // Torso Kabsch
+        if (tf[0]) {
+          console.log('Torso Kabsch: det=' + mat3_det(tf[0].R).toFixed(6) +
+            ' cRest=' + tf[0].cRest.map(v=>v.toFixed(4)) +
+            ' cCurr=' + tf[0].cCurr.map(v=>v.toFixed(4)));
+        }
+        // Shoulder agreement test: shoulder point should map to same world pos under torso and arm transforms
+        if (tf[0] && tf[7] && cageShoulderL) {
+          const sh = cageShoulderL;
+          const t0 = tf[0], t7 = tf[7];
+          const shViaTorso = [t0.R[0]*sh[0]+t0.R[1]*sh[1]+t0.R[2]*sh[2]+t0.t[0],
+                              t0.R[3]*sh[0]+t0.R[4]*sh[1]+t0.R[5]*sh[2]+t0.t[1],
+                              t0.R[6]*sh[0]+t0.R[7]*sh[1]+t0.R[8]*sh[2]+t0.t[2]];
+          const shViaArm = [t7.R[0]*sh[0]+t7.R[1]*sh[1]+t7.R[2]*sh[2]+t7.t[0],
+                            t7.R[3]*sh[0]+t7.R[4]*sh[1]+t7.R[5]*sh[2]+t7.t[1],
+                            t7.R[6]*sh[0]+t7.R[7]*sh[1]+t7.R[8]*sh[2]+t7.t[2]];
+          const err = Math.sqrt((shViaTorso[0]-shViaArm[0])**2+(shViaTorso[1]-shViaArm[1])**2+(shViaTorso[2]-shViaArm[2])**2);
+          console.log('Shoulder L (cage rest):', sh.map(v=>v.toFixed(4)));
+          console.log('Shoulder L via torso:', shViaTorso.map(v=>v.toFixed(4)));
+          console.log('Shoulder L via arm:', shViaArm.map(v=>v.toFixed(4)));
+          console.log('Shoulder agreement error:', err.toFixed(8));
+        }
+        // Forearm: compare old formula vs new formula
+        if (tf[7] && armState.lBendAxis && cageShoulderL && cageArmDirL) {
+          const ba = armState.lBendAxis;
+          const ang = armState.lElbowAngle;
+          const Rb = mat3_rotAxis(ba[0], ba[1], ba[2], ang);
+          const R_u = tf[7].R, t_u = tf[7].t;
+          const uaLen = +$('upperArmLen').value;
+          const erx = cageShoulderL[0]+cageArmDirL[0]*uaLen;
+          const ery = cageShoulderL[1]+cageArmDirL[1]*uaLen;
+          const erz = cageShoulderL[2]+cageArmDirL[2]*uaLen;
+          const ae = mat3_mulVec3(R_u, erx, ery, erz);
+          const ep = [ae[0]+t_u[0], ae[1]+t_u[1], ae[2]+t_u[2]];
+          const R_f = mat3_mul(Rb, R_u);
+          // NEW formula
+          const Rf_re = mat3_mulVec3(R_f, erx, ery, erz);
+          const tNew = [ep[0]-Rf_re[0], ep[1]-Rf_re[1], ep[2]-Rf_re[2]];
+          // OLD formula
+          const Rb_tu = mat3_mulVec3(Rb, t_u[0], t_u[1], t_u[2]);
+          const Rb_ep = mat3_mulVec3(Rb, ep[0], ep[1], ep[2]);
+          const tOld = [Rb_tu[0]+ep[0]-Rb_ep[0], Rb_tu[1]+ep[1]-Rb_ep[1], Rb_tu[2]+ep[2]-Rb_ep[2]];
+          console.log('Forearm L NEW t:', tNew.map(v=>v.toFixed(6)));
+          console.log('Forearm L OLD t:', tOld.map(v=>v.toFixed(6)));
+          console.log('Formula diff:', Math.sqrt((tNew[0]-tOld[0])**2+(tNew[1]-tOld[1])**2+(tNew[2]-tOld[2])**2).toFixed(12));
+          console.log('Elbow rest pos:', [erx,ery,erz].map(v=>v.toFixed(4)));
+          console.log('Elbow world pos:', ep.map(v=>v.toFixed(4)));
+        }
+        // Sample cage verts: check a few from each region
+        for (const [name, arr] of [['torso',R.torso],['l_thigh',R.l_thigh],['l_uarm',R.l_upperarm]]) {
+          if (arr && arr.length) {
+            const ci = arr[0];
+            console.log('Cage ' + name + '[0] idx=' + ci +
+              ' rest=[' + cageRest[ci].map(v=>v.toFixed(4)) + ']' +
+              ' cur=[' + cagePos[ci*3].toFixed(4) + ',' + cagePos[ci*3+1].toFixed(4) + ',' + cagePos[ci*3+2].toFixed(4) + ']');
+          }
+        }
+        // Mesh vert binding check: what regions does v0 actually have?
+        if (meshVertRegions && meshVertRegions[0]) {
+          const pairs = meshVertRegions[0];
+          let str = 'v0 weight pairs:';
+          for (let e = 0; e < pairs.length; e += 2) {
+            str += ' r' + pairs[e] + '=' + pairs[e+1].toFixed(4);
+          }
+          console.log(str);
+        }
+      }
+
+      // One-shot arm diagnostic: compare L vs R transforms after first few frames
+      if (!armDiagDone && time > 0.1 && lastRegionTransforms) {
+        armDiagDone = true;
+        const pairs = [[7,8,'upperarm'],[9,10,'forearm']];
+        for (const [lid, rid, name] of pairs) {
+          const L = lastRegionTransforms[lid];
+          const R_tf = lastRegionTransforms[rid];
+          if (!L) { console.warn(`ARM DIAG: L ${name} (region ${lid}) MISSING`); continue; }
+          if (!R_tf) { console.warn(`ARM DIAG: R ${name} (region ${rid}) MISSING`); continue; }
+          const Ld = mat3_det(L.R), Rd = mat3_det(R_tf.R);
+          console.log(`ARM DIAG ${name}: L det=${Ld.toFixed(4)} R det=${Rd.toFixed(4)}`);
+          console.log(`  L.R=[${Array.from(L.R).map(v=>v.toFixed(3)).join(',')}]`);
+          console.log(`  R.R=[${Array.from(R_tf.R).map(v=>v.toFixed(3)).join(',')}]`);
+          console.log(`  L.t=[${L.t.map(v=>v.toFixed(4)).join(',')}]`);
+          console.log(`  R.t=[${R_tf.t.map(v=>v.toFixed(4)).join(',')}]`);
+        }
+      }
+
+      // (det(R) logging removed — was spamming console)
+
+      // One-shot mesh vertex check: verify mesh deformation produces sane values
+      if (!window._meshVertCheckDone && time > 0.05 && meshGeo) {
+        window._meshVertCheckDone = true;
+        const mpos = meshGeo.attributes.position.array;
+        const n = meshRestPos.length / 3;
+        let nanCount = 0, infCount = 0, bigCount = 0, zeroDeform = 0;
+        let maxDist = 0;
+        for (let i = 0; i < n; i++) {
+          const dx = mpos[i*3] - meshRestPos[i*3];
+          const dy = mpos[i*3+1] - meshRestPos[i*3+1];
+          const dz = mpos[i*3+2] - meshRestPos[i*3+2];
+          const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+          if (isNaN(mpos[i*3]) || isNaN(mpos[i*3+1]) || isNaN(mpos[i*3+2])) nanCount++;
+          if (!isFinite(mpos[i*3]) || !isFinite(mpos[i*3+1]) || !isFinite(mpos[i*3+2])) infCount++;
+          if (dist > 1.0) bigCount++;
+          if (dist < 1e-6) zeroDeform++;
+          if (dist > maxDist) maxDist = dist;
+        }
+        console.log('[MESH CHECK] verts=' + n + ' NaN=' + nanCount + ' Inf=' + infCount +
+          ' bigDeform(>1)=' + bigCount + ' zeroDeform=' + zeroDeform + ' maxDist=' + maxDist.toFixed(4));
+        // Sample 5 vertices from different regions
+        const samples = [0, Math.floor(n*0.2), Math.floor(n*0.4), Math.floor(n*0.6), Math.floor(n*0.8)];
+        for (const si of samples) {
+          const ri = meshVertRegions[si] ? meshVertRegions[si][0] : '?';
+          console.log('  v' + si + ' region=' + ri + ' rest=[' +
+            meshRestPos[si*3].toFixed(4) + ',' + meshRestPos[si*3+1].toFixed(4) + ',' + meshRestPos[si*3+2].toFixed(4) +
+            '] cur=[' + mpos[si*3].toFixed(4) + ',' + mpos[si*3+1].toFixed(4) + ',' + mpos[si*3+2].toFixed(4) + ']');
+        }
+      }
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  tick();
+
+  // ═══════════════════════════════════════════════════════════
+  // FBX DRAG-DROP: extract joint positions in-memory from Mixamo FBX
+  // ═══════════════════════════════════════════════════════════
+
+  const FBX_BONE_MAP = [
+    { suffix: 'Hips',          name: 'pelvis' },
+    { suffix: 'Spine1',        name: 'chest', alt: 'Spine2' },
+    { suffix: 'Neck',          name: 'neck' },
+    { suffix: 'Head',          name: 'head' },
+    { suffix: 'LeftArm',       name: 'l_shoulder' },
+    { suffix: 'LeftForeArm',   name: 'l_elbow' },
+    { suffix: 'LeftHand',      name: 'l_wrist' },
+    { suffix: 'LeftHandMiddle1', name: 'l_mid_knuckle', alt: 'LeftHandMiddle2' },
+    { suffix: 'LeftUpLeg',     name: 'l_hip' },
+    { suffix: 'LeftLeg',       name: 'l_knee' },
+    { suffix: 'LeftFoot',      name: 'l_ankle' },
+    { suffix: 'LeftToeBase',   name: 'l_toe' },
+    { suffix: 'RightArm',      name: 'r_shoulder' },
+    { suffix: 'RightForeArm',  name: 'r_elbow' },
+    { suffix: 'RightHand',     name: 'r_wrist' },
+    { suffix: 'RightHandMiddle1', name: 'r_mid_knuckle', alt: 'RightHandMiddle2' },
+    { suffix: 'RightUpLeg',    name: 'r_hip' },
+    { suffix: 'RightLeg',      name: 'r_knee' },
+    { suffix: 'RightFoot',     name: 'r_ankle' },
+    { suffix: 'RightToeBase',  name: 'r_toe' },
+  ];
+
+  function matchFBXBone(boneName) {
+    const lower = boneName.toLowerCase();
+    const sorted = FBX_BONE_MAP.slice().sort((a, b) => b.suffix.length - a.suffix.length);
+    for (const entry of sorted) {
+      if (lower.endsWith(entry.suffix.toLowerCase())) return entry.name;
+      if (entry.alt && lower.endsWith(entry.alt.toLowerCase())) return entry.name;
+    }
+    return null;
+  }
+
+  function extractPositionsFromFBX(arrayBuffer, filename) {
+    statusEl.textContent = 'Parsing FBX...';
+
+    const loader = new THREE.FBXLoader();
+    let group;
+    try {
+      group = loader.parse(arrayBuffer, '');
+    } catch (e) {
+      statusEl.textContent = 'FBX parse error: ' + e.message;
+      console.error(e);
+      return;
+    }
+
+    // Find bones and map them
+    const allBones = [];
+    group.traverse(obj => { if (obj.isBone) allBones.push(obj); });
+    if (!allBones.length) { statusEl.textContent = 'No bones in FBX!'; return; }
+
+    const boneMapping = {};
+    let hipsBone = null;
+    for (const bone of allBones) {
+      const mapped = matchFBXBone(bone.name);
+      if (mapped) {
+        boneMapping[mapped] = bone;
+        if (mapped === 'pelvis') hipsBone = bone;
+      }
+    }
+
+    if (!hipsBone) { statusEl.textContent = 'No Hips bone found!'; return; }
+
+    const clip = group.animations && group.animations[0];
+    if (!clip) { statusEl.textContent = 'No animation clip in FBX!'; return; }
+
+    // ── Extract BIND POSE (T-pose) BEFORE animation overrides bone transforms ──
+    // In Mixamo FBX, the skeleton's default pose is the T-pose (bind pose).
+    // We need these positions as the "rest" reference for delta retargeting,
+    // NOT frame 0 of the walking animation (which is mid-walk).
+    group.updateMatrixWorld(true);
+    const bindPoseRaw = {};  // hips-centered, X-mirrored, UNscaled
+    const hipsBindPos = new THREE.Vector3();
+    hipsBindPos.setFromMatrixPosition(hipsBone.matrixWorld);
+    for (const jn of Object.keys(boneMapping)) {
+      const bone = boneMapping[jn];
+      const bp = new THREE.Vector3();
+      bp.setFromMatrixPosition(bone.matrixWorld);
+      bindPoseRaw[jn] = [
+        -(bp.x - hipsBindPos.x),
+        bp.y - hipsBindPos.y,
+        bp.z - hipsBindPos.z
+      ];
+    }
+
+    // ── Extract BIND POSE quaternions (world-space, X-mirrored) ──
+    const bindQuatRaw = {};
+    const tmpQuat = new THREE.Quaternion();
+    for (const jn of Object.keys(boneMapping)) {
+      const bone = boneMapping[jn];
+      bone.getWorldQuaternion(tmpQuat);
+      // X-mirror: reflection across YZ plane → negate Y and Z components
+      bindQuatRaw[jn] = [tmpQuat.x, -tmpQuat.y, -tmpQuat.z, tmpQuat.w];
+    }
+
+    // Setup mixer
+    const mixer = new THREE.AnimationMixer(group);
+    const action = mixer.clipAction(clip);
+    action.play();
+
+    // Measure skeleton height for auto-scale (from animated frame 0)
+    mixer.setTime(0);
+    group.updateMatrixWorld(true);
+    let minY = Infinity, maxY = -Infinity;
+    group.traverse(obj => {
+      if (obj.isBone) {
+        const wp = new THREE.Vector3();
+        obj.getWorldPosition(wp);
+        minY = Math.min(minY, wp.y);
+        maxY = Math.max(maxY, wp.y);
+      }
+    });
+    const sourceHeight = maxY - minY;
+    const targetHeight = meshHeight || 1.0;
+    const scaleFactor = (sourceHeight > 0.01) ? (targetHeight / sourceHeight) : 1.0;
+    console.log('FBX skeleton height:', sourceHeight.toFixed(1),
+      '→ cage mesh height:', targetHeight.toFixed(3),
+      '→ scale:', scaleFactor.toFixed(4));
+
+    // Extract positions — use clip's native rate or minimum 60fps for fast animations
+    let nativeFPS = 30;
+    if (clip.tracks.length > 0 && clip.tracks[0].times.length > 1) {
+      const dt = clip.tracks[0].times[1] - clip.tracks[0].times[0];
+      if (dt > 0) nativeFPS = Math.round(1 / dt);
+    }
+    const fps = Math.max(60, nativeFPS);
+    const duration = clip.duration;
+    const frameCount = Math.ceil(duration * fps) + 1;
+    const jointNames = Object.keys(boneMapping);
+
+    const result = {
+      duration, fps, frame_count: frameCount,
+      rest_pose: {},
+      rest_quats: {},
+      root_positions: [],
+      joints: {}
+    };
+    for (const jn of jointNames) {
+      result.joints[jn] = { times: [], positions: [], quaternions: [] };
+    }
+
+    const worldPos = new THREE.Vector3();
+    const hipsPos = new THREE.Vector3();
+
+    for (let f = 0; f < frameCount; f++) {
+      const t = Math.min(f / fps, duration);
+      mixer.setTime(t);
+      group.updateMatrixWorld(true);
+
+      // Get hips TRANSLATION only (not full inverse matrix).
+      // This removes root motion drift while keeping world-space orientation,
+      // so direction vectors between joints stay in world coordinates.
+      hipsPos.setFromMatrixPosition(hipsBone.matrixWorld);
+      // Negate X: Mixamo has left=+X, cage has left=-X (mirrored convention)
+      result.root_positions.push([
+        -hipsPos.x * scaleFactor,
+        hipsPos.y * scaleFactor,
+        hipsPos.z * scaleFactor
+      ]);
+
+      for (const jn of jointNames) {
+        const bone = boneMapping[jn];
+        worldPos.setFromMatrixPosition(bone.matrixWorld);
+
+        // Subtract hips translation only — positions are now
+        // "hips-centered but world-oriented"
+        // Negate X to match cage convention (Mixamo left=+X, cage left=-X)
+        const lx = -(worldPos.x - hipsPos.x) * scaleFactor;
+        const ly = (worldPos.y - hipsPos.y) * scaleFactor;
+        const lz = (worldPos.z - hipsPos.z) * scaleFactor;
+
+        result.joints[jn].times.push(+t.toFixed(6));
+        result.joints[jn].positions.push([
+          +lx.toFixed(6), +ly.toFixed(6), +lz.toFixed(6)
+        ]);
+
+        // World quaternion (X-mirrored: negate Y and Z)
+        bone.getWorldQuaternion(tmpQuat);
+        result.joints[jn].quaternions.push([
+          +tmpQuat.x.toFixed(6), +(-tmpQuat.y).toFixed(6),
+          +(-tmpQuat.z).toFixed(6), +tmpQuat.w.toFixed(6)
+        ]);
+      }
+    }
+
+    // Use BIND POSE (T-pose) as rest_pose, NOT frame 0 of the animation.
+    // This is critical: frame 0 of a walking animation is mid-walk, giving tiny
+    // deltas. T-pose gives meaningful animation deltas for retargeting.
+    for (const jn of jointNames) {
+      const raw = bindPoseRaw[jn];
+      if (raw) {
+        result.rest_pose[jn] = [
+          +(raw[0] * scaleFactor).toFixed(6),
+          +(raw[1] * scaleFactor).toFixed(6),
+          +(raw[2] * scaleFactor).toFixed(6)
+        ];
+      } else {
+        result.rest_pose[jn] = result.joints[jn].positions[0].slice();
+      }
+    }
+
+    // Rest quaternions from bind pose (T-pose)
+    for (const jn of jointNames) {
+      result.rest_quats[jn] = bindQuatRaw[jn] ||
+        (result.joints[jn].quaternions[0] || [0, 0, 0, 1]).slice();
+    }
+
+    // Diagnostic: compare bind pose (T-pose) vs frame 0 (animated) positions
+    console.log('=== BIND POSE (T-pose) vs FRAME 0 (animated) ===');
+    for (const jn of jointNames) {
+      const bp = result.rest_pose[jn];
+      const f0 = result.joints[jn].positions[0];
+      const dist = Math.sqrt((bp[0]-f0[0])**2 + (bp[1]-f0[1])**2 + (bp[2]-f0[2])**2);
+      if (dist > 0.001) {
+        console.log('  ' + jn + ': T-pose=[' + bp.map(v=>(+v).toFixed(4)).join(',') +
+          '] frame0=[' + f0.map(v=>(+v).toFixed(4)).join(',') + '] diff=' + dist.toFixed(4));
+      }
+    }
+
+    // ── SKELETON PROPORTION CHECK ──
+    // Compare FBX rest-pose proportions vs cage pivot proportions.
+    // No alignment/rotation is applied — only direction vectors are used from FBX data.
+    if (P) {
+      console.log('=== FBX vs CAGE PROPORTION CHECK (no alignment applied) ===');
+      const cagePelvis = P.pelvis || [0, 0, 0];
+      const checkJoints = ['l_hip','r_hip','l_shoulder','r_shoulder','l_knee','r_knee','l_elbow','r_elbow','neck','head'];
+      for (const jn of checkJoints) {
+        const fp = result.rest_pose[jn];
+        const cp = P[jn];
+        if (fp && cp) {
+          // FBX: hips-centered distance from pelvis
+          const fd = Math.sqrt(fp[0]*fp[0] + fp[1]*fp[1] + fp[2]*fp[2]);
+          // Cage: distance from cage pelvis
+          const cd = Math.sqrt((cp[0]-cagePelvis[0])**2 + (cp[1]-cagePelvis[1])**2 + (cp[2]-cagePelvis[2])**2);
+          const ratio = cd > 0.001 ? (fd / cd).toFixed(3) : 'N/A';
+          console.log('  ' + jn + ': fbxDist=' + fd.toFixed(4) + ' cageDist=' + cd.toFixed(4) + ' ratio=' + ratio +
+            '  fbx=[' + fp.map(v=>v.toFixed(4)).join(',') + '] cage=[' + cp.map(v=>v.toFixed(4)).join(',') + ']');
+        }
+      }
+      // Direction check: FBX l_shoulder direction vs cage l_shoulder direction
+      const fpLS = result.rest_pose.l_shoulder, fpRS = result.rest_pose.r_shoulder;
+      const cpLS = P.l_shoulder, cpRS = P.r_shoulder;
+      if (fpLS && fpRS && cpLS && cpRS) {
+        console.log('  FBX shoulder axis: [' + [(fpLS[0]-fpRS[0]).toFixed(4), (fpLS[1]-fpRS[1]).toFixed(4), (fpLS[2]-fpRS[2]).toFixed(4)].join(',') + ']');
+        console.log('  Cage shoulder axis: [' + [(cpLS[0]-cpRS[0]).toFixed(4), (cpLS[1]-cpRS[1]).toFixed(4), (cpLS[2]-cpRS[2]).toFixed(4)].join(',') + ']');
+      }
+      // Forward direction: knee should be in +Z when leg is forward
+      const fpLK = result.rest_pose.l_knee, fpLH = result.rest_pose.l_hip;
+      if (fpLK && fpLH) {
+        console.log('  FBX l_thigh rest dir: [' + [(fpLK[0]-fpLH[0]).toFixed(4), (fpLK[1]-fpLH[1]).toFixed(4), (fpLK[2]-fpLH[2]).toFixed(4)].join(',') + ']');
+      }
+      const cpLK = P.l_knee, cpLH = P.l_hip;
+      if (cpLK && cpLH) {
+        console.log('  Cage l_thigh rest dir: [' + [(cpLK[0]-cpLH[0]).toFixed(4), (cpLK[1]-cpLH[1]).toFixed(4), (cpLK[2]-cpLH[2]).toFixed(4)].join(',') + ']');
+      }
+    }
+
+    // Apply to app
+    jointPosData = result;
+    cycleDuration = result.duration;
+    time = 0;
+    window._posDiagDone = false;  // reset diagnostic for fresh output
+    window._kabschDiagDone = false;
+    window._armAnalyticalDiagDone = false;
+    window._twistDiagCount = 0;
+    window._meshVertCheckDone = false;  // re-check mesh after FBX load
+    // Reset temporal coherence state for new animation
+    for (const k of Object.keys(prevBendAxis)) prevBendAxis[k] = null;
+
+    const mappedNames = jointNames.join(', ');
+    const info = filename + ': ' + frameCount + ' frames, ' +
+      jointNames.length + ' joints, ' + duration.toFixed(2) + 's (scale ' + scaleFactor.toFixed(3) + ')';
+    $('fbxInfo').textContent = info;
+    statusEl.textContent = 'FBX loaded — position-based driving active';
+    console.log('FBX extracted:', info);
+    console.log('Mapped joints:', mappedNames);
+  }
+
+  // Drag-drop handlers
+  const dropOverlay = $('dropOverlay');
+  let dragCounter = 0;
+  document.addEventListener('dragenter', e => {
+    e.preventDefault();
+    dragCounter++;
+    dropOverlay.classList.add('active');
+  });
+  document.addEventListener('dragover', e => { e.preventDefault(); });
+  document.addEventListener('dragleave', e => {
+    dragCounter--;
+    if (dragCounter <= 0) { dragCounter = 0; dropOverlay.classList.remove('active'); }
+  });
+  document.addEventListener('drop', e => {
+    e.preventDefault();
+    dragCounter = 0;
+    dropOverlay.classList.remove('active');
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.toLowerCase().endsWith('.fbx')) {
+      const reader = new FileReader();
+      reader.onload = () => extractPositionsFromFBX(reader.result, file.name);
+      reader.readAsArrayBuffer(file);
+    }
+  });
+
+  // File picker handler
+  $('fbxFile').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => extractPositionsFromFBX(reader.result, file.name);
+      reader.readAsArrayBuffer(file);
+    }
+  });
+
+  </script>
+</body>
+</html>

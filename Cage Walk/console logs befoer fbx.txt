@@ -1,0 +1,76 @@
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+Tracking Prevention blocked access to storage for <URL>.
+(index):122 [CAGE v3 — quaternion debug build]
+:3000/joint_positions.json:1   Failed to load resource: the server responded with a status of 404 (File not found)
+(index):3439 No joint_positions.json found — using Euler-based driving
+(index):3444 regionId length = 992
+(index):3445 region meta = Object
+(index):3186  regions.regionId longer than cageRest (992 > 610). Truncating.
+normalizeRegionId @ (index):3186
+(index):3460 cageRest length = 610
+(index):3461 regions.regionId length = 992
+(index):3462 mesh vert count = 59615
+(index):3498 Mesh vert region counts (dominant):
+(index):3500   torso: 18254
+(index):3500   l_thigh: 131
+(index):3500   l_shin: 5831
+(index):3500   r_shin: 2309
+(index):3500   l_foot: 1388
+(index):3500   r_foot: 877
+(index):3500   l_uarm: 6193
+(index):3500   r_uarm: 3222
+(index):3500   l_farm: 6887
+(index):3500   r_farm: 1633
+(index):3500   head: 12890
+(index):3503 Built bind: Object
+(index):3528 Baked cage arm sizes: l_uarm=84 l_farm=83 r_uarm=53 r_farm=28
+(index):3369 Arm geometry clamp: reclassified 1570 torso→arm verts, clamped torso on 6547 arm verts
+(index):437 ArmSplit L: 154 5 8 jointCenter Array(3) armAnchor Array(3) dir Array(3)
+(index):439 ArmSplit R: 68 9 4 jointCenter Array(3) armAnchor Array(3) dir Array(3)
+(index):3761 [MESH CHECK] verts=59615 NaN=0 Inf=0 bigDeform(>1)=0 zeroDeform=0 maxDist=0.6630
+(index):3767   v0 region=7 rest=[0.0825,-0.5009,0.0027] cur=[0.3338,-0.2613,-0.0419]
+(index):3767   v11923 region=0 rest=[0.3187,0.1844,-0.0352] cur=[0.3204,0.1743,-0.0077]
+(index):3767   v23846 region=0 rest=[-0.3116,0.1940,-0.0258] cur=[-0.3098,0.1892,-0.0045]
+(index):3767   v35769 region=7 rest=[-0.0869,-0.3029,-0.0150] cur=[0.0882,-0.3466,-0.0664]
+(index):3767   v47692 region=13 rest=[-0.0113,0.2336,-0.0030] cur=[0.3799,-0.0072,-0.0969]
+(index):3733 ARM DIAG upperarm: L det=1.0000 R det=1.0000
+(index):3734   L.R=[0.346,-0.936,0.072,0.900,0.309,-0.307,0.265,0.171,0.949]
+(index):3735   R.R=[0.338,0.938,-0.079,-0.921,0.347,0.174,0.191,0.014,0.981]
+(index):3736   L.t=[-0.1627,-0.1777,0.0176]
+(index):3737   R.t=[0.1632,-0.0760,-0.0072]
+(index):3733 ARM DIAG forearm: L det=1.0000 R det=1.0000
+(index):3734   L.R=[0.345,-0.934,0.089,0.913,0.313,-0.262,0.217,0.172,0.961]
+(index):3735   R.R=[0.268,0.921,-0.283,-0.616,0.390,0.684,0.741,-0.009,0.672]
+(index):3736   L.t=[-0.1622,-0.1750,0.0126]
+(index):3737   R.t=[0.1673,-0.1037,-0.0897]
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again

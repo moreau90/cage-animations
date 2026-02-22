@@ -1,0 +1,71 @@
+Keep going, but fix the right thing
+
+Your advisor is correct about one specific point:
+
+The clamp only triggers when meshRegion === 7/8, but some bicep verts are getting classified as torso (0), so they never get clamped.
+
+That is the actual blocker.
+
+The solution is not “switch everything to sliders.”
+The solution is: apply the clamp based on geometry, not on meshRegion id.
+
+Why the revert-to-sliders plan is a trap
+
+That diff you showed does two bad things:
+
+It throws away the cage-derived shoulder center + arm axis, which were solving asymmetry and giving you real references.
+
+It locks your arm direction to pure ±X again, which is almost never true once the character isn’t perfectly aligned — and it’s exactly why the elbow/wrist pivots started drifting.
+
+It might make one pose look “less stretched,” but it will not solve bicep crinkling, and it will bring back weird edge cases.
+
+The plan that actually fixes bicep crinkling in your architecture
+Do these two changes, keep everything cage-derived:
+Fix A — Geometry-based “is this an arm vertex?” detection
+
+Inside buildBindKNNRegion, before deciding allowedRegions, compute:
+
+projection tL and tR onto left/right arm axis (using cage-derived shoulderJoint + armDir)
+
+distance to arm axis (point-to-line distance)
+
+If the vertex is close to the arm axis and within an arm-length range, treat it as an arm vertex even if meshRegion came back as torso.
+
+Then apply the torso clamp to those vertices.
+
+This directly addresses “bicep verts classified as torso.”
+
+Fix B — Clamp torso influence past a shoulder band
+
+For vertices detected as “upperarm-ish”:
+
+if t > band → disallow torso (0)
+
+else allow it
+
+And don’t hardcode band=0.04. Tie it to upperArmLen:
+
+band = 0.15 * upperArmLen (start)
+
+Optional nuclear option: hard seam
+
+Hard seam (no blending) can work if your transforms are truly continuous (upperarm → forearm composed). But it’s usually a last resort because you’ll trade “crinkle” for “visible crease.”
+
+I wouldn’t do that yet. You’re one good geometry-gated clamp away from making this behave like painted weights.
+
+What to do right now
+
+✅ Reject the “make split + drive slider-based” revert.
+✅ Implement geometry-based arm detection + clamp in buildBindKNNRegion.
+
+If you paste the current allowedRegions section (just the 20–30 lines around where it does meshRegion = nearestRegion; const allowedRegions = ...), I’ll write the exact drop-in block that:
+
+uses your existing cageShoulderL/R and cageArmDirL/R
+
+computes projection + axis distance
+
+forces arm-only adjacency + torso clamp past the band
+
+keeps everything consistent with your cage-derived frame
+
+That’s the fix that actually targets the problem you’ve identified.

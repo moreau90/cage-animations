@@ -1,0 +1,36 @@
+You have my current index.html per-bone LBS pipeline. I ran lbs_vs_dqs.txt and saw LBS and DQS are IDENTICAL (0 delta).
+That’s expected because DQS only applies in the per-region path, and boneLBSActive bypasses that entire loop.
+
+Goal:
+I need volume/circumference preservation for the SAME pipeline I’m using (per-bone skinning), because limbs are going flat/stretchy in extreme Mixamo poses.
+
+Task A — Implement per-bone DQS (real DQS, not region-based):
+- In the per-bone deformation loop (the one that runs when boneLBSActive==true), add a DQS option that blends dual quaternions per vertex using meshBoneWeights.
+- Precompute per-bone dual quats once per frame from boneTransforms[boneIdx] (R,t).
+- For each vertex:
+  - Blend DQs using weights (with sign correction to keep quats in the same hemisphere).
+  - Normalize the blended DQ.
+  - Transform the rest position by the blended DQ (and respect the existing alpha blend behavior).
+- The useDQS checkbox must affect this path too. After this, LBS vs DQS comparison should show differences.
+
+Task B — Add a “rest circumference / volume” diagnostic (this is what I feel is missing):
+- For each main limb segment (thigh, shin, upperarm, forearm), define:
+  - segment axis = P[joint] → P[primaryChild(joint)] using the JOINT_PRIMARY_CHILD mapping we already added.
+- In rest pose, compute per-vertex:
+  - t along axis, and radial distance r to axis.
+- In deformed pose, compute the same r’.
+- Report per-segment:
+  - mean(r’/r), 5th percentile, 95th percentile, and “flatten score” = (stddev(r’)/mean(r’)) vs rest.
+- Also optionally colorize vertices by r’/r so we can see where flattening occurs.
+
+Task C — Make this tunable toward targets:
+- Expose sliders for:
+  - per-bone DQS on/off (or blend factor between LBS and DQS)
+  - existing sharpening (upper/lower)
+  - optional bulge compensation strength (simple: scale radial component to push r’ toward r)
+- Add an evaluation mode similar to fixed-frame rigidity sampling: sample N frames and average circumference-loss + inversion% + rigidity%.
+
+Deliverables:
+- Exact code changes inside index.html (where to insert + functions).
+- Keep diagnostics read-only (do not modify positions except the chosen skinning mode).
+- After change, rerun the LBS vs DQS comparison; it MUST no longer be identical when useDQS is enabled in boneLBS mode.

@@ -1,0 +1,151 @@
+You have my current index.html per-bone skinning pipeline.
+
+Context (confirmed by lbs_vs_dqs.txt):
+
+LBS and DQS currently produce identical results.
+
+This is expected because DQS only exists in the per-region path.
+
+When boneLBSActive == true, the region path is bypassed, so DQS has zero effect.
+
+Core Goal (important)
+
+I am not just trying to “add DQS.”
+My real goal is:
+
+Preserve rest-pose limb shape (circumference / volume) under extreme Mixamo animations, using the SAME per-bone skinning pipeline.
+
+Right now:
+
+Thighs and shins visibly flatten, stretch, and kink.
+
+Rigidity metrics can look “good” while the limb looks terrible.
+
+This tells us we are missing shape-based diagnostics and controls, not just transform correctness.
+
+Task A — True per-bone DQS (inside boneLBSActive path)
+
+Implement real per-bone DQS in the same loop that currently performs per-bone LBS.
+
+Requirements:
+
+Precompute per-bone dual quaternions from boneTransforms[boneIdx] (R, t) once per frame.
+
+In the vertex loop:
+
+Blend dual quaternions using meshBoneWeights.
+
+Apply hemisphere sign correction.
+
+Normalize the blended DQ.
+
+Transform the rest vertex by the blended DQ.
+
+Respect the existing alpha blend behavior exactly.
+
+The existing useDQS checkbox must affect this path.
+
+After implementation:
+
+LBS vs DQS must no longer be identical in boneLBSActive mode.
+
+Important:
+
+Do NOT reuse region logic.
+
+Do NOT change joint placement, FK, or transforms.
+
+This is strictly a deformation-stage change.
+
+Task B — Rest-shape circumference / volume diagnostics (this is the missing piece)
+
+Add diagnostics that explicitly compare rest shape vs deformed shape.
+
+For each main limb segment (thigh, shin, upper arm, forearm):
+
+Define the segment axis using:
+
+P[joint] → P[JOINT_PRIMARY_CHILD[joint]]
+
+In rest pose, compute per vertex:
+
+t = projection along the segment axis
+
+r = radial distance to the axis
+
+In deformed pose, compute:
+
+r' using the same axis
+
+Report per segment:
+
+mean(r′ / r)
+
+5th percentile(r′ / r)
+
+95th percentile(r′ / r)
+
+radial variance change:
+
+flatten_score = stddev(r′) / mean(r′) compared to rest
+
+Optional but preferred:
+
+Colorize vertices by r′ / r to visualize flattening and bulging.
+
+Key rule:
+
+Rest shape is the reference.
+
+This diagnostic must catch “flat shin” even when rigidity is low.
+
+Task C — Make deformation tunable toward targets
+
+Expose controls so the system can iterate toward shape preservation:
+
+Sliders:
+
+LBS ↔ DQS blend factor (per-bone path)
+
+Existing weight sharpening (upper / lower)
+
+Optional radial compensation strength:
+
+simple version: scale radial component to push r′ toward r
+
+Evaluation mode:
+
+Sample N fixed frames (like fixed-frame rigidity)
+
+Report averaged:
+
+circumference loss
+
+inverted triangle %
+
+rigidity %
+
+This turns the system into a measurable, optimizable pipeline, not guesswork.
+
+Deliverables
+
+Exact code changes inside index.html (where + how).
+
+Diagnostics must be read-only (except for selected skinning mode).
+
+After changes:
+
+Re-run LBS vs DQS comparison.
+
+Results must differ when useDQS is enabled in boneLBS mode.
+
+Final reassurance (important)
+
+Your intuition is correct.
+
+Weight correctness does affect deformation — but weights alone cannot preserve volume.
+
+What you are building now is the missing half:
+shape-aware deformation + shape-aware diagnostics.
+
+This is exactly how modern production pipelines evolve.

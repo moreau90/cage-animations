@@ -1,0 +1,1002 @@
+[
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c19316b3c1838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.4d614c26-42fa-471b-a118-35427cf587d3 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "a97a13c3-12e4-465c-ab5b-2465948d8ac6",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.4d614c26-42fa-471b-a118-35427cf587d3",
+    "status_code": 200,
+    "timestamp": 1755464399593000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c1930da791838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.ebb16d63-ba36-4451-8e85-1903024e624b | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "f18ec333-3300-41fa-ab72-a7e41e674020",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.ebb16d63-ba36-4451-8e85-1903024e624b",
+    "status_code": 200,
+    "timestamp": 1755464399515000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c19309a451838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=*%2Csubmission%3Acontest_submissions%28*%2Ccontest%3Acontests%28*%29%29&order=calculated_at.desc&limit=20 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "82fe0ed5-f211-4e1f-b2ce-0072fcd67ba2",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=*%2Csubmission%3Acontest_submissions%28*%2Ccontest%3Acontests%28*%29%29&order=calculated_at.desc&limit=20",
+    "status_code": 200,
+    "timestamp": 1755464399463000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c19306a0b1838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.116e850e-755f-4956-9feb-a7a46781f876 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "f60fc73d-8eee-4c3b-85f3-555afdf02477",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.116e850e-755f-4956-9feb-a7a46781f876",
+    "status_code": 200,
+    "timestamp": 1755464399437000
+  },
+  {
+    "event_message": "OPTIONS | 200 | 68.184.243.236 | 970c19305a011838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=*%2Csubmission%3Acontest_submissions%28*%2Ccontest%3Acontests%28*%29%29&order=calculated_at.desc&limit=20 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "edce7d04-745c-40ed-bd9b-bdbb3014ade9",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "OPTIONS",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=*%2Csubmission%3Acontest_submissions%28*%2Ccontest%3Acontests%28*%29%29&order=calculated_at.desc&limit=20",
+    "status_code": 200,
+    "timestamp": 1755464399424000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c192ff9721838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.54d6a7f4-7ff8-483a-b622-9920aedc6477 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "93179bfd-85f1-448a-8242-2b67cee2c838",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.54d6a7f4-7ff8-483a-b622-9920aedc6477",
+    "status_code": 200,
+    "timestamp": 1755464399361000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c192f89111838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.e804543e-2715-4b94-acb8-25588d87d8db | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "a02451c9-c815-4b76-a296-48f5ad8af6a7",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.e804543e-2715-4b94-acb8-25588d87d8db",
+    "status_code": 200,
+    "timestamp": 1755464399297000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c192ee88c1838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contests_archive?select=id%2Cname%2Cstart_date%2Cend_date&id=in.%28e804543e-2715-4b94-acb8-25588d87d8db%2C54d6a7f4-7ff8-483a-b622-9920aedc6477%2C116e850e-755f-4956-9feb-a7a46781f876%2Cebb16d63-ba36-4451-8e85-1903024e624b%2C4d614c26-42fa-471b-a118-35427cf587d3%29 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "f449f05e-4808-46b5-8c78-f341ae60cd8d",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contests_archive",
+    "search": "?select=id%2Cname%2Cstart_date%2Cend_date&id=in.%28e804543e-2715-4b94-acb8-25588d87d8db%2C54d6a7f4-7ff8-483a-b622-9920aedc6477%2C116e850e-755f-4956-9feb-a7a46781f876%2Cebb16d63-ba36-4451-8e85-1903024e624b%2C4d614c26-42fa-471b-a118-35427cf587d3%29",
+    "status_code": 200,
+    "timestamp": 1755464399195000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c192d2f4b1838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results_archive?select=*&submission_id=in.%28613ad296-1047-4885-bb98-7d53bcc26912%2C20f4245b-e8b7-4124-817f-fe1e43cee88e%2C37347c2c-fcb4-4af9-8f15-3b036db21d50%2C0a1a9776-7733-4935-9a48-26608f016c67%2C77aec4e5-576b-4c84-a4fc-269e05199334%2Cd08bc0ec-9fd0-4a63-a744-deda514c4588%2C7215d6d0-358c-449b-a786-afd5ada53943%29 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "55a3301e-402d-4095-a8ee-3454dab250d7",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results_archive",
+    "search": "?select=*&submission_id=in.%28613ad296-1047-4885-bb98-7d53bcc26912%2C20f4245b-e8b7-4124-817f-fe1e43cee88e%2C37347c2c-fcb4-4af9-8f15-3b036db21d50%2C0a1a9776-7733-4935-9a48-26608f016c67%2C77aec4e5-576b-4c84-a4fc-269e05199334%2Cd08bc0ec-9fd0-4a63-a744-deda514c4588%2C7215d6d0-358c-449b-a786-afd5ada53943%29",
+    "status_code": 200,
+    "timestamp": 1755464398909000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c192d1f441838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/game_schedule?select=*&tank01_game_id=in.%2820250817_JAX%40NO%2C20250817_BUF%40CHI%2C20250818_CIN%40WSH%2C20250815_KC%40PIT%2C20250816_CAR%40HOU%2C20250816_CLE%40PHI%2C20250816_GB%40IND%2C20250816_MIA%40DET%2C20250816_NE%40MIN%2C20250816_SF%40LV%2C20250816_BAL%40DAL%2C20250816_LAC%40LAR%2C20250816_NYJ%40NYG%2C20250816_TB%40PIT%2C20250816_ARI%40DEN%2C20250815_TEN%40ATL%2C20250815_KC%40SEA%29 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "96a8cb6f-ea8e-4aa2-b03a-f5d4f015212e",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/game_schedule",
+    "search": "?select=*&tank01_game_id=in.%2820250817_JAX%40NO%2C20250817_BUF%40CHI%2C20250818_CIN%40WSH%2C20250815_KC%40PIT%2C20250816_CAR%40HOU%2C20250816_CLE%40PHI%2C20250816_GB%40IND%2C20250816_MIA%40DET%2C20250816_NE%40MIN%2C20250816_SF%40LV%2C20250816_BAL%40DAL%2C20250816_LAC%40LAR%2C20250816_NYJ%40NYG%2C20250816_TB%40PIT%2C20250816_ARI%40DEN%2C20250815_TEN%40ATL%2C20250815_KC%40SEA%29",
+    "status_code": 200,
+    "timestamp": 1755464398903000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c192d0f3c1838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=*&submission_id=in.%2820f73bd4-e15d-4f51-8507-4c543c4e15bb%2C4edc9b54-98b6-467f-8924-eeb396b60822%2Cc2360f09-6a04-4dce-bd98-f1024477f697%2C17adc721-da5e-49d4-9907-5a77fa4431f2%2Cd4fd8e97-0edd-4549-adaf-486dae08b9e2%2C2fc09749-4342-412b-b850-240851cc9564%2Cdfb920d2-f4b8-48bb-8ad7-ca669eed4291%2C00d7df4f-31e5-41e0-bbf4-2d26b4bee71c%2Cc3cd07b8-a30f-4c25-99d2-7ed5bb84c03f%2Cf664b257-2c1d-4648-9018-d88c66094fce%2C60ecc168-14ad-4b8d-8bb9-89f87d1e2616%2Ced1bff20-f928-429b-8a66-6ffbe8d51411%2C88b81a08-9725-471c-b47d-9a2f5de7bccd%2C8568db09-9f31-44bf-86f5-07d1ddc0c013%2C5c853692-4676-45ba-b62e-dd53d3f2e09c%2Ca18160a8-4b84-444f-be95-cb45c4fa1267%29 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "8c18fb11-3dc3-42bb-8eaa-e251dc6268d1",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=*&submission_id=in.%2820f73bd4-e15d-4f51-8507-4c543c4e15bb%2C4edc9b54-98b6-467f-8924-eeb396b60822%2Cc2360f09-6a04-4dce-bd98-f1024477f697%2C17adc721-da5e-49d4-9907-5a77fa4431f2%2Cd4fd8e97-0edd-4549-adaf-486dae08b9e2%2C2fc09749-4342-412b-b850-240851cc9564%2Cdfb920d2-f4b8-48bb-8ad7-ca669eed4291%2C00d7df4f-31e5-41e0-bbf4-2d26b4bee71c%2Cc3cd07b8-a30f-4c25-99d2-7ed5bb84c03f%2Cf664b257-2c1d-4648-9018-d88c66094fce%2C60ecc168-14ad-4b8d-8bb9-89f87d1e2616%2Ced1bff20-f928-429b-8a66-6ffbe8d51411%2C88b81a08-9725-471c-b47d-9a2f5de7bccd%2C8568db09-9f31-44bf-86f5-07d1ddc0c013%2C5c853692-4676-45ba-b62e-dd53d3f2e09c%2Ca18160a8-4b84-444f-be95-cb45c4fa1267%29",
+    "status_code": 200,
+    "timestamp": 1755464398900000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c192c8ee31838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=*&submission_id=in.%2820f73bd4-e15d-4f51-8507-4c543c4e15bb%2C4edc9b54-98b6-467f-8924-eeb396b60822%2Cc2360f09-6a04-4dce-bd98-f1024477f697%2C17adc721-da5e-49d4-9907-5a77fa4431f2%2Cd4fd8e97-0edd-4549-adaf-486dae08b9e2%2C2fc09749-4342-412b-b850-240851cc9564%2Cdfb920d2-f4b8-48bb-8ad7-ca669eed4291%2C00d7df4f-31e5-41e0-bbf4-2d26b4bee71c%2Cc3cd07b8-a30f-4c25-99d2-7ed5bb84c03f%2Cf664b257-2c1d-4648-9018-d88c66094fce%2C60ecc168-14ad-4b8d-8bb9-89f87d1e2616%2Ced1bff20-f928-429b-8a66-6ffbe8d51411%2C88b81a08-9725-471c-b47d-9a2f5de7bccd%2C8568db09-9f31-44bf-86f5-07d1ddc0c013%2C5c853692-4676-45ba-b62e-dd53d3f2e09c%2Ca18160a8-4b84-444f-be95-cb45c4fa1267%29 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "570dd3a2-9b11-4716-9a27-c9c086e15403",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=*&submission_id=in.%2820f73bd4-e15d-4f51-8507-4c543c4e15bb%2C4edc9b54-98b6-467f-8924-eeb396b60822%2Cc2360f09-6a04-4dce-bd98-f1024477f697%2C17adc721-da5e-49d4-9907-5a77fa4431f2%2Cd4fd8e97-0edd-4549-adaf-486dae08b9e2%2C2fc09749-4342-412b-b850-240851cc9564%2Cdfb920d2-f4b8-48bb-8ad7-ca669eed4291%2C00d7df4f-31e5-41e0-bbf4-2d26b4bee71c%2Cc3cd07b8-a30f-4c25-99d2-7ed5bb84c03f%2Cf664b257-2c1d-4648-9018-d88c66094fce%2C60ecc168-14ad-4b8d-8bb9-89f87d1e2616%2Ced1bff20-f928-429b-8a66-6ffbe8d51411%2C88b81a08-9725-471c-b47d-9a2f5de7bccd%2C8568db09-9f31-44bf-86f5-07d1ddc0c013%2C5c853692-4676-45ba-b62e-dd53d3f2e09c%2Ca18160a8-4b84-444f-be95-cb45c4fa1267%29",
+    "status_code": 200,
+    "timestamp": 1755464398818000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c192b5e1f1838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/user_roles?select=role&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "19f6acad-90b2-4ed8-be31-95f7bf902e26",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/user_roles",
+    "search": "?select=role&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864",
+    "status_code": 200,
+    "timestamp": 1755464398626000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c192afdde1838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/user_roles?select=role&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "33f3f06c-2f2a-454f-be1e-709bdf5aa947",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/user_roles",
+    "search": "?select=role&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864",
+    "status_code": 200,
+    "timestamp": 1755464398563000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c192a4d831838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions?select=*%2Ccontest%3Acontests%28*%29&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864&order=submitted_at.desc&limit=20 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "b520ec07-936e-4f03-9415-e9d13bc590c1",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions",
+    "search": "?select=*%2Ccontest%3Acontests%28*%29&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864&order=submitted_at.desc&limit=20",
+    "status_code": 200,
+    "timestamp": 1755464398453000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c192a4d801838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=*&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "f97acea9-efc8-42b3-81e0-b7499f30a0a7",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=*&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864",
+    "status_code": 200,
+    "timestamp": 1755464398452000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c192a4d811838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/user_roles?select=role&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "cf0be7b5-44fe-47f7-9d5f-286f7f410147",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/user_roles",
+    "search": "?select=role&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864",
+    "status_code": 200,
+    "timestamp": 1755464398452000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c192a4d7d1838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contests?select=*&order=start_date.desc&offset=0&limit=20 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "3a67367b-b80e-4581-838c-009b0045a0db",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contests",
+    "search": "?select=*&order=start_date.desc&offset=0&limit=20",
+    "status_code": 200,
+    "timestamp": 1755464398451000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c192a4d7e1838 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contests?select=*&order=start_date.desc | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "fa1bc27f-b9a8-4ba2-a0d9-a6c42a5bcab6",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contests",
+    "search": "?select=*&order=start_date.desc",
+    "status_code": 200,
+    "timestamp": 1755464398450000
+  },
+  {
+    "event_message": "GET | 101 | 68.184.243.236 | 970c192a0ed2dd94 | https://zabmnedjdircildoppgl.supabase.co/realtime/v1/websocket?apikey=REDACTED&vsn=1.0.0 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "a53ad825-d3de-454f-8dcf-911f3ea29dd3",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/realtime/v1/websocket",
+    "search": "?apikey=REDACTED&vsn=1.0.0",
+    "status_code": 101,
+    "timestamp": 1755464398411000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c1851c90743ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.4d614c26-42fa-471b-a118-35427cf587d3 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "1e3f0d3b-27c2-4c9d-a5e1-4de7ebb0f7b1",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.4d614c26-42fa-471b-a118-35427cf587d3",
+    "status_code": 200,
+    "timestamp": 1755464363817000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c18513f1943ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.ebb16d63-ba36-4451-8e85-1903024e624b | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "b69b34cb-3096-4557-a3a5-2fc9dccb9b22",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.ebb16d63-ba36-4451-8e85-1903024e624b",
+    "status_code": 200,
+    "timestamp": 1755464363719000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c1850ad8143ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.116e850e-755f-4956-9feb-a7a46781f876 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "ec6cab61-7681-4df8-933d-834cadf059ac",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.116e850e-755f-4956-9feb-a7a46781f876",
+    "status_code": 200,
+    "timestamp": 1755464363628000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c18502bef43ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.4d614c26-42fa-471b-a118-35427cf587d3 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "dc2cce77-969e-4f17-88d9-cd51d77bc66c",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.4d614c26-42fa-471b-a118-35427cf587d3",
+    "status_code": 200,
+    "timestamp": 1755464363550000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c18501bd743ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.54d6a7f4-7ff8-483a-b622-9920aedc6477 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "f4a267e2-7468-486b-a7a7-a70ea5859fe0",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.54d6a7f4-7ff8-483a-b622-9920aedc6477",
+    "status_code": 200,
+    "timestamp": 1755464363542000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c184f9a4d43ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.ebb16d63-ba36-4451-8e85-1903024e624b | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "2dbe47ca-2a90-4dc6-bf08-7fa83c9827df",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.ebb16d63-ba36-4451-8e85-1903024e624b",
+    "status_code": 200,
+    "timestamp": 1755464363458000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c184f8a2743ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.e804543e-2715-4b94-acb8-25588d87d8db | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "ae55d5c0-9645-4fd0-a6d4-ed2aff0da763",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.e804543e-2715-4b94-acb8-25588d87d8db",
+    "status_code": 200,
+    "timestamp": 1755464363453000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c184ec83043ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.116e850e-755f-4956-9feb-a7a46781f876 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "db634e24-ea5a-4151-9988-52c1c2640e60",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.116e850e-755f-4956-9feb-a7a46781f876",
+    "status_code": 200,
+    "timestamp": 1755464363338000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c184ebfeb43ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contests_archive?select=id%2Cname%2Cstart_date%2Cend_date&id=in.%28e804543e-2715-4b94-acb8-25588d87d8db%2C54d6a7f4-7ff8-483a-b622-9920aedc6477%2C116e850e-755f-4956-9feb-a7a46781f876%2Cebb16d63-ba36-4451-8e85-1903024e624b%2C4d614c26-42fa-471b-a118-35427cf587d3%29 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "483606ff-52f3-4c19-b9df-73c9239acb1c",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contests_archive",
+    "search": "?select=id%2Cname%2Cstart_date%2Cend_date&id=in.%28e804543e-2715-4b94-acb8-25588d87d8db%2C54d6a7f4-7ff8-483a-b622-9920aedc6477%2C116e850e-755f-4956-9feb-a7a46781f876%2Cebb16d63-ba36-4451-8e85-1903024e624b%2C4d614c26-42fa-471b-a118-35427cf587d3%29",
+    "status_code": 200,
+    "timestamp": 1755464363324000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c184e3e8143ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.54d6a7f4-7ff8-483a-b622-9920aedc6477 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "6ddabcfe-87b8-4b55-9eaf-a67c3a7b2e87",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.54d6a7f4-7ff8-483a-b622-9920aedc6477",
+    "status_code": 200,
+    "timestamp": 1755464363242000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c184e1e1b43ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results_archive?select=*&submission_id=in.%28613ad296-1047-4885-bb98-7d53bcc26912%2C20f4245b-e8b7-4124-817f-fe1e43cee88e%2C37347c2c-fcb4-4af9-8f15-3b036db21d50%2C0a1a9776-7733-4935-9a48-26608f016c67%2C77aec4e5-576b-4c84-a4fc-269e05199334%2Cd08bc0ec-9fd0-4a63-a744-deda514c4588%2C7215d6d0-358c-449b-a786-afd5ada53943%29 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "1342df02-3fad-412a-92f2-3c5a1f647f74",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results_archive",
+    "search": "?select=*&submission_id=in.%28613ad296-1047-4885-bb98-7d53bcc26912%2C20f4245b-e8b7-4124-817f-fe1e43cee88e%2C37347c2c-fcb4-4af9-8f15-3b036db21d50%2C0a1a9776-7733-4935-9a48-26608f016c67%2C77aec4e5-576b-4c84-a4fc-269e05199334%2Cd08bc0ec-9fd0-4a63-a744-deda514c4588%2C7215d6d0-358c-449b-a786-afd5ada53943%29",
+    "status_code": 200,
+    "timestamp": 1755464363223000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c184dad0643ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.e804543e-2715-4b94-acb8-25588d87d8db | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "3ed92ebb-b4ad-40c6-852e-ea80b99f49d7",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.e804543e-2715-4b94-acb8-25588d87d8db",
+    "status_code": 200,
+    "timestamp": 1755464363151000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c184d8c9743ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=*&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "5e7fa71d-555d-4e9d-be70-56fcbc3a4fc8",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=*&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864",
+    "status_code": 200,
+    "timestamp": 1755464363131000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c18206b7b43ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=*%2Csubmission%3Acontest_submissions%28*%2Ccontest%3Acontests%28*%29%29&order=calculated_at.desc&limit=20 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "198e832e-d2b9-4481-8bf3-8df89923e9d5",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=*%2Csubmission%3Acontest_submissions%28*%2Ccontest%3Acontests%28*%29%29&order=calculated_at.desc&limit=20",
+    "status_code": 200,
+    "timestamp": 1755464355913000
+  },
+  {
+    "event_message": "OPTIONS | 200 | 68.184.243.236 | 970c181ffa3043ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=*%2Csubmission%3Acontest_submissions%28*%2Ccontest%3Acontests%28*%29%29&order=calculated_at.desc&limit=20 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "34f974a3-7fec-4200-8faf-e0271ef56392",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "OPTIONS",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=*%2Csubmission%3Acontest_submissions%28*%2Ccontest%3Acontests%28*%29%29&order=calculated_at.desc&limit=20",
+    "status_code": 200,
+    "timestamp": 1755464355850000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c181eced843ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.4d614c26-42fa-471b-a118-35427cf587d3 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "9faa443f-aa4c-46b1-addf-b6c31094718f",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.4d614c26-42fa-471b-a118-35427cf587d3",
+    "status_code": 200,
+    "timestamp": 1755464355649000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c181e3d7143ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.ebb16d63-ba36-4451-8e85-1903024e624b | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "54fb99cd-5f46-47e7-af81-ceded96e23c4",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.ebb16d63-ba36-4451-8e85-1903024e624b",
+    "status_code": 200,
+    "timestamp": 1755464355564000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c181d9c1043ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.116e850e-755f-4956-9feb-a7a46781f876 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "8c37a39b-efe9-4983-906a-c42ae24e7422",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.116e850e-755f-4956-9feb-a7a46781f876",
+    "status_code": 200,
+    "timestamp": 1755464355471000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c181cfa3043ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.54d6a7f4-7ff8-483a-b622-9920aedc6477 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "01942925-5e82-4471-a672-8a99333d2d8e",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.54d6a7f4-7ff8-483a-b622-9920aedc6477",
+    "status_code": 200,
+    "timestamp": 1755464355369000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c181c686943ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=id&contest_id=eq.e804543e-2715-4b94-acb8-25588d87d8db | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "8e006151-e26a-47ba-ac21-399ee5cd8066",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=id&contest_id=eq.e804543e-2715-4b94-acb8-25588d87d8db",
+    "status_code": 200,
+    "timestamp": 1755464355276000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c181bbe8743ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/game_schedule?select=*&tank01_game_id=in.%2820250817_JAX%40NO%2C20250817_BUF%40CHI%2C20250818_CIN%40WSH%2C20250815_KC%40PIT%2C20250816_CAR%40HOU%2C20250816_CLE%40PHI%2C20250816_GB%40IND%2C20250816_MIA%40DET%2C20250816_NE%40MIN%2C20250816_SF%40LV%2C20250816_BAL%40DAL%2C20250816_LAC%40LAR%2C20250816_NYJ%40NYG%2C20250816_TB%40PIT%2C20250816_ARI%40DEN%2C20250815_TEN%40ATL%2C20250815_KC%40SEA%29 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "d530cb39-44f4-41e2-9a44-3e22046a6290",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/game_schedule",
+    "search": "?select=*&tank01_game_id=in.%2820250817_JAX%40NO%2C20250817_BUF%40CHI%2C20250818_CIN%40WSH%2C20250815_KC%40PIT%2C20250816_CAR%40HOU%2C20250816_CLE%40PHI%2C20250816_GB%40IND%2C20250816_MIA%40DET%2C20250816_NE%40MIN%2C20250816_SF%40LV%2C20250816_BAL%40DAL%2C20250816_LAC%40LAR%2C20250816_NYJ%40NYG%2C20250816_TB%40PIT%2C20250816_ARI%40DEN%2C20250815_TEN%40ATL%2C20250815_KC%40SEA%29",
+    "status_code": 200,
+    "timestamp": 1755464355163000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c181bae4d43ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contests_archive?select=id%2Cname%2Cstart_date%2Cend_date&id=in.%28e804543e-2715-4b94-acb8-25588d87d8db%2C54d6a7f4-7ff8-483a-b622-9920aedc6477%2C116e850e-755f-4956-9feb-a7a46781f876%2Cebb16d63-ba36-4451-8e85-1903024e624b%2C4d614c26-42fa-471b-a118-35427cf587d3%29 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "385b4ac5-10df-4ac3-b480-a787869d5b4c",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contests_archive",
+    "search": "?select=id%2Cname%2Cstart_date%2Cend_date&id=in.%28e804543e-2715-4b94-acb8-25588d87d8db%2C54d6a7f4-7ff8-483a-b622-9920aedc6477%2C116e850e-755f-4956-9feb-a7a46781f876%2Cebb16d63-ba36-4451-8e85-1903024e624b%2C4d614c26-42fa-471b-a118-35427cf587d3%29",
+    "status_code": 200,
+    "timestamp": 1755464355152000
+  },
+  {
+    "event_message": "OPTIONS | 200 | 68.184.243.236 | 970c181b7da543ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/game_schedule?select=*&tank01_game_id=in.%2820250817_JAX%40NO%2C20250817_BUF%40CHI%2C20250818_CIN%40WSH%2C20250815_KC%40PIT%2C20250816_CAR%40HOU%2C20250816_CLE%40PHI%2C20250816_GB%40IND%2C20250816_MIA%40DET%2C20250816_NE%40MIN%2C20250816_SF%40LV%2C20250816_BAL%40DAL%2C20250816_LAC%40LAR%2C20250816_NYJ%40NYG%2C20250816_TB%40PIT%2C20250816_ARI%40DEN%2C20250815_TEN%40ATL%2C20250815_KC%40SEA%29 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "09805378-b36c-46c3-831c-e03d514165c3",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "OPTIONS",
+    "path": "/rest/v1/game_schedule",
+    "search": "?select=*&tank01_game_id=in.%2820250817_JAX%40NO%2C20250817_BUF%40CHI%2C20250818_CIN%40WSH%2C20250815_KC%40PIT%2C20250816_CAR%40HOU%2C20250816_CLE%40PHI%2C20250816_GB%40IND%2C20250816_MIA%40DET%2C20250816_NE%40MIN%2C20250816_SF%40LV%2C20250816_BAL%40DAL%2C20250816_LAC%40LAR%2C20250816_NYJ%40NYG%2C20250816_TB%40PIT%2C20250816_ARI%40DEN%2C20250815_TEN%40ATL%2C20250815_KC%40SEA%29",
+    "status_code": 200,
+    "timestamp": 1755464355121000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c181b7da743ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=*&submission_id=in.%2820f73bd4-e15d-4f51-8507-4c543c4e15bb%2C4edc9b54-98b6-467f-8924-eeb396b60822%2Cc2360f09-6a04-4dce-bd98-f1024477f697%2C17adc721-da5e-49d4-9907-5a77fa4431f2%2Cd4fd8e97-0edd-4549-adaf-486dae08b9e2%2C2fc09749-4342-412b-b850-240851cc9564%2Cdfb920d2-f4b8-48bb-8ad7-ca669eed4291%2C00d7df4f-31e5-41e0-bbf4-2d26b4bee71c%2Cc3cd07b8-a30f-4c25-99d2-7ed5bb84c03f%2Cf664b257-2c1d-4648-9018-d88c66094fce%2C60ecc168-14ad-4b8d-8bb9-89f87d1e2616%2Ced1bff20-f928-429b-8a66-6ffbe8d51411%2C88b81a08-9725-471c-b47d-9a2f5de7bccd%2C8568db09-9f31-44bf-86f5-07d1ddc0c013%2C5c853692-4676-45ba-b62e-dd53d3f2e09c%2Ca18160a8-4b84-444f-be95-cb45c4fa1267%29 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "e570fb34-f591-40b7-bf88-acad617caa6c",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=*&submission_id=in.%2820f73bd4-e15d-4f51-8507-4c543c4e15bb%2C4edc9b54-98b6-467f-8924-eeb396b60822%2Cc2360f09-6a04-4dce-bd98-f1024477f697%2C17adc721-da5e-49d4-9907-5a77fa4431f2%2Cd4fd8e97-0edd-4549-adaf-486dae08b9e2%2C2fc09749-4342-412b-b850-240851cc9564%2Cdfb920d2-f4b8-48bb-8ad7-ca669eed4291%2C00d7df4f-31e5-41e0-bbf4-2d26b4bee71c%2Cc3cd07b8-a30f-4c25-99d2-7ed5bb84c03f%2Cf664b257-2c1d-4648-9018-d88c66094fce%2C60ecc168-14ad-4b8d-8bb9-89f87d1e2616%2Ced1bff20-f928-429b-8a66-6ffbe8d51411%2C88b81a08-9725-471c-b47d-9a2f5de7bccd%2C8568db09-9f31-44bf-86f5-07d1ddc0c013%2C5c853692-4676-45ba-b62e-dd53d3f2e09c%2Ca18160a8-4b84-444f-be95-cb45c4fa1267%29",
+    "status_code": 200,
+    "timestamp": 1755464355120000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c181b6d8743ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=*&submission_id=in.%2820f73bd4-e15d-4f51-8507-4c543c4e15bb%2C4edc9b54-98b6-467f-8924-eeb396b60822%2Cc2360f09-6a04-4dce-bd98-f1024477f697%2C17adc721-da5e-49d4-9907-5a77fa4431f2%2Cd4fd8e97-0edd-4549-adaf-486dae08b9e2%2C2fc09749-4342-412b-b850-240851cc9564%2Cdfb920d2-f4b8-48bb-8ad7-ca669eed4291%2C00d7df4f-31e5-41e0-bbf4-2d26b4bee71c%2Cc3cd07b8-a30f-4c25-99d2-7ed5bb84c03f%2Cf664b257-2c1d-4648-9018-d88c66094fce%2C60ecc168-14ad-4b8d-8bb9-89f87d1e2616%2Ced1bff20-f928-429b-8a66-6ffbe8d51411%2C88b81a08-9725-471c-b47d-9a2f5de7bccd%2C8568db09-9f31-44bf-86f5-07d1ddc0c013%2C5c853692-4676-45ba-b62e-dd53d3f2e09c%2Ca18160a8-4b84-444f-be95-cb45c4fa1267%29 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "d580b641-470b-434c-8df4-4326eb0d00c9",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=*&submission_id=in.%2820f73bd4-e15d-4f51-8507-4c543c4e15bb%2C4edc9b54-98b6-467f-8924-eeb396b60822%2Cc2360f09-6a04-4dce-bd98-f1024477f697%2C17adc721-da5e-49d4-9907-5a77fa4431f2%2Cd4fd8e97-0edd-4549-adaf-486dae08b9e2%2C2fc09749-4342-412b-b850-240851cc9564%2Cdfb920d2-f4b8-48bb-8ad7-ca669eed4291%2C00d7df4f-31e5-41e0-bbf4-2d26b4bee71c%2Cc3cd07b8-a30f-4c25-99d2-7ed5bb84c03f%2Cf664b257-2c1d-4648-9018-d88c66094fce%2C60ecc168-14ad-4b8d-8bb9-89f87d1e2616%2Ced1bff20-f928-429b-8a66-6ffbe8d51411%2C88b81a08-9725-471c-b47d-9a2f5de7bccd%2C8568db09-9f31-44bf-86f5-07d1ddc0c013%2C5c853692-4676-45ba-b62e-dd53d3f2e09c%2Ca18160a8-4b84-444f-be95-cb45c4fa1267%29",
+    "status_code": 200,
+    "timestamp": 1755464355115000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c181b0c5e43ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results_archive?select=*&submission_id=in.%28613ad296-1047-4885-bb98-7d53bcc26912%2C20f4245b-e8b7-4124-817f-fe1e43cee88e%2C37347c2c-fcb4-4af9-8f15-3b036db21d50%2C0a1a9776-7733-4935-9a48-26608f016c67%2C77aec4e5-576b-4c84-a4fc-269e05199334%2Cd08bc0ec-9fd0-4a63-a744-deda514c4588%2C7215d6d0-358c-449b-a786-afd5ada53943%29 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "08200ea2-644b-4ed4-9f55-3faca3ce5a79",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results_archive",
+    "search": "?select=*&submission_id=in.%28613ad296-1047-4885-bb98-7d53bcc26912%2C20f4245b-e8b7-4124-817f-fe1e43cee88e%2C37347c2c-fcb4-4af9-8f15-3b036db21d50%2C0a1a9776-7733-4935-9a48-26608f016c67%2C77aec4e5-576b-4c84-a4fc-269e05199334%2Cd08bc0ec-9fd0-4a63-a744-deda514c4588%2C7215d6d0-358c-449b-a786-afd5ada53943%29",
+    "status_code": 200,
+    "timestamp": 1755464355051000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c181a9b3d43ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions?select=*%2Ccontest%3Acontests%28*%29&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864&order=submitted_at.desc&limit=20 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "34ae021e-4d74-4816-8717-1130cd06cf08",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions",
+    "search": "?select=*%2Ccontest%3Acontests%28*%29&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864&order=submitted_at.desc&limit=20",
+    "status_code": 200,
+    "timestamp": 1755464354985000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c181a6ab543ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contests?select=*&order=start_date.desc&offset=0&limit=20 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "9b9ef27c-c4c8-437b-b0ab-54114e8b1fe8",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contests",
+    "search": "?select=*&order=start_date.desc&offset=0&limit=20",
+    "status_code": 200,
+    "timestamp": 1755464354960000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c181a6ab943ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contests?select=*&order=start_date.desc | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "2594382a-1748-4164-a92a-c7822377e038",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contests",
+    "search": "?select=*&order=start_date.desc",
+    "status_code": 200,
+    "timestamp": 1755464354957000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c181a6ac043ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions_archive?select=*&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "dc0caf5d-a2eb-4631-a806-af4a60597804",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_submissions_archive",
+    "search": "?select=*&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864",
+    "status_code": 200,
+    "timestamp": 1755464354956000
+  },
+  {
+    "event_message": "OPTIONS | 200 | 68.184.243.236 | 970c181a6aa043ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_submissions?select=*%2Ccontest%3Acontests%28*%29&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864&order=submitted_at.desc&limit=20 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "fb18af0f-7786-4688-9fd8-01188878192f",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "OPTIONS",
+    "path": "/rest/v1/contest_submissions",
+    "search": "?select=*%2Ccontest%3Acontests%28*%29&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864&order=submitted_at.desc&limit=20",
+    "status_code": 200,
+    "timestamp": 1755464354949000
+  },
+  {
+    "event_message": "GET | 101 | 68.184.243.236 | 970c1819fbdadd95 | https://zabmnedjdircildoppgl.supabase.co/realtime/v1/websocket?apikey=REDACTED&vsn=1.0.0 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "5af4caca-1c6c-46aa-82a7-8725ea245f0e",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/realtime/v1/websocket",
+    "search": "?apikey=REDACTED&vsn=1.0.0",
+    "status_code": 101,
+    "timestamp": 1755464354896000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c180fbc2643ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/user_roles?select=role&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "2631dbad-4273-4057-bdb1-e4dc4441d668",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/user_roles",
+    "search": "?select=role&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864",
+    "status_code": 200,
+    "timestamp": 1755464353246000
+  },
+  {
+    "event_message": "GET | 200 | 68.184.243.236 | 970c180f1a4643ae | https://zabmnedjdircildoppgl.supabase.co/rest/v1/user_roles?select=role&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864 | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "5bef7a49-e16e-4299-b420-f38545f0a530",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/user_roles",
+    "search": "?select=role&user_id=eq.160c17b1-80e6-468f-b4c9-ede8fd7f9864",
+    "status_code": 200,
+    "timestamp": 1755464353138000
+  },
+  {
+    "event_message": "POST | 200 | 68.184.243.236 | 970c180eb94543ae | https://zabmnedjdircildoppgl.supabase.co/auth/v1/token?grant_type=refresh_token | Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+    "id": "e80b8e8b-2f1e-4b89-9182-3a1d727665b8",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "POST",
+    "path": "/auth/v1/token",
+    "search": "?grant_type=refresh_token",
+    "status_code": 200,
+    "timestamp": 1755464353084000
+  },
+  {
+    "event_message": "PATCH | 204 | 54.211.67.24 | 970c17f9ddb50132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?id=eq.c9906a93-c376-46bd-a397-7916abea8526 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "74cdb12d-64e4-4508-ad81-f35091631b8f",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "PATCH",
+    "path": "/rest/v1/contest_results",
+    "search": "?id=eq.c9906a93-c376-46bd-a397-7916abea8526",
+    "status_code": 204,
+    "timestamp": 1755464349742000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f99d440132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=id%2Csubmission_id%2Ctotal_points_earned&submission_id=in.%28d4fd8e97-0edd-4549-adaf-486dae08b9e2%29&order=total_points_earned.desc | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "b7be07fd-a35c-4835-ab31-a70980c1b4c0",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=id%2Csubmission_id%2Ctotal_points_earned&submission_id=in.%28d4fd8e97-0edd-4549-adaf-486dae08b9e2%29&order=total_points_earned.desc",
+    "status_code": 200,
+    "timestamp": 1755464349706000
+  },
+  {
+    "event_message": "PATCH | 204 | 54.211.67.24 | 970c17f95cb80132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?id=eq.e467e377-2b45-4494-9e52-3f901dbd9dc3 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "3a151216-f5d0-4835-86d3-368603cd113a",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "PATCH",
+    "path": "/rest/v1/contest_results",
+    "search": "?id=eq.e467e377-2b45-4494-9e52-3f901dbd9dc3",
+    "status_code": 204,
+    "timestamp": 1755464349668000
+  },
+  {
+    "event_message": "PATCH | 204 | 54.211.67.24 | 970c17f91c4b0132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?id=eq.024cff79-e538-426b-8ef9-de2038bdfc2e | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "d54f2434-4619-4cb4-a517-bcdd27d35ed3",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "PATCH",
+    "path": "/rest/v1/contest_results",
+    "search": "?id=eq.024cff79-e538-426b-8ef9-de2038bdfc2e",
+    "status_code": 204,
+    "timestamp": 1755464349622000
+  },
+  {
+    "event_message": "PATCH | 204 | 54.211.67.24 | 970c17f8ebd70132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?id=eq.8237b476-c831-4f1b-bdb1-1d8d0280c9f5 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "52ba4cfc-3190-453c-a23b-f9e214365abb",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "PATCH",
+    "path": "/rest/v1/contest_results",
+    "search": "?id=eq.8237b476-c831-4f1b-bdb1-1d8d0280c9f5",
+    "status_code": 204,
+    "timestamp": 1755464349590000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f8ab710132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=id%2Csubmission_id%2Ctotal_points_earned&submission_id=in.%282fc09749-4342-412b-b850-240851cc9564%2C4edc9b54-98b6-467f-8924-eeb396b60822%2C20f73bd4-e15d-4f51-8507-4c543c4e15bb%29&order=total_points_earned.desc | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "d9751d7b-b39b-440f-846e-4fd188e2772f",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=id%2Csubmission_id%2Ctotal_points_earned&submission_id=in.%282fc09749-4342-412b-b850-240851cc9564%2C4edc9b54-98b6-467f-8924-eeb396b60822%2C20f73bd4-e15d-4f51-8507-4c543c4e15bb%29&order=total_points_earned.desc",
+    "status_code": 200,
+    "timestamp": 1755464349555000
+  },
+  {
+    "event_message": "PATCH | 204 | 54.211.67.24 | 970c17f86b0e0132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?id=eq.33db185a-1ab4-4669-ba65-f3dcf41916a8 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "ee79a2da-aa09-440c-bb03-fb70aa81c222",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "PATCH",
+    "path": "/rest/v1/contest_results",
+    "search": "?id=eq.33db185a-1ab4-4669-ba65-f3dcf41916a8",
+    "status_code": 204,
+    "timestamp": 1755464349515000
+  },
+  {
+    "event_message": "PATCH | 204 | 54.211.67.24 | 970c17f83aa80132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?id=eq.939c9196-0e49-49ad-8902-040ff2278676 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "c811fc6c-950f-421e-b493-a8c75ebc845a",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "PATCH",
+    "path": "/rest/v1/contest_results",
+    "search": "?id=eq.939c9196-0e49-49ad-8902-040ff2278676",
+    "status_code": 204,
+    "timestamp": 1755464349482000
+  },
+  {
+    "event_message": "PATCH | 204 | 54.211.67.24 | 970c17f80a500132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?id=eq.cb720017-7a65-47df-ab4d-292ef897c41a | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "a2e47764-fa66-487a-bb53-430aec46ab8c",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "PATCH",
+    "path": "/rest/v1/contest_results",
+    "search": "?id=eq.cb720017-7a65-47df-ab4d-292ef897c41a",
+    "status_code": 204,
+    "timestamp": 1755464349450000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f7c9fb0132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=id%2Csubmission_id%2Ctotal_points_earned&submission_id=in.%2800d7df4f-31e5-41e0-bbf4-2d26b4bee71c%2C17adc721-da5e-49d4-9907-5a77fa4431f2%2Cc2360f09-6a04-4dce-bd98-f1024477f697%29&order=total_points_earned.desc | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "e3880db8-1975-4d6e-af57-963ec4007773",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=id%2Csubmission_id%2Ctotal_points_earned&submission_id=in.%2800d7df4f-31e5-41e0-bbf4-2d26b4bee71c%2C17adc721-da5e-49d4-9907-5a77fa4431f2%2Cc2360f09-6a04-4dce-bd98-f1024477f697%29&order=total_points_earned.desc",
+    "status_code": 200,
+    "timestamp": 1755464349416000
+  },
+  {
+    "event_message": "POST | 200 | 54.211.67.24 | 970c17f799780132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?on_conflict=submission_id&select=* | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "ec13e38f-d110-4986-91d8-e94c53ada599",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "POST",
+    "path": "/rest/v1/contest_results",
+    "search": "?on_conflict=submission_id&select=*",
+    "status_code": 200,
+    "timestamp": 1755464349378000
+  },
+  {
+    "event_message": "POST | 200 | 54.211.67.24 | 970c17f759120132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?on_conflict=submission_id&select=* | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "0417df30-4fbb-46ba-aef2-a87dfaf9c741",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "POST",
+    "path": "/rest/v1/contest_results",
+    "search": "?on_conflict=submission_id&select=*",
+    "status_code": 200,
+    "timestamp": 1755464349343000
+  },
+  {
+    "event_message": "POST | 200 | 54.211.67.24 | 970c17f728b60132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?on_conflict=submission_id&select=* | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "d3abd1bd-51c9-46fd-8af0-c30d80ab27b4",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "POST",
+    "path": "/rest/v1/contest_results",
+    "search": "?on_conflict=submission_id&select=*",
+    "status_code": 200,
+    "timestamp": 1755464349310000
+  },
+  {
+    "event_message": "POST | 200 | 54.211.67.24 | 970c17f6e8390132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?on_conflict=submission_id&select=* | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "5b196c3a-a472-4c41-9c5c-b6af7fe358af",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "POST",
+    "path": "/rest/v1/contest_results",
+    "search": "?on_conflict=submission_id&select=*",
+    "status_code": 200,
+    "timestamp": 1755464349273000
+  },
+  {
+    "event_message": "POST | 200 | 54.211.67.24 | 970c17f6afd10132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?on_conflict=submission_id&select=* | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "38b1f404-6428-4392-a842-cb74873254d0",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "POST",
+    "path": "/rest/v1/contest_results",
+    "search": "?on_conflict=submission_id&select=*",
+    "status_code": 200,
+    "timestamp": 1755464349236000
+  },
+  {
+    "event_message": "POST | 200 | 54.211.67.24 | 970c17f67f530132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?on_conflict=submission_id&select=* | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "e6ff98e4-8f21-400a-b8ce-d819a9f71ee3",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "POST",
+    "path": "/rest/v1/contest_results",
+    "search": "?on_conflict=submission_id&select=*",
+    "status_code": 200,
+    "timestamp": 1755464349201000
+  },
+  {
+    "event_message": "POST | 200 | 54.211.67.24 | 970c17f64efe0132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?on_conflict=submission_id&select=* | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "c1cab01d-462d-4545-b228-93289b339fa1",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "POST",
+    "path": "/rest/v1/contest_results",
+    "search": "?on_conflict=submission_id&select=*",
+    "status_code": 200,
+    "timestamp": 1755464349168000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f5de380132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/box_scores?select=game_id%2Cbox_score%2Cgame_status&game_id=in.%2820250815_KC%40PIT%2C20250817_JAX%40NO%2C20250817_BUF%40CHI%2C20250818_CIN%40WSH%29 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "a9ee9a63-54c6-405e-85a8-7c56097d6e8f",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/box_scores",
+    "search": "?select=game_id%2Cbox_score%2Cgame_status&game_id=in.%2820250815_KC%40PIT%2C20250817_JAX%40NO%2C20250817_BUF%40CHI%2C20250818_CIN%40WSH%29",
+    "status_code": 200,
+    "timestamp": 1755464349106000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f5ade20132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=submission_id&submission_id=eq.20f73bd4-e15d-4f51-8507-4c543c4e15bb | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "7e243be2-3b8a-49d1-8e7b-d6b4fef8d559",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=submission_id&submission_id=eq.20f73bd4-e15d-4f51-8507-4c543c4e15bb",
+    "status_code": 200,
+    "timestamp": 1755464349070000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f57d700132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=submission_id&submission_id=eq.4edc9b54-98b6-467f-8924-eeb396b60822 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "5d43afac-1c81-4ef8-a5e7-f2bf22077864",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=submission_id&submission_id=eq.4edc9b54-98b6-467f-8924-eeb396b60822",
+    "status_code": 200,
+    "timestamp": 1755464349037000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f53d140132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=submission_id&submission_id=eq.c2360f09-6a04-4dce-bd98-f1024477f697 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "f8ceca5f-961a-47e0-877c-adc88c27bd28",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=submission_id&submission_id=eq.c2360f09-6a04-4dce-bd98-f1024477f697",
+    "status_code": 200,
+    "timestamp": 1755464349006000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f4fc890132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=submission_id&submission_id=eq.17adc721-da5e-49d4-9907-5a77fa4431f2 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "6b605b4d-b977-43c3-8a6c-cd0cd485bf10",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=submission_id&submission_id=eq.17adc721-da5e-49d4-9907-5a77fa4431f2",
+    "status_code": 200,
+    "timestamp": 1755464348971000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f4cc110132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=submission_id&submission_id=eq.d4fd8e97-0edd-4549-adaf-486dae08b9e2 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "2f27c007-64b9-48dc-8d0d-e3c752967897",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=submission_id&submission_id=eq.d4fd8e97-0edd-4549-adaf-486dae08b9e2",
+    "status_code": 200,
+    "timestamp": 1755464348929000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f48bb20132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=submission_id&submission_id=eq.2fc09749-4342-412b-b850-240851cc9564 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "90cf8c7e-d182-4efa-bf10-e37925d5deac",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=submission_id&submission_id=eq.2fc09749-4342-412b-b850-240851cc9564",
+    "status_code": 200,
+    "timestamp": 1755464348894000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f44b4a0132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.e68b611f-6b3a-4152-b305-132d160186fc | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "a97ad779-e9e2-4d2f-a5cf-e179a217ffd9",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.e68b611f-6b3a-4152-b305-132d160186fc",
+    "status_code": 200,
+    "timestamp": 1755464348857000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f40ad50132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.52bece98-6251-410f-9f5a-9039a5e17647 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "91b21dd0-60e1-415b-af35-c0f3734ae1ef",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.52bece98-6251-410f-9f5a-9039a5e17647",
+    "status_code": 200,
+    "timestamp": 1755464348816000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f3da830132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.c6cac6fb-855f-44cf-8ff1-cbb3d25aee71 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "20f33876-919f-49da-902b-ce6499d557a2",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.c6cac6fb-855f-44cf-8ff1-cbb3d25aee71",
+    "status_code": 200,
+    "timestamp": 1755464348784000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f3aa210132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.c06e2e71-0b0c-4150-a3ac-e4967060892a | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "5575c993-c842-49f8-8f8b-dc58a889087a",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.c06e2e71-0b0c-4150-a3ac-e4967060892a",
+    "status_code": 200,
+    "timestamp": 1755464348750000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f369b10132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.21964dc3-fd18-410f-9177-ac123702416b | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "ead800ea-5536-4f70-afab-dd559fa5c785",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.21964dc3-fd18-410f-9177-ac123702416b",
+    "status_code": 200,
+    "timestamp": 1755464348713000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f339550132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.67f8adeb-2d84-454b-a425-2cfe22b50b43 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "b0f59a4b-55a9-43f4-8443-db3ef249ea93",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.67f8adeb-2d84-454b-a425-2cfe22b50b43",
+    "status_code": 200,
+    "timestamp": 1755464348679000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f2f8e50132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.e8f22a2c-a209-4c1f-b1a1-e81eead74053 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "dc010e28-633d-4d46-895c-edd130d41273",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.e8f22a2c-a209-4c1f-b1a1-e81eead74053",
+    "status_code": 200,
+    "timestamp": 1755464348647000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f2c8900132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.b31dd57e-219d-4b59-9940-08a245f4ae52 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "bf9d01b0-ddfa-4332-a86a-24778472a067",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.b31dd57e-219d-4b59-9940-08a245f4ae52",
+    "status_code": 200,
+    "timestamp": 1755464348611000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f2881d0132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=submission_id&submission_id=eq.4d745fdb-f93f-4fd1-949f-6a972e078bcf | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "08f049a8-9930-4575-a68e-3c80099cd4fb",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=submission_id&submission_id=eq.4d745fdb-f93f-4fd1-949f-6a972e078bcf",
+    "status_code": 200,
+    "timestamp": 1755464348572000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f25fd10132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.0a679424-b768-4581-ae5d-e7bfdd3dd377 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "8532a934-a0e4-460e-80bf-ba98ff490d67",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.0a679424-b768-4581-ae5d-e7bfdd3dd377",
+    "status_code": 200,
+    "timestamp": 1755464348539000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f21f6b0132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.376a44d0-891d-41b2-a085-1870add41472 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "580fe545-91b6-4102-88a3-09f0451f7bba",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.376a44d0-891d-41b2-a085-1870add41472",
+    "status_code": 200,
+    "timestamp": 1755464348504000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f1def30132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.f76f5a6c-348d-4a36-a05e-08a7d70904e9 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "2bc62b91-c105-46ce-b8f6-e521d8bb916b",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.f76f5a6c-348d-4a36-a05e-08a7d70904e9",
+    "status_code": 200,
+    "timestamp": 1755464348465000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f19e730132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.c83ba38d-9845-42ab-9418-cd3e2b42a976 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "39df3453-15e0-4531-91e9-3ae6978e9324",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.c83ba38d-9845-42ab-9418-cd3e2b42a976",
+    "status_code": 200,
+    "timestamp": 1755464348421000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f15deb0132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.328ed0d7-0bcc-4489-9c6c-6bd651bb3544 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "de96b0fd-b62c-4462-8df0-0a86b13f8b57",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.328ed0d7-0bcc-4489-9c6c-6bd651bb3544",
+    "status_code": 200,
+    "timestamp": 1755464348384000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f12d690132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=submission_id&submission_id=eq.dfb920d2-f4b8-48bb-8ad7-ca669eed4291 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "24eba041-59a1-44d9-b007-1bfaf6907e1a",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=submission_id&submission_id=eq.dfb920d2-f4b8-48bb-8ad7-ca669eed4291",
+    "status_code": 200,
+    "timestamp": 1755464348351000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f0fcf20132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.fcc20947-5a71-42ee-b057-63e6b1395723 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "750c0c1a-a39c-4065-a72a-8363cfd3fc0c",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.fcc20947-5a71-42ee-b057-63e6b1395723",
+    "status_code": 200,
+    "timestamp": 1755464348318000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f0bc7f0132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.60ecc168-14ad-4b8d-8bb9-89f87d1e2616 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "909e73b4-3bc9-43d0-8f4a-d8c40fd5950f",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.60ecc168-14ad-4b8d-8bb9-89f87d1e2616",
+    "status_code": 200,
+    "timestamp": 1755464348286000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f07c260132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=submission_id&submission_id=eq.00d7df4f-31e5-41e0-bbf4-2d26b4bee71c | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "9c1cc113-e206-4ccd-a278-d5284810ca9b",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=submission_id&submission_id=eq.00d7df4f-31e5-41e0-bbf4-2d26b4bee71c",
+    "status_code": 200,
+    "timestamp": 1755464348247000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f04ba90132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.d82a6989-259b-451f-9f84-84b804e63812 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "5c78758e-ca9e-41ef-b75f-2198bde2af26",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.d82a6989-259b-451f-9f84-84b804e63812",
+    "status_code": 200,
+    "timestamp": 1755464348210000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17f00b450132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/demo_contest_results?select=submission_id&submission_id=eq.22325474-8d90-4bbb-b440-31b073df4334 | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "ec10343f-1a19-4349-9009-257a3f441608",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/demo_contest_results",
+    "search": "?select=submission_id&submission_id=eq.22325474-8d90-4bbb-b440-31b073df4334",
+    "status_code": 200,
+    "timestamp": 1755464348173000
+  },
+  {
+    "event_message": "GET | 200 | 54.211.67.24 | 970c17efdae60132 | https://zabmnedjdircildoppgl.supabase.co/rest/v1/contest_results?select=submission_id&submission_id=eq.05b87ab4-dbc3-4c6a-b539-5416eb945e1e | Deno/2.1.4 (variant; SupabaseEdgeRuntime/1.68.0-develop.36)",
+    "id": "dbd30364-ec2b-4348-bb72-332fe2dab24c",
+    "identifier": "zabmnedjdircildoppgl",
+    "method": "GET",
+    "path": "/rest/v1/contest_results",
+    "search": "?select=submission_id&submission_id=eq.05b87ab4-dbc3-4c6a-b539-5416eb945e1e",
+    "status_code": 200,
+    "timestamp": 1755464348140000
+  }
+]

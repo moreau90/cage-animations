@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head><title>FBX Viewer</title></head>
+<body style="margin:0;background:#222">
+<div style="position:absolute;top:10px;left:10px;color:#fff;font:14px monospace;z-index:1;max-width:500px">
+  Drop an FBX file here or <input type="file" id="file" accept=".fbx" />
+  <br><label><input type="checkbox" id="showSkel" checked /> Show skeleton</label>
+  <label><input type="checkbox" id="wireframe" /> Wireframe</label>
+  <label><input type="checkbox" id="showAxes" /> Joint axes</label>
+  <br><button id="playBtn" disabled>Play/Pause</button>
+  <button id="restBtn" disabled>Rest Pose</button>
+  <input type="range" id="timeSlider" min="0" max="1" step="0.001" value="0" style="width:200px;vertical-align:middle" disabled />
+  <span id="timeLabel">0.00s</span>
+  <div id="info"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fflate@0.4.8/umd/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+<script>
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x333333);
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.01, 100);
+camera.position.set(0, 0.5, 2);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0.5, 0);
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+dirLight.position.set(2, 3, 2);
+scene.add(dirLight);
+
+let mixer, skelHelper, meshMats = [], clipDuration = 0, playing = true;
+let jointAxesGroup = null;
+let currentAction = null, fbxGroup = null, inRestPose = false;
+let jointSpheres = []; // { mesh, bone } pairs for joint dots
+
+function loadFBX(buf, name) {
+  // Clear previous
+  while(scene.children.length > 2) scene.remove(scene.children[scene.children.length-1]);
+  mixer = null; skelHelper = null; meshMats = [];
+  if (jointAxesGroup) { scene.remove(jointAxesGroup); jointAxesGroup = null; }
+
+  const loader = new THREE.FBXLoader();
+  const group = loader.parse(buf, '');
+
+  // Add to scene and update world matrices FIRST
+  scene.add(group);
+  fbxGroup = group;
+  group.updateMatrixWorld(true);
+
+  // Collect mesh info
+  let totalVerts = 0, totalTris = 0, meshCount = 0;
+  group.traverse(o => {
+    if (o.isMesh || o.isSkinnedMesh) {
+      meshCount++;
+      totalVerts += o.geometry.attributes.position.count;
+      if (o.geometry.index) totalTris += o.geometry.index.count / 3;
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0xcccccc, roughness: 0.7, metalness: 0, side: THREE.DoubleSide,
+        skinning: o.isSkinnedMesh
+      });
+      o.material = mat;
+      meshMats.push(mat);
+      if (o.isSkinnedMesh) o.frustumCulled = false;
+    }
+  });
+
+  // ── LOG T-POSE (BIND POSE) BONE POSITIONS ──
+  // This is BEFORE animation mixer is created, so skeleton is in default T-pose
+  console.log('=== T-POSE (BIND) BONE POSITIONS ===');
+  const bones = [];
+  const boneByName = {};
+  group.traverse(o => {
+    if (o.isBone) {
+      const wp = new THREE.Vector3();
+      o.getWorldPosition(wp);
+      bones.push({ name: o.name, x: wp.x, y: wp.y, z: wp.z, bone: o });
+      boneByName[o.name] = wp.clone();
+    }
+  });
+  bones.sort((a, b) => b.y - a.y);
+
+  // Find hips for centering
+  let hipsPos = null;
+  for (const b of bones) {
+    if (b.name.toLowerCase().includes('hips') || b.name.toLowerCase().includes('pelvis')) {
+      hipsPos = new THREE.Vector3(b.x, b.y, b.z);
+      break;
+    }
+  }
+
+  // Log bone positions (hips-centered, X-mirrored like our cage convention)
+  console.log('--- Bone positions (hips-centered, X-mirrored for cage comparison) ---');
+  console.log('Hips world position:', hipsPos ? `[${hipsPos.x.toFixed(4)}, ${hipsPos.y.toFixed(4)}, ${hipsPos.z.toFixed(4)}]` : 'NOT FOUND');
+  for (const b of bones) {
+    if (hipsPos) {
+      const rx = -(b.x - hipsPos.x);  // X-mirror (Mixamo +X=left, cage -X=left)
+      const ry = b.y - hipsPos.y;
+      const rz = b.z - hipsPos.z;
+      const dist = Math.sqrt(rx*rx + ry*ry + rz*rz);
+      console.log(`  ${b.name.padEnd(30)} world=[${b.x.toFixed(4)}, ${b.y.toFixed(4)}, ${b.z.toFixed(4)}]  hips-rel=[${rx.toFixed(4)}, ${ry.toFixed(4)}, ${rz.toFixed(4)}]  dist=${dist.toFixed(4)}`);
+    } else {
+      console.log(`  ${b.name.padEnd(30)} [${b.x.toFixed(4)}, ${b.y.toFixed(4)}, ${b.z.toFixed(4)}]`);
+    }
+  }
+
+  // Log key bone-to-bone distances (actual skeleton segment lengths)
+  console.log('--- Key bone-to-bone distances (segment lengths in world units) ---');
+  const SEGMENTS = [
+    ['Hips', 'LeftUpLeg',   'pelvis→l_hip'],
+    ['Hips', 'RightUpLeg',  'pelvis→r_hip'],
+    ['LeftUpLeg', 'LeftLeg',     'l_hip→l_knee (L thigh)'],
+    ['RightUpLeg', 'RightLeg',    'r_hip→r_knee (R thigh)'],
+    ['LeftLeg', 'LeftFoot',    'l_knee→l_ankle (L shin)'],
+    ['RightLeg', 'RightFoot',   'r_knee→r_ankle (R shin)'],
+    ['LeftArm', 'LeftForeArm', 'l_shoulder→l_elbow (L upper arm)'],
+    ['RightArm', 'RightForeArm','r_shoulder→r_elbow (R upper arm)'],
+    ['LeftForeArm', 'LeftHand',    'l_elbow→l_wrist (L forearm)'],
+    ['RightForeArm', 'RightHand',   'r_elbow→r_wrist (R forearm)'],
+    ['Spine2', 'Neck',        'chest→neck'],
+    ['Neck', 'Head',        'neck→head'],
+  ];
+  for (const [from, to, label] of SEGMENTS) {
+    // Find bones by suffix match (Mixamo prefixes vary)
+    let fromPos = null, toPos = null;
+    for (const b of bones) {
+      if (b.name.endsWith(from) || b.name === from) fromPos = new THREE.Vector3(b.x, b.y, b.z);
+      if (b.name.endsWith(to) || b.name === to) toPos = new THREE.Vector3(b.x, b.y, b.z);
+    }
+    if (fromPos && toPos) {
+      const d = fromPos.distanceTo(toPos);
+      console.log(`  ${label.padEnd(40)} ${(d*1000).toFixed(1)}mm  (${d.toFixed(4)} units)`);
+    } else {
+      console.log(`  ${label.padEnd(40)} MISSING (${from}→${to})`);
+    }
+  }
+
+  // Overall skeleton height from bone Y range
+  const boneMinY = Math.min(...bones.map(b => b.y));
+  const boneMaxY = Math.max(...bones.map(b => b.y));
+  console.log(`Skeleton T-pose height (bone Y range): ${(boneMaxY - boneMinY).toFixed(4)} units = ${((boneMaxY-boneMinY)*1000).toFixed(1)}mm`);
+
+  // Skeleton helper
+  skelHelper = new THREE.SkeletonHelper(group);
+  skelHelper.material.linewidth = 2;
+  scene.add(skelHelper);
+
+  // Joint spheres (yellow dots at each bone)
+  jointSpheres.forEach(j => scene.remove(j.mesh));
+  jointSpheres = [];
+  const sphereGeo = new THREE.SphereBufferGeometry(0.006, 8, 6);
+  const sphereMat = new THREE.MeshBasicMaterial({ color: 0xffff00, depthTest: false });
+  group.traverse(o => {
+    if (o.isBone) {
+      const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+      sphere.renderOrder = 999;
+      scene.add(sphere);
+      const wp = new THREE.Vector3();
+      o.getWorldPosition(wp);
+      sphere.position.copy(wp);
+      jointSpheres.push({ mesh: sphere, bone: o });
+    }
+  });
+
+  // Bounding box and camera
+  const box = new THREE.Box3().setFromObject(group);
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const grid = new THREE.GridHelper(4, 20, 0x555555, 0x444444);
+  grid.position.y = 0;
+  scene.add(grid);
+  controls.target.set(center.x, center.y, center.z);
+  camera.position.set(center.x + size.y * 0.3, center.y, center.z + size.y * 1.5);
+
+  // ── ANIMATION ──
+  let animInfo = 'No animation';
+  if (group.animations && group.animations.length) {
+    const clip = group.animations[0];
+    clipDuration = clip.duration;
+    mixer = new THREE.AnimationMixer(group);
+    currentAction = mixer.clipAction(clip);
+    currentAction.play();
+    playing = true;
+    inRestPose = false;
+    animInfo = 'Animation: ' + clip.duration.toFixed(2) + 's, ' + clip.tracks.length + ' tracks, ' + (clip.tracks.length > 0 ? clip.tracks[0].name : '');
+    console.log('Animation clip:', clip.name, clip.duration + 's', clip.tracks.length, 'tracks');
+    console.log('Track names:', clip.tracks.map(t => t.name).join(', '));
+
+    document.getElementById('playBtn').disabled = false;
+    document.getElementById('restBtn').disabled = false;
+    document.getElementById('timeSlider').disabled = false;
+    document.getElementById('timeSlider').max = clip.duration;
+  }
+
+  document.getElementById('info').innerHTML =
+    '<br><b>' + name + '</b>' +
+    '<br>Meshes: ' + meshCount + ' | Verts: ' + totalVerts.toLocaleString() + ' | Tris: ' + totalTris.toLocaleString() +
+    '<br>Size: ' + size.x.toFixed(3) + ' x ' + size.y.toFixed(3) + ' x ' + size.z.toFixed(3) +
+    '<br>Skeleton height: ' + (boneMaxY - boneMinY).toFixed(4) +
+    '<br>' + animInfo +
+    '<br>Bones: ' + bones.length;
+
+  console.log('Bounding box:', size.x.toFixed(3), 'x', size.y.toFixed(3), 'x', size.z.toFixed(3));
+}
+
+// Play/Pause
+document.getElementById('playBtn').addEventListener('click', () => {
+  if (inRestPose && currentAction) {
+    // Restore from rest pose: re-enable the animation
+    currentAction.enabled = true;
+    currentAction.play();
+    inRestPose = false;
+    playing = true;
+    document.getElementById('playBtn').textContent = 'Pause';
+    return;
+  }
+  playing = !playing;
+  document.getElementById('playBtn').textContent = playing ? 'Pause' : 'Play';
+});
+
+// Rest Pose: stop animation and reset skeleton to bind/T-pose
+document.getElementById('restBtn').addEventListener('click', () => {
+  if (!fbxGroup) return;
+  // Stop the animation
+  if (currentAction) {
+    currentAction.stop();
+    currentAction.enabled = false;
+  }
+  playing = false;
+  inRestPose = true;
+  // Reset all skinned meshes to their bind pose
+  fbxGroup.traverse(o => {
+    if (o.isSkinnedMesh && o.skeleton) {
+      o.skeleton.pose();
+    }
+  });
+  // Also reset all bones to their default transforms
+  fbxGroup.traverse(o => {
+    if (o.isBone) {
+      o.position.copy(o.position); // force update
+    }
+  });
+  fbxGroup.updateMatrixWorld(true);
+  document.getElementById('playBtn').textContent = 'Play';
+  document.getElementById('timeLabel').textContent = 'REST';
+});
+
+// Time slider (scrub)
+let scrubbing = false;
+document.getElementById('timeSlider').addEventListener('input', function() {
+  if (mixer) {
+    scrubbing = true;
+    const t = parseFloat(this.value);
+    mixer.setTime(t);
+    document.getElementById('timeLabel').textContent = t.toFixed(2) + 's';
+  }
+});
+document.getElementById('timeSlider').addEventListener('change', () => { scrubbing = false; });
+
+document.getElementById('showSkel').addEventListener('change', function() {
+  if (skelHelper) skelHelper.visible = this.checked;
+  jointSpheres.forEach(j => j.mesh.visible = this.checked);
+});
+document.getElementById('wireframe').addEventListener('change', function() {
+  meshMats.forEach(m => m.wireframe = this.checked);
+});
+document.getElementById('showAxes').addEventListener('change', function() {
+  if (jointAxesGroup) jointAxesGroup.visible = this.checked;
+});
+
+document.getElementById('file').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (f) { const r = new FileReader(); r.onload = () => loadFBX(r.result, f.name); r.readAsArrayBuffer(f); }
+});
+document.body.addEventListener('dragover', e => e.preventDefault());
+document.body.addEventListener('drop', e => {
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if (f) { const r = new FileReader(); r.onload = () => loadFBX(r.result, f.name); r.readAsArrayBuffer(f); }
+});
+
+const clock = new THREE.Clock();
+(function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  if (mixer && playing && !scrubbing) {
+    mixer.update(dt);
+    // Update time slider
+    if (clipDuration > 0) {
+      const t = (mixer.time % clipDuration);
+      document.getElementById('timeSlider').value = t;
+      document.getElementById('timeLabel').textContent = t.toFixed(2) + 's';
+    }
+  }
+  // Update joint sphere positions
+  const _wp = new THREE.Vector3();
+  for (const j of jointSpheres) {
+    j.bone.getWorldPosition(_wp);
+    j.mesh.position.copy(_wp);
+  }
+  renderer.render(scene, camera);
+})();
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+=== FULL BONE MAPPING: Mixamo FBX → Our Joint Names ===
+
+Mixamo bone names describe the SEGMENT (limb part), but the bone POSITION
+is at the JOINT where that segment begins. Our names describe the JOINT directly.
+
+MIXAMO BONE NAME        OUR JOINT NAME     JOINT LOCATION (what's actually there)
+─────────────────────── ────────────────── ──────────────────────────────────────
+Hips                    hips               Pelvis center (root bone)
+  ├─ Spine              spine_joint        Base of spine (above pelvis)
+  │   ├─ Spine1         spine1_joint       Mid-spine
+  │   │   ├─ Spine2     spine2_joint       Upper spine
+  │   │   │   ├─ Neck   neck               Base of neck
+  │   │   │   │   └─ Head  head            Center of head
+  │   │   │   ├─ LeftShoulder   l_collar   Left clavicle start
+  │   │   │   │   └─ LeftArm    l_shoulder Left shoulder joint
+  │   │   │   │       └─ LeftForeArm  l_elbow    Left elbow joint
+  │   │   │   │           └─ LeftHand     l_wrist   Left wrist joint
+  │   │   │   │               ├─ LeftHandMiddle1  l_mid_knuckle  Left middle finger base
+  │   │   │   │               ├─ LeftHandThumb1   l_thumb1
+  │   │   │   │               │   ├─ LeftHandThumb2  l_thumb2
+  │   │   │   │               │   └─ LeftHandThumb3  l_thumb3
+  │   │   │   │               ├─ LeftHandIndex1   l_index1
+  │   │   │   │               │   ├─ LeftHandIndex2  l_index2
+  │   │   │   │               │   └─ LeftHandIndex3  l_index3
+  │   │   │   │               ├─ LeftHandMiddle2  l_middle2
+  │   │   │   │               │   └─ LeftHandMiddle3  l_middle3
+  │   │   │   │               ├─ LeftHandRing1    l_ring1
+  │   │   │   │               │   ├─ LeftHandRing2   l_ring2
+  │   │   │   │               │   └─ LeftHandRing3   l_ring3
+  │   │   │   │               └─ LeftHandPinky1   l_pinky1
+  │   │   │   │                   ├─ LeftHandPinky2  l_pinky2
+  │   │   │   │                   └─ LeftHandPinky3  l_pinky3
+  │   │   │   └─ RightShoulder  r_collar   Right clavicle start
+  │   │   │       └─ RightArm   r_shoulder Right shoulder joint
+  │   │   │           └─ (same as left, mirrored)
+  ├─ LeftUpLeg          l_hip              Left hip joint (thigh start)
+  │   └─ LeftLeg        l_knee             Left knee joint
+  │       └─ LeftFoot   l_ankle            Left ankle joint
+  │           └─ LeftToeBase  l_toe        Left toe base
+  └─ RightUpLeg         r_hip              Right hip joint (thigh start)
+      └─ RightLeg       r_knee             Right knee joint
+          └─ RightFoot  r_ankle            Right ankle joint
+              └─ RightToeBase  r_toe       Right toe base
+
+
+=== KEY DIFFERENCES FROM MIXAMO ===
+
+1. HIPS vs HIP JOINTS:
+   - Mixamo "Hips" = pelvis CENTER (root bone, high up at belt level)
+   - Mixamo "LeftUpLeg"/"RightUpLeg" = hip joints, DOWN and to the SIDE from Hips
+   - In Mixamo, hip joints are typically ~35mm BELOW Hips, and ~49mm to each side
+   - OUR CODE: currently places hips at same Y as pelvis center (WRONG)
+   - SHOULD BE: hips below pelvis, angled down-and-out like Mixamo
+
+2. CLAVICLE (LeftShoulder/RightShoulder):
+   - In Mixamo, these originate from Spine2 (upper spine), go OUT toward shoulders
+   - They should angle outward and slightly forward from the spine
+   - Our l_collar/r_collar may be derived incorrectly
+
+3. NAMING CONVENTION:
+   - Mixamo: segment-based names (the bone IS the segment)
+   - Ours: joint-based names (the point IS the joint location)
+   - Both refer to the same 3D position — just different naming philosophy

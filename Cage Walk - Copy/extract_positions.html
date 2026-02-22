@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Mixamo Joint Position Extractor</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { margin:0; background:#0f1220; font-family:system-ui; color:#e7e7e7; overflow:hidden; }
+    #dropzone {
+      position:absolute; top:0; left:0; right:0; bottom:0;
+      display:flex; align-items:center; justify-content:center;
+      z-index:100; pointer-events:none;
+    }
+    #dropzone.active {
+      background:rgba(78,205,196,0.15); pointer-events:all;
+    }
+    #dropzone .msg {
+      font-size:24px; color:#4ecdc4; border:3px dashed #4ecdc4;
+      padding:60px 80px; border-radius:20px; display:none;
+    }
+    #dropzone.active .msg { display:block; }
+    #ui {
+      position:absolute; top:12px; left:12px; background:rgba(0,0,0,.82);
+      padding:14px; border-radius:12px; z-index:5; max-width:380px; font-size:13px;
+    }
+    .row { display:flex; gap:10px; align-items:center; margin:6px 0; }
+    .row label { min-width:140px; color:#bfe7ff; }
+    input[type=range] { flex:1; }
+    button { background:#4ecdc4; color:#0f1220; border:none; padding:8px 16px;
+      border-radius:6px; cursor:pointer; font-weight:700; font-size:13px; }
+    button:hover { background:#6ee7de; }
+    button:disabled { background:#555; color:#999; cursor:default; }
+    .section { margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,.12); }
+    .sectionTitle { color:#4ecdc4; font-weight:700; margin-bottom:6px; }
+    #status { position:absolute; bottom:12px; left:50%; transform:translateX(-50%);
+      background:rgba(0,0,0,.7); padding:10px 14px; border-radius:12px; z-index:5; }
+    #boneList { font-size:11px; max-height:200px; overflow-y:auto; margin-top:8px;
+      background:rgba(0,0,0,.3); padding:8px; border-radius:6px; }
+    .bone-ok { color:#4ecdc4; }
+    .bone-miss { color:#ff6b6b; }
+    #fileInput { display:none; }
+  </style>
+</head>
+<body>
+  <div id="dropzone">
+    <div class="msg">Drop Mixamo FBX file here</div>
+  </div>
+
+  <div id="ui">
+    <div class="sectionTitle">Mixamo Joint Position Extractor</div>
+    <div class="row">
+      <button onclick="document.getElementById('fileInput').click()">Load FBX</button>
+      <input type="file" id="fileInput" accept=".fbx" />
+      <span id="fileName" style="color:#888; font-size:11px;">No file loaded</span>
+    </div>
+
+    <div class="section">
+      <div class="sectionTitle">Settings</div>
+      <div class="row"><label>Sample FPS</label><input id="fps" type="range" min="10" max="60" step="1" value="30" /><span id="fpsVal">30</span></div>
+      <div class="row"><label>Scale (target height)</label><input id="scale" type="range" min="0.1" max="3.0" step="0.01" value="1.0" /><span id="scaleVal">1.00</span></div>
+      <div class="row"><label><input type="checkbox" id="flipZ" /> Flip Z (face -Z)</label></div>
+    </div>
+
+    <div class="section">
+      <div class="sectionTitle">Playback</div>
+      <div class="row">
+        <button id="playBtn" disabled>Play</button>
+        <button id="pauseBtn" disabled>Pause</button>
+      </div>
+      <div class="row"><label>Frame</label><input id="scrubber" type="range" min="0" max="100" step="1" value="0" style="flex:1" /><span id="scrubVal">0</span></div>
+    </div>
+
+    <div class="section">
+      <div class="sectionTitle">Export</div>
+      <div class="row">
+        <button id="exportBtn" disabled onclick="exportJSON()">Download joint_positions.json</button>
+      </div>
+    </div>
+
+    <div id="boneList"></div>
+  </div>
+
+  <div id="status">Drag & drop a Mixamo FBX file to begin</div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+  import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+
+  // ---- UI helpers ----
+  const $ = id => document.getElementById(id);
+  function bindRange(id, outId, fmt = v => v) {
+    const el = $(id), out = $(outId);
+    const set = () => out.textContent = fmt(el.value);
+    el.addEventListener('input', set); set();
+  }
+  bindRange('fps', 'fpsVal', v => String(v));
+  bindRange('scale', 'scaleVal', v => (+v).toFixed(2));
+
+  // ---- Three.js scene ----
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0f1220);
+  const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.01, 500);
+  camera.position.set(0, 1, 3);
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(innerWidth, innerHeight);
+  document.body.appendChild(renderer.domElement);
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.target.set(0, 0.5, 0);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(2, 3, 2);
+  scene.add(dirLight);
+  scene.add(new THREE.GridHelper(4, 20, 0x333333, 0x222222));
+  scene.add(new THREE.AxesHelper(0.3));
+
+  window.addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  });
+
+  // ---- Bone name mapping ----
+  // Case-insensitive suffix matching for Mixamo bone names
+  const BONE_MAP = [
+    { suffix: 'Hips',          name: 'pelvis' },
+    { suffix: 'Spine1',        name: 'chest', alt: 'Spine2' },
+    { suffix: 'Neck',          name: 'neck' },
+    { suffix: 'Head',          name: 'head' },
+    { suffix: 'LeftArm',       name: 'l_shoulder' },
+    { suffix: 'LeftForeArm',   name: 'l_elbow' },
+    { suffix: 'LeftHand',      name: 'l_wrist' },
+    { suffix: 'LeftUpLeg',     name: 'l_hip' },
+    { suffix: 'LeftLeg',       name: 'l_knee' },
+    { suffix: 'LeftFoot',      name: 'l_ankle' },
+    { suffix: 'LeftToeBase',   name: 'l_toe' },
+    { suffix: 'RightArm',      name: 'r_shoulder' },
+    { suffix: 'RightForeArm',  name: 'r_elbow' },
+    { suffix: 'RightHand',     name: 'r_wrist' },
+    { suffix: 'RightUpLeg',    name: 'r_hip' },
+    { suffix: 'RightLeg',      name: 'r_knee' },
+    { suffix: 'RightFoot',     name: 'r_ankle' },
+    { suffix: 'RightToeBase',  name: 'r_toe' },
+  ];
+
+  function matchBone(boneName) {
+    const lower = boneName.toLowerCase();
+    // Try exact suffix match first (longer suffixes first to avoid partial matches)
+    const sorted = BONE_MAP.slice().sort((a, b) => b.suffix.length - a.suffix.length);
+    for (const entry of sorted) {
+      if (lower.endsWith(entry.suffix.toLowerCase())) return entry.name;
+      if (entry.alt && lower.endsWith(entry.alt.toLowerCase())) return entry.name;
+    }
+    return null;
+  }
+
+  // ---- State ----
+  let fbxGroup = null;
+  let mixer = null;
+  let clip = null;
+  let skeletonHelper = null;
+  let hipsBone = null;
+  let boneMapping = {};   // projectName → THREE.Bone
+  let playing = false;
+  let currentTime = 0;
+
+  // ---- File loading ----
+  function loadFBX(buffer, filename) {
+    // Clean up previous
+    if (fbxGroup) { scene.remove(fbxGroup); fbxGroup = null; }
+    if (skeletonHelper) { scene.remove(skeletonHelper); skeletonHelper = null; }
+    mixer = null; clip = null; hipsBone = null; boneMapping = {};
+
+    $('status').textContent = 'Parsing FBX...';
+
+    const loader = new FBXLoader();
+    let group;
+    try {
+      group = loader.parse(buffer, '');
+    } catch (e) {
+      $('status').textContent = `FBX parse error: ${e.message}`;
+      console.error(e);
+      return;
+    }
+
+    fbxGroup = group;
+    scene.add(group);
+
+    // Find skeleton and clip
+    let skeleton = null;
+    group.traverse(obj => {
+      if (obj.isSkinnedMesh && obj.skeleton) skeleton = obj.skeleton;
+    });
+
+    // Also look for bones directly
+    const allBones = [];
+    group.traverse(obj => {
+      if (obj.isBone) allBones.push(obj);
+    });
+
+    if (!allBones.length) {
+      $('status').textContent = 'No bones found in FBX!';
+      return;
+    }
+
+    // Map bones
+    const boneListEl = $('boneList');
+    let html = '<b>Bone Mapping:</b><br>';
+    boneMapping = {};
+
+    for (const bone of allBones) {
+      const mapped = matchBone(bone.name);
+      if (mapped) {
+        boneMapping[mapped] = bone;
+        html += `<span class="bone-ok">${bone.name} → ${mapped}</span><br>`;
+        if (mapped === 'pelvis') hipsBone = bone;
+      }
+    }
+
+    // Show unmapped bones too
+    const mappedBones = new Set(Object.values(boneMapping));
+    for (const bone of allBones) {
+      if (!mappedBones.has(bone)) {
+        const mapped = matchBone(bone.name);
+        if (!mapped) {
+          html += `<span class="bone-miss">${bone.name} → (unmapped)</span><br>`;
+        }
+      }
+    }
+    boneListEl.innerHTML = html;
+
+    if (!hipsBone) {
+      $('status').textContent = 'No Hips bone found!';
+      return;
+    }
+
+    // Find animation clip
+    clip = group.animations && group.animations[0];
+    if (!clip) {
+      $('status').textContent = 'No animation clip found in FBX!';
+      return;
+    }
+
+    // Create mixer and play
+    mixer = new THREE.AnimationMixer(group);
+    const action = mixer.clipAction(clip);
+    action.play();
+
+    // Make skeleton visible (hide mesh for clarity)
+    group.traverse(obj => {
+      if (obj.isMesh || obj.isSkinnedMesh) {
+        obj.visible = false;
+      }
+    });
+
+    // Add skeleton helper
+    skeletonHelper = new THREE.SkeletonHelper(group);
+    skeletonHelper.material.linewidth = 2;
+    scene.add(skeletonHelper);
+
+    // Auto-scale: measure skeleton height and compute scale factor
+    measureAndAutoScale(group);
+
+    // Setup scrubber
+    const scrubber = $('scrubber');
+    const totalFrames = Math.ceil(clip.duration * (+$('fps').value));
+    scrubber.max = Math.max(1, totalFrames - 1);
+    scrubber.value = 0;
+    $('scrubVal').textContent = '0';
+
+    // Enable controls
+    $('playBtn').disabled = false;
+    $('pauseBtn').disabled = false;
+    $('exportBtn').disabled = false;
+
+    playing = true;
+    currentTime = 0;
+    $('fileName').textContent = filename;
+    $('status').textContent = `Loaded: ${clip.name || filename} (${clip.duration.toFixed(3)}s, ${allBones.length} bones, ${Object.keys(boneMapping).length} mapped)`;
+  }
+
+  function measureAndAutoScale(group) {
+    // Measure skeleton height from bone positions at rest
+    group.updateMatrixWorld(true);
+    let minY = Infinity, maxY = -Infinity;
+    group.traverse(obj => {
+      if (obj.isBone) {
+        const wp = new THREE.Vector3();
+        obj.getWorldPosition(wp);
+        minY = Math.min(minY, wp.y);
+        maxY = Math.max(maxY, wp.y);
+      }
+    });
+    const sourceHeight = maxY - minY;
+    if (sourceHeight > 0.01) {
+      const targetHeight = 1.0; // cage mesh is ~1.0 units tall
+      const autoScale = targetHeight / sourceHeight;
+      $('scale').value = autoScale.toFixed(2);
+      $('scaleVal').textContent = autoScale.toFixed(2);
+      console.log(`Source skeleton height: ${sourceHeight.toFixed(1)} → auto-scale: ${autoScale.toFixed(4)}`);
+    }
+  }
+
+  // ---- Drag & drop ----
+  const dropzone = $('dropzone');
+  document.addEventListener('dragenter', e => { e.preventDefault(); dropzone.classList.add('active'); });
+  document.addEventListener('dragover', e => { e.preventDefault(); });
+  document.addEventListener('dragleave', e => {
+    if (e.target === dropzone || e.target === dropzone.querySelector('.msg')) {
+      dropzone.classList.remove('active');
+    }
+  });
+  document.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('active');
+    const file = e.dataTransfer.files[0];
+    if (file) readFile(file);
+  });
+
+  $('fileInput').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) readFile(file);
+  });
+
+  function readFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => loadFBX(reader.result, file.name);
+    reader.readAsArrayBuffer(file);
+  }
+
+  // ---- Playback controls ----
+  $('playBtn').addEventListener('click', () => { playing = true; });
+  $('pauseBtn').addEventListener('click', () => { playing = false; });
+
+  const scrubber = $('scrubber');
+  scrubber.addEventListener('input', () => {
+    if (!clip) return;
+    playing = false;
+    const fps = +$('fps').value;
+    const frame = +scrubber.value;
+    currentTime = frame / fps;
+    $('scrubVal').textContent = String(frame);
+  });
+
+  // Update scrubber max when fps changes
+  $('fps').addEventListener('input', () => {
+    if (!clip) return;
+    const fps = +$('fps').value;
+    const totalFrames = Math.ceil(clip.duration * fps);
+    scrubber.max = Math.max(1, totalFrames - 1);
+  });
+
+  // ---- Extraction ----
+  function extractPositions() {
+    if (!clip || !mixer || !hipsBone || !fbxGroup) return null;
+
+    const fps = +$('fps').value;
+    const userScale = +$('scale').value;
+    const flipZ = $('flipZ').checked;
+    const duration = clip.duration;
+    const frameCount = Math.ceil(duration * fps) + 1; // +1 to include last frame
+
+    // Reset mixer to start
+    mixer.setTime(0);
+    fbxGroup.updateMatrixWorld(true);
+
+    const result = {
+      duration,
+      fps,
+      frame_count: frameCount,
+      rest_pose: {},
+      root_positions: [],
+      joints: {}
+    };
+
+    // Initialize joint arrays
+    const jointNames = Object.keys(boneMapping);
+    for (const jn of jointNames) {
+      result.joints[jn] = { times: [], positions: [] };
+    }
+
+    const worldPos = new THREE.Vector3();
+    const hipsPos = new THREE.Vector3();
+
+    for (let f = 0; f < frameCount; f++) {
+      const t = Math.min(f / fps, duration);
+
+      // Advance mixer to exact time
+      mixer.setTime(t);
+      fbxGroup.updateMatrixWorld(true);
+
+      // Get hips TRANSLATION only (not full inverse matrix).
+      // Subtracting translation removes root motion drift while keeping
+      // world-space orientation for direction vectors between joints.
+      hipsPos.setFromMatrixPosition(hipsBone.matrixWorld);
+      result.root_positions.push([
+        hipsPos.x * userScale,
+        hipsPos.y * userScale,
+        hipsPos.z * userScale * (flipZ ? -1 : 1)
+      ]);
+
+      // Record each joint: world position minus hips translation
+      for (const jn of jointNames) {
+        const bone = boneMapping[jn];
+        worldPos.setFromMatrixPosition(bone.matrixWorld);
+
+        let x = (worldPos.x - hipsPos.x) * userScale;
+        let y = (worldPos.y - hipsPos.y) * userScale;
+        let z = (worldPos.z - hipsPos.z) * userScale;
+        if (flipZ) z = -z;
+
+        result.joints[jn].times.push(+t.toFixed(6));
+        result.joints[jn].positions.push([
+          +x.toFixed(6), +y.toFixed(6), +z.toFixed(6)
+        ]);
+      }
+    }
+
+    // Rest pose = frame 0
+    for (const jn of jointNames) {
+      result.rest_pose[jn] = result.joints[jn].positions[0].slice();
+    }
+
+    return result;
+  }
+
+  // ---- Export ----
+  window.exportJSON = function() {
+    const data = extractPositions();
+    if (!data) {
+      $('status').textContent = 'No data to export!';
+      return;
+    }
+
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'joint_positions.json';
+    a.click();
+    URL.revokeObjectURL(url);
+
+    const jointCount = Object.keys(data.joints).length;
+    $('status').textContent = `Exported: ${data.frame_count} frames, ${jointCount} joints, ${data.duration.toFixed(3)}s @ ${data.fps}fps`;
+  };
+
+  // ---- Animation loop ----
+  let lastTime = performance.now();
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    const now = performance.now();
+    const dt = Math.min((now - lastTime) / 1000, 0.05);
+    lastTime = now;
+
+    if (mixer && clip) {
+      if (playing) {
+        currentTime += dt;
+        if (currentTime > clip.duration) currentTime = 0;
+      }
+
+      mixer.setTime(currentTime);
+      fbxGroup.updateMatrixWorld(true);
+
+      // Update scrubber position
+      const fps = +$('fps').value;
+      const frame = Math.round(currentTime * fps);
+      scrubber.value = frame;
+      $('scrubVal').textContent = String(frame);
+    }
+
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  </script>
+</body>
+</html>

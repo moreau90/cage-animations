@@ -1,0 +1,65 @@
+What the Mixamo Blender plugin actually does
+1) Renames and normalizes the Mixamo skeleton
+
+Mixamo rigs come with:
+
+long, inconsistent bone names
+
+FBX-style hierarchy quirks
+
+non-Blender-friendly conventions
+
+The plugin:
+
+renames bones to predictable patterns
+
+fixes hierarchy oddities
+
+makes the armature easier to work with in Blender
+
+Key point:
+👉 The skeleton is still the same Mixamo skeleton. No new bones, no repositioning.
+
+2) Fixes orientation, roll, and rest-pose issues
+
+Mixamo FBXs often import with:
+
+strange bone roll
+
+axis mismatches
+
+rest pose vs pose pose confusion
+
+The plugin:
+
+corrects bone roll
+
+aligns axes for Blender’s transform system
+
+stabilizes rotations for animation editing
+
+This is editor hygiene, not deformation logic.
+
+3) Builds a Blender control rig (the big value)
+
+This is the main reason people use it.
+
+The plugin:
+
+creates IK controls (hands, feet, spine)
+
+adds pole targets
+
+sets up constraints
+
+lets animators pose the character without touching deform bones
+
+Important:
+
+Deform bones remain untouched
+
+Controls drive the Mixamo bones via constraints
+
+This is pure rig UI, not skinning
+
+Think: Rigify-style controls layered on top of Mixamo.

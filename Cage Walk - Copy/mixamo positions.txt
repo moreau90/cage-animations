@@ -1,0 +1,87 @@
+=== T-POSE (BIND) BONE POSITIONS ===
+view_fbx.html:92 --- Bone positions (hips-centered, X-mirrored for cage comparison) ---
+view_fbx.html:93 Hips world position: [0.0011, -0.0335, -0.0361]
+view_fbx.html:100   mixamorigHeadTop_End           world=[0.0011, 0.4928, 0.0037]  hips-rel=[0.0000, 0.5263, 0.0398]  dist=0.5278
+view_fbx.html:100   mixamorigHead                  world=[0.0011, 0.2779, -0.0367]  hips-rel=[0.0000, 0.3114, -0.0006]  dist=0.3114
+view_fbx.html:100   mixamorigNeck                  world=[0.0011, 0.2457, -0.0428]  hips-rel=[0.0000, 0.2792, -0.0066]  dist=0.2793
+view_fbx.html:100   mixamorigLeftShoulder          world=[0.0332, 0.2331, -0.0429]  hips-rel=[-0.0322, 0.2666, -0.0067]  dist=0.2686
+view_fbx.html:100   mixamorigRightShoulder         world=[-0.0311, 0.2331, -0.0427]  hips-rel=[0.0322, 0.2666, -0.0065]  dist=0.2686
+view_fbx.html:100   mixamorigRightHandRing1        world=[-0.4333, 0.2098, -0.0567]  hips-rel=[0.4343, 0.2433, -0.0206]  dist=0.4983
+view_fbx.html:100   mixamorigRightHandIndex1       world=[-0.4300, 0.2098, -0.0146]  hips-rel=[0.4311, 0.2433, 0.0215]  dist=0.4955
+view_fbx.html:100   mixamorigRightHandMiddle1      world=[-0.4312, 0.2088, -0.0361]  hips-rel=[0.4323, 0.2423, 0.0000]  dist=0.4956
+view_fbx.html:100   mixamorigLeftHandRing1         world=[0.4325, 0.2086, -0.0564]  hips-rel=[-0.4314, 0.2421, -0.0202]  dist=0.4951
+view_fbx.html:100   mixamorigLeftHandIndex1        world=[0.4332, 0.2085, -0.0136]  hips-rel=[-0.4321, 0.2420, 0.0226]  dist=0.4958
+view_fbx.html:100   mixamorigLeftArm               world=[0.0974, 0.2076, -0.0431]  hips-rel=[-0.0964, 0.2411, -0.0069]  dist=0.2598
+view_fbx.html:100   mixamorigRightArm              world=[-0.0953, 0.2076, -0.0425]  hips-rel=[0.0964, 0.2411, -0.0063]  dist=0.2597
+view_fbx.html:100   mixamorigRightHandPinky1       world=[-0.4277, 0.2076, -0.0790]  hips-rel=[0.4287, 0.2411, -0.0428]  dist=0.4937
+view_fbx.html:100   mixamorigLeftHandMiddle1       world=[0.4309, 0.2073, -0.0365]  hips-rel=[-0.4299, 0.2408, -0.0003]  dist=0.4927
+view_fbx.html:100   mixamorigLeftHandMiddle2       world=[0.4573, 0.2068, -0.0370]  hips-rel=[-0.4562, 0.2403, -0.0009]  dist=0.5156
+view_fbx.html:100   mixamorigLeftHandPinky1        world=[0.4285, 0.2066, -0.0803]  hips-rel=[-0.4274, 0.2401, -0.0442]  dist=0.4922
+view_fbx.html:100   mixamorigRightHandMiddle2      world=[-0.4580, 0.2066, -0.0361]  hips-rel=[0.4590, 0.2401, 0.0001]  dist=0.5180
+view_fbx.html:100   mixamorigRightHandRing2        world=[-0.4576, 0.2047, -0.0581]  hips-rel=[0.4587, 0.2382, -0.0219]  dist=0.5173
+view_fbx.html:100   mixamorigRightHandIndex2       world=[-0.4550, 0.2046, -0.0119]  hips-rel=[0.4560, 0.2381, 0.0242]  dist=0.5150
+view_fbx.html:100   mixamorigLeftHandRing2         world=[0.4578, 0.2045, -0.0578]  hips-rel=[-0.4567, 0.2380, -0.0216]  dist=0.5154
+view_fbx.html:100   mixamorigLeftHandIndex2        world=[0.4573, 0.2042, -0.0121]  hips-rel=[-0.4563, 0.2377, 0.0241]  dist=0.5150
+view_fbx.html:100   mixamorigLeftHand              world=[0.3589, 0.2042, -0.0419]  hips-rel=[-0.3578, 0.2377, -0.0057]  dist=0.4296
+view_fbx.html:100   mixamorigRightHand             world=[-0.3568, 0.2042, -0.0419]  hips-rel=[0.3578, 0.2377, -0.0057]  dist=0.4296
+view_fbx.html:100   mixamorigLeftForeArm           world=[0.2279, 0.2028, -0.0430]  hips-rel=[-0.2268, 0.2363, -0.0069]  dist=0.3276
+view_fbx.html:100   mixamorigRightForeArm          world=[-0.2258, 0.2028, -0.0432]  hips-rel=[0.2268, 0.2363, -0.0071]  dist=0.3276
+view_fbx.html:100   mixamorigRightHandPinky2       world=[-0.4418, 0.2010, -0.0838]  hips-rel=[0.4428, 0.2345, -0.0477]  dist=0.5034
+view_fbx.html:100   mixamorigLeftHandPinky2        world=[0.4425, 0.2007, -0.0831]  hips-rel=[-0.4414, 0.2342, -0.0470]  dist=0.5019
+view_fbx.html:100   mixamorigLeftHandMiddle3       world=[0.4823, 0.2001, -0.0371]  hips-rel=[-0.4812, 0.2336, -0.0010]  dist=0.5349
+view_fbx.html:100   mixamorigRightHandMiddle3      world=[-0.4833, 0.1996, -0.0357]  hips-rel=[0.4843, 0.2331, 0.0004]  dist=0.5375
+view_fbx.html:100   mixamorigRightHandThumb1       world=[-0.3830, 0.1986, -0.0206]  hips-rel=[0.3841, 0.2321, 0.0155]  dist=0.4490
+view_fbx.html:100   mixamorigLeftHandPinky4        world=[0.4602, 0.1985, -0.0868]  hips-rel=[-0.4591, 0.2320, -0.0507]  dist=0.5169
+view_fbx.html:100   mixamorigRightHandIndex3       world=[-0.4778, 0.1984, -0.0094]  hips-rel=[0.4788, 0.2319, 0.0267]  dist=0.5327
+view_fbx.html:100   mixamorigRightHandRing4        world=[-0.4953, 0.1983, -0.0602]  hips-rel=[0.4963, 0.2318, -0.0241]  dist=0.5484
+view_fbx.html:100   mixamorigRightHandRing3        world=[-0.4797, 0.1983, -0.0592]  hips-rel=[0.4808, 0.2318, -0.0231]  dist=0.5342
+view_fbx.html:100   mixamorigLeftHandRing4         world=[0.4953, 0.1982, -0.0599]  hips-rel=[-0.4942, 0.2317, -0.0237]  dist=0.5464
+view_fbx.html:100   mixamorigLeftHandRing3         world=[0.4796, 0.1982, -0.0588]  hips-rel=[-0.4785, 0.2317, -0.0227]  dist=0.5321
+view_fbx.html:100   mixamorigLeftHandIndex3        world=[0.4791, 0.1981, -0.0105]  hips-rel=[-0.4780, 0.2316, 0.0256]  dist=0.5318
+view_fbx.html:100   mixamorigLeftHandThumb1        world=[0.3853, 0.1979, -0.0195]  hips-rel=[-0.3842, 0.2314, 0.0166]  dist=0.4488
+view_fbx.html:100   mixamorigRightHandPinky4       world=[-0.4589, 0.1970, -0.0897]  hips-rel=[0.4600, 0.2305, -0.0536]  dist=0.5173
+view_fbx.html:100   mixamorigLeftHandPinky3        world=[0.4541, 0.1969, -0.0855]  hips-rel=[-0.4531, 0.2304, -0.0493]  dist=0.5107
+view_fbx.html:100   mixamorigRightHandPinky3       world=[-0.4531, 0.1958, -0.0878]  hips-rel=[0.4542, 0.2293, -0.0516]  dist=0.5114
+view_fbx.html:100   mixamorigLeftHandMiddle4       world=[0.4995, 0.1958, -0.0372]  hips-rel=[-0.4984, 0.2293, -0.0011]  dist=0.5486
+view_fbx.html:100   mixamorigRightHandMiddle4      world=[-0.4994, 0.1955, -0.0355]  hips-rel=[0.5005, 0.2290, 0.0006]  dist=0.5503
+view_fbx.html:100   mixamorigLeftHandIndex4        world=[0.4937, 0.1955, -0.0096]  hips-rel=[-0.4927, 0.2290, 0.0265]  dist=0.5439
+view_fbx.html:100   mixamorigRightHandIndex4       world=[-0.4937, 0.1952, -0.0077]  hips-rel=[0.4948, 0.2287, 0.0284]  dist=0.5459
+view_fbx.html:100   mixamorigRightHandThumb2       world=[-0.4040, 0.1941, -0.0036]  hips-rel=[0.4050, 0.2276, 0.0326]  dist=0.4658
+view_fbx.html:100   mixamorigLeftHandThumb2        world=[0.4064, 0.1929, -0.0017]  hips-rel=[-0.4053, 0.2264, 0.0345]  dist=0.4655
+view_fbx.html:100   mixamorigRightHandThumb3       world=[-0.4231, 0.1803, 0.0145]  hips-rel=[0.4242, 0.2138, 0.0507]  dist=0.4777
+view_fbx.html:100   mixamorigLeftHandThumb3        world=[0.4258, 0.1787, 0.0160]  hips-rel=[-0.4247, 0.2122, 0.0521]  dist=0.4777
+view_fbx.html:100   mixamorigLeftHandThumb4        world=[0.4433, 0.1747, 0.0245]  hips-rel=[-0.4422, 0.2082, 0.0607]  dist=0.4925
+view_fbx.html:100   mixamorigRightHandThumb4       world=[-0.4410, 0.1696, 0.0245]  hips-rel=[0.4421, 0.2031, 0.0606]  dist=0.4903
+view_fbx.html:100   mixamorigSpine2                world=[0.0011, 0.1619, -0.0408]  hips-rel=[0.0000, 0.1954, -0.0046]  dist=0.1955
+view_fbx.html:100   mixamorigSpine1                world=[0.0011, 0.0875, -0.0390]  hips-rel=[0.0000, 0.1210, -0.0029]  dist=0.1210
+view_fbx.html:100   mixamorigSpine                 world=[0.0011, 0.0223, -0.0375]  hips-rel=[0.0000, 0.0558, -0.0013]  dist=0.0559
+view_fbx.html:100   mixamorigHips                  world=[0.0011, -0.0335, -0.0361]  hips-rel=[0.0000, 0.0000, 0.0000]  dist=0.0000
+view_fbx.html:100   mixamorigLeftUpLeg             world=[0.0448, -0.0645, -0.0369]  hips-rel=[-0.0437, -0.0310, -0.0007]  dist=0.0536
+view_fbx.html:100   mixamorigRightUpLeg            world=[-0.0427, -0.0645, -0.0367]  hips-rel=[0.0437, -0.0310, -0.0005]  dist=0.0536
+view_fbx.html:100   mixamorigRightLeg              world=[-0.0555, -0.2663, -0.0417]  hips-rel=[0.0566, -0.2328, -0.0056]  dist=0.2396
+view_fbx.html:100   mixamorigLeftLeg               world=[0.0576, -0.2663, -0.0422]  hips-rel=[-0.0566, -0.2328, -0.0060]  dist=0.2396
+view_fbx.html:100   mixamorigRightFoot             world=[-0.0593, -0.4339, -0.0540]  hips-rel=[0.0604, -0.4004, -0.0178]  dist=0.4054
+view_fbx.html:100   mixamorigLeftFoot              world=[0.0615, -0.4339, -0.0544]  hips-rel=[-0.0604, -0.4004, -0.0183]  dist=0.4054
+view_fbx.html:100   mixamorigLeftToeBase           world=[0.0840, -0.4908, 0.0453]  hips-rel=[-0.0829, -0.4573, 0.0815]  dist=0.4719
+view_fbx.html:100   mixamorigRightToeBase          world=[-0.0818, -0.4909, 0.0462]  hips-rel=[0.0829, -0.4573, 0.0823]  dist=0.4720
+view_fbx.html:100   mixamorigLeftToe_End           world=[0.0949, -0.4911, 0.0937]  hips-rel=[-0.0938, -0.4576, 0.1299]  dist=0.4848
+view_fbx.html:100   mixamorigRightToe_End          world=[-0.0927, -0.4911, 0.0944]  hips-rel=[0.0938, -0.4576, 0.1305]  dist=0.4850
+view_fbx.html:107 --- Key bone-to-bone distances (segment lengths in world units) ---
+view_fbx.html:131   pelvis→l_hip                             53.6mm  (0.0536 units)
+view_fbx.html:131   pelvis→r_hip                             53.6mm  (0.0536 units)
+view_fbx.html:131   l_hip→l_knee (L thigh)                   202.3mm  (0.2023 units)
+view_fbx.html:131   r_hip→r_knee (R thigh)                   202.3mm  (0.2023 units)
+view_fbx.html:131   l_knee→l_ankle (L shin)                  168.1mm  (0.1681 units)
+view_fbx.html:131   r_knee→r_ankle (R shin)                  168.1mm  (0.1681 units)
+view_fbx.html:131   l_shoulder→l_elbow (L upper arm)         130.6mm  (0.1306 units)
+view_fbx.html:131   r_shoulder→r_elbow (R upper arm)         130.6mm  (0.1306 units)
+view_fbx.html:131   l_elbow→l_wrist (L forearm)              131.0mm  (0.1310 units)
+view_fbx.html:131   r_elbow→r_wrist (R forearm)              131.0mm  (0.1310 units)
+view_fbx.html:131   chest→neck                               83.8mm  (0.0838 units)
+view_fbx.html:131   neck→head                                32.8mm  (0.0328 units)
+view_fbx.html:140 Skeleton T-pose height (bone Y range): 0.9839 units = 983.9mm
+view_fbx.html:167 Animation clip: mixamo.com 4.800000190734863s 53 tracks
+view_fbx.html:168 Track names: mixamorigHips.position, mixamorigHips.quaternion, mixamorigSpine.quaternion, mixamorigSpine1.quaternion, mixamorigSpine2.quaternion, mixamorigNeck.quaternion, mixamorigHead.quaternion, mixamorigLeftShoulder.quaternion, mixamorigLeftArm.quaternion, mixamorigLeftForeArm.quaternion, mixamorigLeftHand.quaternion, mixamorigLeftHandThumb1.quaternion, mixamorigLeftHandThumb2.quaternion, mixamorigLeftHandThumb3.quaternion, mixamorigLeftHandIndex1.quaternion, mixamorigLeftHandIndex2.quaternion, mixamorigLeftHandIndex3.quaternion, mixamorigLeftHandMiddle1.quaternion, mixamorigLeftHandMiddle2.quaternion, mixamorigLeftHandMiddle3.quaternion, mixamorigLeftHandRing1.quaternion, mixamorigLeftHandRing2.quaternion, mixamorigLeftHandRing3.quaternion, mixamorigLeftHandPinky1.quaternion, mixamorigLeftHandPinky2.quaternion, mixamorigLeftHandPinky3.quaternion, mixamorigRightShoulder.quaternion, mixamorigRightArm.quaternion, mixamorigRightForeArm.quaternion, mixamorigRightHand.quaternion, mixamorigRightHandThumb1.quaternion, mixamorigRightHandThumb2.quaternion, mixamorigRightHandThumb3.quaternion, mixamorigRightHandIndex1.quaternion, mixamorigRightHandIndex2.quaternion, mixamorigRightHandIndex3.quaternion, mixamorigRightHandMiddle1.quaternion, mixamorigRightHandMiddle2.quaternion, mixamorigRightHandMiddle3.quaternion, mixamorigRightHandRing1.quaternion, mixamorigRightHandRing2.quaternion, mixamorigRightHandRing3.quaternion, mixamorigRightHandPinky1.quaternion, mixamorigRightHandPinky2.quaternion, mixamorigRightHandPinky3.quaternion, mixamorigLeftUpLeg.quaternion, mixamorigLeftLeg.quaternion, mixamorigLeftFoot.quaternion, mixamorigLeftToeBase.quaternion, mixamorigRightUpLeg.quaternion, mixamorigRightLeg.quaternion, mixamorigRightFoot.quaternion, mixamorigRightToeBase.quaternion
+view_fbx.html:183 Bounding box: 1.002 x 0.985 x 0.252
+view_fbx.html:1  Access to image at 'file:///C:/Users/home/app/mixamo-mini/tmp/skins_1a0192eb-b2fe-445a-813f-ed5b700947aa.fbm/Image_0' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome-extension, chrome-untrusted, data, edge, http, https, isolated-app.
+Image_0:1   Failed to load resource: net::ERR_FAILED

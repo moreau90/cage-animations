@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<title>FBX Animation Analysis - Position-Based Retargeting</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Consolas,monospace;background:#1a1a2e;color:#e0e0e0;padding:20px}
+h1{color:#00d4ff;margin-bottom:10px;font-size:1.4em}h2{color:#ff6b6b;margin:20px 0 8px;font-size:1.15em;border-bottom:1px solid #333;padding-bottom:4px}
+h3{color:#ffd93d;margin:12px 0 6px;font-size:1em}.controls{margin:10px 0 20px;padding:15px;background:#16213e;border-radius:8px;border:1px solid #0f3460}
+.controls label{color:#00d4ff;font-weight:bold}#fileInput{margin:8px 0}#status{color:#ffd93d;margin:8px 0;font-style:italic}
+#output{white-space:pre-wrap;line-height:1.5}.section{background:#16213e;padding:12px 16px;margin:10px 0;border-radius:6px;border-left:3px solid #0f3460}
+.warning{color:#ff6b6b;font-weight:bold}.ok{color:#6bff6b}.highlight{color:#ffd93d}.dim{color:#888}
+table{border-collapse:collapse;margin:8px 0;width:100%;max-width:900px}th,td{text-align:left;padding:4px 12px;border:1px solid #333}
+th{background:#0f3460;color:#00d4ff}td{background:#1a1a2e}
+.bar-container{display:inline-block;width:150px;height:12px;background:#333;border-radius:3px;vertical-align:middle;margin-left:6px}
+.bar{height:100%;border-radius:3px}.bar-low{background:#6bff6b}.bar-med{background:#ffd93d}.bar-high{background:#ff6b6b}
+#loading-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:100;justify-content:center;align-items:center}
+#loading-overlay .spinner{color:#00d4ff;font-size:1.3em}</style></head><body>
+<h1>FBX Animation Analysis for Position-Based Retargeting</h1>
+<div class="controls"><label>Load Mixamo FBX file:</label><br><input type="file" id="fileInput" accept=".fbx"><br>
+<span id="status">Waiting for file...</span></div><div id="output"></div>
+<div id="loading-overlay"><div class="spinner">Analyzing animation...</div></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import*as THREE from"three";import{FBXLoader}from"three/addons/loaders/FBXLoader.js";
+const FI=document.getElementById("fileInput"),ST=document.getElementById("status"),OUT=document.getElementById("output"),OV=document.getElementById("loading-overlay");
+FI.addEventListener("change",async e=>{const file=e.target.files[0];if(\!file)return;ST.textContent="Loading "+file.name+"...";OV.style.display="flex";OUT.innerHTML="";
+try{const buf=await file.arrayBuffer();const fbx=new FBXLoader().parse(buf,"");ST.textContent="Analyzing...";await new Promise(r=>setTimeout(r,50));
+OUT.innerHTML=analyze(fbx,file.name);ST.textContent="Done: "+file.name}catch(err){ST.textContent="Error: "+err.message;console.error(err)}finally{OV.style.display="none"}});
+function analyze(fbx,fn){let sk=null;fbx.traverse(o=>{if(o.isSkinnedMesh&&o.skeleton)sk=o.skeleton});
+const bones=[];fbx.traverse(o=>{if(o.isBone)bones.push(o)});if(bones.length===0)return"<span class=warning>No skeleton\!</span>";
+const clips=fbx.animations;if(\!clips||clips.length===0)return"<span class=warning>No animation\!</span>";const clip=clips[0];
+const bm={};fbx.traverse(o=>{if(o.isBone)bm[o.name]=o});const bn=Object.keys(bm);const J=idJoints(bn);
+let h="<div class=section><h2>File: "+fn+"</h2><b>Clip:</b> "+clip.name+" | <b>Duration:</b> "+clip.duration.toFixed(3)+"s | <b>Tracks:</b> "+clip.tracks.length+"\n";
+h+="<b>Bones:</b> "+bn.length+"\n<b>Key joints:</b>\n";for(const[role,name]of Object.entries(J)){h+="  "+role+": "+(name||"<span class=warning>NOT FOUND</span>")+"\n"}h+="</div>";
+const mx=new THREE.AnimationMixer(fbx);mx.clipAction(clip).play();const fps=30,nf=Math.ceil(clip.duration*fps),dt=1/fps;const FD=[];
+for(let f=0;f<=nf;f++){const t=Math.min(f*dt,clip.duration);mx.setTime(t);fbx.updateMatrixWorld(true);
+const pos={};for(const[r,n]of Object.entries(J)){if(n&&bm[n]){const w=new THREE.Vector3();bm[n].getWorldPosition(w);pos[r]=w}}
+const ap={};for(const n of bn){const w=new THREE.Vector3();bm[n].getWorldPosition(w);ap[n]=w}FD.push({time:t,positions:pos,allPositions:ap})}
+h+=issue1(FD,J)+issue2(FD,J)+issue3(FD,J)+issue4(FD,J)+issue5(FD,bn,fps)+summary(FD,J,fps);return h}
+function idJoints(ns){const F=(...ps)=>{for(const p of ps){const r=ns.find(n=>n.toLowerCase().includes(p.toLowerCase()));if(r)return r}return null};
+return{hips:F("Hips","pelvis"),spine:F("Spine1","Spine"),spine2:F("Spine2"),neck:F("Neck"),head:F("Head"),
+leftShoulder:F("LeftShoulder"),leftUpperArm:F("LeftArm"),leftForearm:F("LeftForeArm"),leftHand:F("LeftHand"),
+rightShoulder:F("RightShoulder"),rightUpperArm:F("RightArm"),rightForearm:F("RightForeArm"),rightHand:F("RightHand"),
+leftUpLeg:F("LeftUpLeg"),leftLeg:F("LeftLeg"),leftFoot:F("LeftFoot"),leftToe:F("LeftToeBase"),
+rightUpLeg:F("RightUpLeg"),rightLeg:F("RightLeg"),rightFoot:F("RightFoot"),rightToe:F("RightToeBase")}}
+const LIMBS=[{name:"Left Arm",p:"leftUpperArm",m:"leftForearm",d:"leftHand"},{name:"Right Arm",p:"rightUpperArm",m:"rightForearm",d:"rightHand"},{name:"Left Leg",p:"leftUpLeg",m:"leftLeg",d:"leftFoot"},{name:"Right Leg",p:"rightUpLeg",m:"rightLeg",d:"rightFoot"}];
+const V3=()=>new THREE.Vector3();const CL=(v,a,b)=>THREE.MathUtils.clamp(v,a,b);
+function sev(v,lo,hi){return v<lo?"ok":v<hi?"highlight":"warning"}function bar(v,lo,hi){return v<lo?"bar-low":v<hi?"bar-med":"bar-high"}
+function issue1(FD,J){let h="<div class=section><h2>Issue 1: Limb Twist (Pronation/Supination)</h2>";
+h+="<span class=dim>Measures rotation of elbow/knee around limb axis. Position-based IK cannot represent this.</span>\n\n";const rest=FD[0];
+for(const L of LIMBS){const p0=rest.positions[L.p],m0=rest.positions[L.m],d0=rest.positions[L.d];
+if(\!p0||\!m0||\!d0){h+="<b>"+L.name+":</b> <span class=warning>joints not found</span>\n";continue}
+const rA=V3().subVectors(d0,p0).normalize(),rM=V3().subVectors(m0,p0),rPj=rM.dot(rA),rPp=V3().subVectors(rM,rA.clone().multiplyScalar(rPj)).normalize();
+let mt=0,mtf=0,mtt=0;for(let f=0;f<FD.length;f++){const fd=FD[f],p=fd.positions[L.p],m=fd.positions[L.m],d=fd.positions[L.d];if(\!p||\!m||\!d)continue;
+const ax=V3().subVectors(d,p),al=ax.length();if(al<1e-6)continue;ax.divideScalar(al);
+const mr=V3().subVectors(m,p),pj=mr.dot(ax),pp=V3().subVectors(mr,ax.clone().multiplyScalar(pj)),pl=pp.length();if(pl<1e-6)continue;pp.divideScalar(pl);
+const rp=V3().copy(rPp);rp.sub(ax.clone().multiplyScalar(rp.dot(ax)));const rl=rp.length();if(rl<1e-6)continue;rp.divideScalar(rl);
+let tw=Math.acos(CL(pp.dot(rp),-1,1));if(V3().crossVectors(rp,pp).dot(ax)<0)tw=-tw;const td=tw*180/Math.PI;
+if(Math.abs(td)>Math.abs(mt)){mt=td;mtf=f;mtt=fd.time}}const am=Math.abs(mt);
+h+="<b>"+L.name+":</b> max twist = <span class="+sev(am,15,45)+">"+mt.toFixed(1)+"deg</span> at t="+mtt.toFixed(3)+"s (frame "+mtf+")";
+h+=" <span class=bar-container><span class=\"bar "+bar(am,15,45)+"\" style=\"width:"+Math.min(am/90*100,100)+"%\"></span></span>";
+if(am>45)h+="\n  <span class=warning>WARNING: Large twist. Position IK loses forearm pronation\!</span>";h+="\n"}h+="</div>";return h}
+function grpCon(a){if(\!a.length)return[];const g=[[a[0]]];for(let i=1;i<a.length;i++){if(a[i]===a[i-1]+1)g[g.length-1].push(a[i]);else g.push([a[i]])}return g}
+function issue2(FD,J){let h="<div class=section><h2>Issue 2: Near-Straight Limbs (Degenerate Bend Axis)</h2>";
+h+="<span class=dim>When nearly straight, bend plane is ambiguous. IK may flip.</span>\n\n";const TH=0.95;
+for(const L of LIMBS){let df=[],mb=180,mbf=0,mbt=0;for(let f=0;f<FD.length;f++){const fd=FD[f],p=fd.positions[L.p],m=fd.positions[L.m],d=fd.positions[L.d];
+if(\!p||\!m||\!d)continue;const v1=V3().subVectors(m,p).normalize(),v2=V3().subVectors(d,m).normalize(),dot=v1.dot(v2);
+const ba=Math.acos(CL(dot,-1,1))*180/Math.PI;if(dot>TH)df.push({frame:f,time:fd.time});if(ba<mb){mb=ba;mbf=f;mbt=fd.time}}
+h+="<b>"+L.name+":</b> ";if(df.length===0){h+="<span class=ok>No near-straight poses (min bend="+mb.toFixed(1)+"deg at t="+mbt.toFixed(3)+"s)</span>\n"}
+else{h+="<span class=warning>"+df.length+" frames with bend<"+(Math.acos(TH)*180/Math.PI).toFixed(0)+"deg</span>\n";
+h+="  Straightest: "+mb.toFixed(1)+"deg at t="+mbt.toFixed(3)+"s (frame "+mbf+")\n";
+const rn=grpCon(df.map(x=>x.frame));h+="  Ranges: ";for(const r of rn.slice(0,8)){h+="["+FD[r[0]].time.toFixed(2)+"s-"+FD[r[r.length-1]].time.toFixed(2)+"s] "}
+if(rn.length>8)h+="...("+rn.length+" ranges)";h+="\n"}}h+="</div>";return h}
+function issue3(FD,J){let h="<div class=section><h2>Issue 3: Extreme Joint Angles</h2><span class=dim>Max flexion/extension/abduction.</span>\n\n";const st=[];
+for(const s of["left","right"]){const hk=s+"UpLeg",kk=s+"Leg";let mf=0,mft=0,me=0,met=0,ma=0,mat=0;
+for(let f=0;f<FD.length;f++){const fd=FD[f],th=fd.positions[hk],kn=fd.positions[kk];if(\!th||\!kn)continue;
+const td=V3().subVectors(kn,th).normalize(),sa=Math.atan2(-td.z,-td.y)*180/Math.PI;
+if(sa>0&&sa>mf){mf=sa;mft=fd.time}if(sa<0&&Math.abs(sa)>me){me=Math.abs(sa);met=fd.time}
+const aa=Math.abs(Math.atan2(td.x,-td.y)*180/Math.PI);if(aa>ma){ma=aa;mat=fd.time}}
+st.push({j:s+" Hip",ms:[{n:"Flexion",v:mf,t:mft,l:120},{n:"Extension",v:me,t:met,l:30},{n:"Abduction",v:ma,t:mat,l:45}]})}
+for(const s of["left","right"]){const tk=s+"UpLeg",kk=s+"Leg",fk=s+"Foot";let mb=0,mbt=0;
+for(let f=0;f<FD.length;f++){const fd=FD[f],th=fd.positions[tk],kn=fd.positions[kk],ft=fd.positions[fk];if(\!th||\!kn||\!ft)continue;
+const a=Math.acos(CL(V3().subVectors(th,kn).normalize().dot(V3().subVectors(ft,kn).normalize()),-1,1))*180/Math.PI,b=180-a;if(b>mb){mb=b;mbt=fd.time}}
+st.push({j:s+" Knee",ms:[{n:"Max bend",v:mb,t:mbt,l:150}]})}
+for(const s of["left","right"]){const sk=s+"UpperArm",ek=s+"Forearm";let me=0,met=0,mb=0,mbt=0;
+for(let f=0;f<FD.length;f++){const fd=FD[f],sh=fd.positions[sk],el=fd.positions[ek];if(\!sh||\!el)continue;
+const ad=V3().subVectors(el,sh).normalize(),ev=Math.asin(CL(ad.y,-1,1))*180/Math.PI;if(ev>me){me=ev;met=fd.time}
+const bh=Math.atan2(-ad.z,Math.abs(ad.x))*180/Math.PI;if(bh>mb){mb=bh;mbt=fd.time}}
+st.push({j:s+" Shoulder",ms:[{n:"Elevation",v:me,t:met,l:180},{n:"Behind-body",v:mb,t:mbt,l:60}]})}
+for(const s of["left","right"]){const uk=s+"UpperArm",fk=s+"Forearm",hk=s+"Hand";let mb=0,mbt=0;
+for(let f=0;f<FD.length;f++){const fd=FD[f],u=fd.positions[uk],fo=fd.positions[fk],ha=fd.positions[hk];if(\!u||\!fo||\!ha)continue;
+const a=Math.acos(CL(V3().subVectors(u,fo).normalize().dot(V3().subVectors(ha,fo).normalize()),-1,1))*180/Math.PI,b=180-a;if(b>mb){mb=b;mbt=fd.time}}
+st.push({j:s+" Elbow",ms:[{n:"Max bend",v:mb,t:mbt,l:145}]})}
+h+="<table><tr><th>Joint</th><th>Metric</th><th>Value</th><th>Time</th><th>Limit</th><th>Severity</th></tr>";
+for(const s of st){for(const m of s.ms){const pc=m.v/m.l*100,c=pc<50?"ok":pc<80?"highlight":"warning",bc=pc<50?"bar-low":pc<80?"bar-med":"bar-high";
+h+="<tr><td>"+s.j+"</td><td>"+m.n+"</td><td><span class="+c+">"+m.v.toFixed(1)+"deg</span></td>";
+h+="<td>"+m.t.toFixed(3)+"s</td><td>"+m.l+"deg</td><td><span class=bar-container><span class=\"bar "+bc+"\" style=\"width:"+Math.min(pc,100)+"%\"></span></span> "+pc.toFixed(0)+"%</td></tr>"}}
+h+="</table></div>";return h}
+function issue4(FD,J){let h="<div class=section><h2>Issue 4: Hip Twist / Pelvis Rotation</h2><span class=dim>Tracks hip-to-hip axis vs rest.</span>\n\n";
+if(\!J.leftUpLeg||\!J.rightUpLeg){h+="<span class=warning>Hip joints not found</span></div>";return h}
+const rL=FD[0].positions.leftUpLeg,rR=FD[0].positions.rightUpLeg;if(\!rL||\!rR){h+="<span class=warning>No rest data</span></div>";return h}
+const rAx=V3().subVectors(rL,rR);rAx.y=0;rAx.normalize();let my=0,myt=0,myf=0,mti=0,mtit=0;const ya=[];
+for(let f=0;f<FD.length;f++){const fd=FD[f],l=fd.positions.leftUpLeg,r=fd.positions.rightUpLeg;if(\!l||\!r)continue;
+const ax=V3().subVectors(l,r),axH=new THREE.Vector3(ax.x,0,ax.z).normalize();
+let yw=Math.acos(CL(axH.dot(rAx),-1,1))*180/Math.PI;const cr=V3().crossVectors(rAx,axH);if(cr.y<0)yw=-yw;ya.push(yw);
+if(Math.abs(yw)>Math.abs(my)){my=yw;myt=fd.time;myf=f}const ti=Math.atan2(ax.y,Math.sqrt(ax.x*ax.x+ax.z*ax.z))*180/Math.PI;
+if(Math.abs(ti)>Math.abs(mti)){mti=ti;mtit=fd.time}}
+let mp=0,mpt=0;if(J.hips&&J.spine){for(let f=0;f<FD.length;f++){const fd=FD[f],hp=fd.positions.hips,sp=fd.positions.spine;if(\!hp||\!sp)continue;
+const sd=V3().subVectors(sp,hp).normalize(),pi=90-Math.acos(CL(sd.y,-1,1))*180/Math.PI;if(Math.abs(pi)>Math.abs(mp)){mp=pi;mpt=fd.time}}}
+const ay=Math.abs(my);h+="<b>Max pelvis yaw:</b> <span class="+sev(ay,15,45)+">"+my.toFixed(1)+"deg</span> at t="+myt.toFixed(3)+"s (frame "+myf+")\n";
+const at=Math.abs(mti);h+="<b>Max pelvis tilt:</b> <span class="+sev(at,10,25)+">"+mti.toFixed(1)+"deg</span> at t="+mtit.toFixed(3)+"s\n";
+if(J.hips&&J.spine){const ap=Math.abs(mp);h+="<b>Max spine-from-vertical:</b> <span class="+sev(ap,15,40)+">"+mp.toFixed(1)+"deg</span> at t="+mpt.toFixed(3)+"s\n"}
+if(ay>30)h+="\n<span class=warning>WARNING: Large pelvis rotation. Must transform to hips-local coords each frame.</span>\n";
+h+="\n<b>Pelvis yaw timeline:</b>\n";const mn=Math.min(...ya),mx=Math.max(...ya),rg=mx-mn||1;
+const ch=" \u2581\u2582\u2583\u2584\u2585\u2586\u2587\u2588",sp=Math.max(1,Math.floor(ya.length/80));let ln="";
+for(let i=0;i<ya.length;i+=sp){const n=(ya[i]-mn)/rg;ln+=ch[Math.min(Math.floor(n*(ch.length-1)),ch.length-1)]}
+h+="  "+mn.toFixed(0)+"deg |"+ln+"| "+mx.toFixed(0)+"deg\n</div>";return h}
+function issue5(FD,bn,fps){let h="<div class=section><h2>Issue 5: Joint Velocity Analysis</h2><span class=dim>Max velocity at "+fps+"fps.</span>\n\n";
+const bv={};for(const n of bn){let mv=0,mvf=0,mvt=0;for(let f=1;f<FD.length;f++){const pv=FD[f-1].allPositions[n],cv=FD[f].allPositions[n];
+if(\!pv||\!cv)continue;const dt=FD[f].time-FD[f-1].time;if(dt<1e-6)continue;const v=pv.distanceTo(cv)/dt;if(v>mv){mv=v;mvf=f;mvt=FD[f].time}}bv[n]={mv,mvf,mvt}}
+const so=Object.entries(bv).sort((a,b)=>b[1].mv-a[1].mv);h+="<table><tr><th>#</th><th>Joint</th><th>Max Vel</th><th>Dist/Frame</th><th>Time</th><th>Frame</th></tr>";
+for(let i=0;i<Math.min(15,so.length);i++){const[n,d]=so[i],dp=d.mv/fps,c=dp<3?"ok":dp<8?"highlight":"warning";
+h+="<tr><td>"+(i+1)+"</td><td>"+n+"</td><td><span class="+c+">"+d.mv.toFixed(1)+" u/s</span></td>";
+h+="<td><span class="+c+">"+dp.toFixed(2)+" u</span></td><td>"+d.mvt.toFixed(3)+"s</td><td>"+d.mvf+"</td></tr>"}h+="</table>";
+h+="\n<h3>High-Activity Frames</h3>";const fa=[];for(let f=1;f<FD.length;f++){let tv=0,ct=0;
+for(const n of bn){const pv=FD[f-1].allPositions[n],cv=FD[f].allPositions[n];if(\!pv||\!cv)continue;const dt=FD[f].time-FD[f-1].time;if(dt<1e-6)continue;tv+=pv.distanceTo(cv)/dt;ct++}
+fa.push({f,time:FD[f].time,avg:ct?tv/ct:0,total:tv})}fa.sort((a,b)=>b.total-a.total);
+h+="Top 5 highest-activity moments:\n";for(let i=0;i<Math.min(5,fa.length);i++){const a=fa[i];h+="  Frame "+a.f+" (t="+a.time.toFixed(3)+"s): total="+a.total.toFixed(1)+", avg="+a.avg.toFixed(1)+" u/s\n"}
+h+="</div>";return h}
+function summary(FD,J,fps){let h="<div class=section><h2>Retargeting Difficulty Summary</h2>";const iss=[];
+if(J.leftUpLeg&&J.rightUpLeg){const rL=FD[0].positions.leftUpLeg,rR=FD[0].positions.rightUpLeg;if(rL&&rR){const ra=V3().subVectors(rL,rR);ra.y=0;ra.normalize();
+let my=0;for(const fd of FD){const l=fd.positions.leftUpLeg,r=fd.positions.rightUpLeg;if(\!l||\!r)continue;const a=V3().subVectors(l,r),ah=new THREE.Vector3(a.x,0,a.z).normalize();
+const y=Math.acos(CL(ah.dot(ra),-1,1))*180/Math.PI;if(y>my)my=y}if(my>45)iss.push({s:"HIGH",m:"Pelvis rotation "+my.toFixed(0)+"deg. Must use hips-local."});else if(my>20)iss.push({s:"MED",m:"Pelvis rotation "+my.toFixed(0)+"deg."})}}
+for(const L of LIMBS){let sc=0;for(const fd of FD){const p=fd.positions[L.p],m=fd.positions[L.m],d=fd.positions[L.d];if(\!p||\!m||\!d)continue;
+if(V3().subVectors(m,p).normalize().dot(V3().subVectors(d,m).normalize())>0.98)sc++}
+if(sc>FD.length*0.1)iss.push({s:"HIGH",m:L.name+": straight in "+sc+"/"+FD.length+" frames."});else if(sc>0)iss.push({s:"LOW",m:L.name+": "+sc+" near-straight frames."})}
+let md=0,fj="";for(const n of Object.keys(FD[0].allPositions)){for(let f=1;f<FD.length;f++){const pv=FD[f-1].allPositions[n],cv=FD[f].allPositions[n];
+if(\!pv||\!cv)continue;const d=pv.distanceTo(cv);if(d>md){md=d;fj=n}}}if(md>10)iss.push({s:"HIGH",m:"Very fast: "+fj+" "+md.toFixed(1)+"u/frame."});else if(md>5)iss.push({s:"MED",m:"Fast: "+fj+" "+md.toFixed(1)+"u/frame."});
+if(iss.length===0)h+="<span class=ok>No major issues. Should retarget well with position-based IK.</span>\n";
+else{iss.sort((a,b)=>{const o={HIGH:0,MED:1,LOW:2};return o[a.s]-o[b.s]});for(const i of iss){const c=i.s==="HIGH"?"warning":i.s==="MED"?"highlight":"ok";h+="<span class="+c+">["+i.s+"]</span> "+i.m+"\n"}}
+h+="\n<h3>Position-Based Retargeting Checklist</h3>";
+h+="[ ] Hips-local extraction (negate X for Mixamo-to-cage mirror)\n";
+h+="[ ] 2-segment IK per limb\n[ ] Preferred bend direction hint\n[ ] Near-straight limb clamping\n";
+h+="[ ] Forearm twist: bone-local rotation needed\n[ ] Pelvis yaw: Kabsch or explicit rotation\n";
+h+="[ ] Frame rate: "+fps+"fps, duration: "+FD[FD.length-1].time.toFixed(2)+"s, "+FD.length+" samples\n</div>";return h}
+
+</script></body></html>
