@@ -1,0 +1,51 @@
+import { defineConfig } from 'tsup';
+
+export default defineConfig([
+  // Node.js / worker builds (ESM + CJS + types)
+  {
+    entry: [
+      'src/index.ts',
+      'src/math/vec3.ts',
+      'src/math/mat3.ts',
+      'src/math/quat.ts',
+      'src/math/svd.ts',
+      'src/math/dualquat.ts',
+      'src/math/kabsch.ts',
+      'src/math/rotation.ts',
+      'src/math/interpolation.ts',
+      'src/types/index.ts',
+      'src/skeleton/constants.ts',
+      'src/skeleton/bone-matching.ts',
+      'src/skeleton/fk.ts',
+      'src/skeleton/twist.ts',
+      'src/animation/keyframe.ts',
+      'src/geometry/cross-section.ts',
+      'src/geometry/regression.ts',
+      'src/geometry/boundary-extrapolation.ts',
+      'src/geometry/hip-detection.ts',
+      'src/geometry/toe-detection.ts',
+      'src/geometry/plane-slice.ts',
+      'src/geometry/mesh-adjacency.ts',
+      'src/weights/barycentric-transfer.ts',
+      'src/weights/sharpening.ts',
+      'src/weights/per-bone-matrices.ts',
+      'src/weights/lbs.ts',
+      'src/weights/dqs.ts',
+      'src/qa/skeleton-qa.ts',
+      'src/qa/deformation-qa.ts',
+    ],
+    format: ['esm', 'cjs'],
+    dts: true,
+    clean: true,
+    splitting: false,
+  },
+  // Browser IIFE bundle (window.CageCore)
+  {
+    entry: { 'cage-core.browser': 'src/browser.ts' },
+    format: ['iife'],
+    globalName: 'CageCore',
+    outDir: 'dist',
+    splitting: false,
+    minify: false,
+  },
+]);

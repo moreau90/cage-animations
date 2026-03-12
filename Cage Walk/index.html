@@ -62,7 +62,8 @@
       <div class="row"><label><input id="showStrain" type="checkbox" /> Show strain (mesh quality)</label></div>
       <div class="row"><label><input id="showSurfaceHealth" type="checkbox" /> Show surface health (bulge/cave)</label></div>
       <div class="row"><label><input id="showSkeleton" type="checkbox" checked /> Show skeleton overlay</label>
-        <label style="margin-left:8px"><input id="showFBXSkeleton" type="checkbox" /> FBX skeleton (red)</label></div>
+        <label style="margin-left:8px"><input id="showFBXSkeleton" type="checkbox" /> FBX skeleton (red)</label>
+        <label style="margin-left:8px"><input id="show3DGrid" type="checkbox" /> 3D Grid</label></div>
       <div class="row"><label><input id="showDiagHUD" type="checkbox" /> Diagnostic HUD</label></div>
       <div class="row"><label><input id="showFBXGT" type="checkbox" /> Show FBX ground truth error</label></div>
       <div class="row"><label><input id="showFBXGhost" type="checkbox" /> Show FBX ghost mesh</label></div>
@@ -187,6 +188,7 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/curves/NURBSCurve.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/curves/NURBSUtils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+  <script src="cage-core/dist/cage-core.browser.global.js"></script>
 
   <script>
   // ── Auto-tuner config injection (URL hash) ──
@@ -337,21 +339,22 @@
     ['spine2_joint','r_collar'], ['r_collar','r_shoulder'],
     ['l_shoulder','l_elbow'], ['l_elbow','l_wrist'], ['l_wrist','l_mid_knuckle'],
     ['r_shoulder','r_elbow'], ['r_elbow','r_wrist'], ['r_wrist','r_mid_knuckle'],
-    // Finger chains (left)
-    ['l_wrist','l_thumb1'], ['l_thumb1','l_thumb2'], ['l_thumb2','l_thumb3'],
-    ['l_wrist','l_index1'], ['l_index1','l_index2'], ['l_index2','l_index3'],
-    ['l_mid_knuckle','l_middle2'], ['l_middle2','l_middle3'],
-    ['l_wrist','l_ring1'], ['l_ring1','l_ring2'], ['l_ring2','l_ring3'],
-    ['l_wrist','l_pinky1'], ['l_pinky1','l_pinky2'], ['l_pinky2','l_pinky3'],
-    // Finger chains (right)
-    ['r_wrist','r_thumb1'], ['r_thumb1','r_thumb2'], ['r_thumb2','r_thumb3'],
-    ['r_wrist','r_index1'], ['r_index1','r_index2'], ['r_index2','r_index3'],
-    ['r_mid_knuckle','r_middle2'], ['r_middle2','r_middle3'],
-    ['r_wrist','r_ring1'], ['r_ring1','r_ring2'], ['r_ring2','r_ring3'],
-    ['r_wrist','r_pinky1'], ['r_pinky1','r_pinky2'], ['r_pinky2','r_pinky3']
+    // Finger chains (left) - 4 joints per finger
+    ['l_wrist','l_thumb1'], ['l_thumb1','l_thumb2'], ['l_thumb2','l_thumb3'], ['l_thumb3','l_thumb4'],
+    ['l_wrist','l_index1'], ['l_index1','l_index2'], ['l_index2','l_index3'], ['l_index3','l_index4'],
+    ['l_mid_knuckle','l_middle2'], ['l_middle2','l_middle3'], ['l_middle3','l_middle4'],
+    ['l_wrist','l_ring1'], ['l_ring1','l_ring2'], ['l_ring2','l_ring3'], ['l_ring3','l_ring4'],
+    ['l_wrist','l_pinky1'], ['l_pinky1','l_pinky2'], ['l_pinky2','l_pinky3'], ['l_pinky3','l_pinky4'],
+    // Finger chains (right) - 4 joints per finger
+    ['r_wrist','r_thumb1'], ['r_thumb1','r_thumb2'], ['r_thumb2','r_thumb3'], ['r_thumb3','r_thumb4'],
+    ['r_wrist','r_index1'], ['r_index1','r_index2'], ['r_index2','r_index3'], ['r_index3','r_index4'],
+    ['r_mid_knuckle','r_middle2'], ['r_middle2','r_middle3'], ['r_middle3','r_middle4'],
+    ['r_wrist','r_ring1'], ['r_ring1','r_ring2'], ['r_ring2','r_ring3'], ['r_ring3','r_ring4'],
+    ['r_wrist','r_pinky1'], ['r_pinky1','r_pinky2'], ['r_pinky2','r_pinky3'], ['r_pinky3','r_pinky4']
   ];
   let skeletonLine = null;
   let skeletonJointSpheres = [];
+  let gridGroup = null;          // 3D coordinate grid overlay
   let fbxSkeletonLine = null;    // FBX rest-pose skeleton overlay (red)
   let fbxSkeletonSpheres = [];
   var pelvisDelta = [0, 0, 0];   // pelvis translation delta (module scope for bone comparison)
@@ -479,13 +482,17 @@
       'l_shoulder','r_shoulder','l_elbow','r_elbow','l_wrist','r_wrist',
       'l_mid_knuckle','r_mid_knuckle','neck','head','chest',
       'spine_joint','spine1_joint','spine2_joint','l_collar','r_collar',
-      // Finger bones (positions from FBX T-pose, needed for FK chain + LBS)
-      'l_thumb1','l_thumb2','l_thumb3','l_index1','l_index2','l_index3',
-      'l_middle2','l_middle3','l_ring1','l_ring2','l_ring3',
-      'l_pinky1','l_pinky2','l_pinky3',
-      'r_thumb1','r_thumb2','r_thumb3','r_index1','r_index2','r_index3',
-      'r_middle2','r_middle3','r_ring1','r_ring2','r_ring3',
-      'r_pinky1','r_pinky2','r_pinky3'];
+      // Finger bones (4 joints per finger: base, PIP, DIP, tip)
+      'l_thumb1','l_thumb2','l_thumb3','l_thumb4',
+      'l_index1','l_index2','l_index3','l_index4',
+      'l_middle2','l_middle3','l_middle4',
+      'l_ring1','l_ring2','l_ring3','l_ring4',
+      'l_pinky1','l_pinky2','l_pinky3','l_pinky4',
+      'r_thumb1','r_thumb2','r_thumb3','r_thumb4',
+      'r_index1','r_index2','r_index3','r_index4',
+      'r_middle2','r_middle3','r_middle4',
+      'r_ring1','r_ring2','r_ring3','r_ring4',
+      'r_pinky1','r_pinky2','r_pinky3','r_pinky4'];
 
     console.log('[WRIST TRACE] syncPWithFBX: useFBXJoints=' + useFBXJoints + ' BEFORE: P.l_wrist=' + (P.l_wrist ? '['+P.l_wrist.map(v=>v.toFixed(4)).join(',')+']' : 'null'));
     if (useFBXJoints) {
@@ -515,6 +522,10 @@
       }
       if (missing.length > 0) console.log('  WARNING: Missing joints (not in P, not filled from FBX): ' + missing.join(', '));
       else console.log('  All joints present from placement/derivation');
+
+      // FBX finger override removed — mesh-derived finger positions are now
+      // accurate (marchCenter-based Z-straightening, ±2mm centering).
+      // Skeleton must come from mesh geometry, not FBX dependency.
     }
 
     // Log current bone lengths
@@ -551,12 +562,16 @@
     if (fbxRestWorld) {
       console.log('=== JOINT COMPARISON: Our P vs FBX rest_pose (unscaled, floor-aligned) ===');
       const fingerJoints = [
-        'l_thumb1','l_thumb2','l_thumb3','l_index1','l_index2','l_index3',
-        'l_middle2','l_middle3','l_ring1','l_ring2','l_ring3',
-        'l_pinky1','l_pinky2','l_pinky3',
-        'r_thumb1','r_thumb2','r_thumb3','r_index1','r_index2','r_index3',
-        'r_middle2','r_middle3','r_ring1','r_ring2','r_ring3',
-        'r_pinky1','r_pinky2','r_pinky3'
+        'l_thumb1','l_thumb2','l_thumb3','l_thumb4',
+        'l_index1','l_index2','l_index3','l_index4',
+        'l_middle2','l_middle3','l_middle4',
+        'l_ring1','l_ring2','l_ring3','l_ring4',
+        'l_pinky1','l_pinky2','l_pinky3','l_pinky4',
+        'r_thumb1','r_thumb2','r_thumb3','r_thumb4',
+        'r_index1','r_index2','r_index3','r_index4',
+        'r_middle2','r_middle3','r_middle4',
+        'r_ring1','r_ring2','r_ring3','r_ring4',
+        'r_pinky1','r_pinky2','r_pinky3','r_pinky4'
       ];
       const primaryJoints = ['hips','neck','head','chest',
         'l_hip','r_hip','l_knee','r_knee','l_ankle','r_ankle','l_toe','r_toe',
@@ -595,6 +610,253 @@
         }
       }
       console.log('=== END JOINT COMPARISON ===');
+
+      // === FBX FINGER MESH ANALYSIS ===
+      // Analyze the actual FBX MESH vertex positions around fingers to understand
+      // how Mixamo meshes space finger tubes apart. This is the ground truth for splay.
+      if (fbxSkinData && fbxSkinData.boneWeights && fbxSkinData.boneNames) {
+        console.log('=== FBX FINGER MESH ANALYSIS ===');
+        const fbxPos = fbxSkinData.positions;
+        const fbxBW = fbxSkinData.boneWeights;
+        const nFBX = fbxSkinData.nVerts;
+        const boneNames = fbxSkinData.boneNames;
+
+        // Build bone name → bone index map
+        const boneNameToIdx = {};
+        for (let bi = 0; bi < boneNames.length; bi++) {
+          const mapped = matchFBXBone(boneNames[bi]);
+          if (mapped) boneNameToIdx[mapped] = bi;
+        }
+
+        for (const side of ['l','r']) {
+          const pr = side + '_';
+          const wrist = fbxRestWorld[pr+'wrist'];
+          const elbow = fbxRestWorld[pr+'elbow'];
+          if (!wrist || !elbow) continue;
+
+          const armDir = vnorm(vsub(wrist, elbow));
+          const handSign = Math.sign(armDir[0]);
+
+          const fNames = ['index', 'middle', 'ring', 'pinky'];
+          // Bone keys for each finger's j1..j4
+          const fingerBoneKeys = [
+            [pr+'index1', pr+'index2', pr+'index3', pr+'index4'],
+            [pr+'mid_knuckle', pr+'middle2', pr+'middle3', pr+'middle4'],
+            [pr+'ring1', pr+'ring2', pr+'ring3', pr+'ring4'],
+            [pr+'pinky1', pr+'pinky2', pr+'pinky3', pr+'pinky4']
+          ];
+          // Thumb
+          const thumbBoneKeys = [pr+'thumb1', pr+'thumb2', pr+'thumb3', pr+'thumb4'];
+
+          // Collect FBX mesh verts per finger (using skin weights: vert belongs to a finger
+          // if its highest-weight bone is one of that finger's bones)
+          const fingerVerts = [[], [], [], []]; // [fi] = [{x,y,z}]
+          const thumbVerts = [];
+
+          // Build set of bone indices per finger
+          const fingerBoneIdxSets = fingerBoneKeys.map(keys =>
+            new Set(keys.map(k => boneNameToIdx[k]).filter(v => v !== undefined)));
+          const thumbBoneIdxSet = new Set(thumbBoneKeys.map(k => boneNameToIdx[k]).filter(v => v !== undefined));
+
+          for (let i = 0; i < nFBX; i++) {
+            const bw = fbxBW[i];
+            if (!bw) continue;
+            // Find highest-weight bone
+            let bestBi = -1, bestW = 0;
+            for (let j = 0; j < bw.length; j += 2) {
+              if (bw[j + 1] > bestW) { bestW = bw[j + 1]; bestBi = bw[j]; }
+            }
+            if (bestBi < 0) continue;
+
+            const vx = fbxPos[i*3], vy = fbxPos[i*3+1], vz = fbxPos[i*3+2];
+            for (let fi = 0; fi < 4; fi++) {
+              if (fingerBoneIdxSets[fi].has(bestBi)) {
+                fingerVerts[fi].push({x: vx, y: vy, z: vz});
+                break;
+              }
+            }
+            if (thumbBoneIdxSet.has(bestBi)) {
+              thumbVerts.push({x: vx, y: vy, z: vz});
+            }
+          }
+
+          console.log('[FBX MESH ' + side.toUpperCase() + '] finger vert counts: ' +
+            fNames.map((n, fi) => n + '=' + fingerVerts[fi].length).join(' ') +
+            ' thumb=' + thumbVerts.length);
+
+          // For each finger: measure Z extent at multiple X slabs along the finger
+          // This reveals the actual tube boundaries and inter-finger gaps
+          const knuckle = fbxRestWorld[pr + (side === 'l' ? 'mid_knuckle' : 'mid_knuckle')];
+          const fbxWrist = fbxRestWorld[pr+'wrist'];
+          if (!knuckle || !fbxWrist) continue;
+          const knuckleX = knuckle[0];
+          const knuckleY = knuckle[1];
+
+          // Get finger bone j1 and j4 positions for reference
+          const j1Pos = fingerBoneKeys.map(keys => fbxRestWorld[keys[0]]);
+          const j4Pos = fingerBoneKeys.map(keys => fbxRestWorld[keys[3]]);
+          if (j1Pos.some(v=>!v) || j4Pos.some(v=>!v)) continue;
+
+          const midFingerLen = vlen(vsub(j4Pos[1], j1Pos[1]));
+
+          // Scan X slabs from 0% to 100% of middle finger length
+          console.log('[FBX MESH ' + side.toUpperCase() + '] Z-extents at X slabs (finger tube boundaries):');
+          const slabPcts = [0.0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90];
+          for (const pct of slabPcts) {
+            const scanX = knuckleX + pct * midFingerLen * handSign;
+            const slabHalf = 0.006; // ±6mm
+
+            let line = '  X=' + (pct*100).toFixed(0) + '%: ';
+            const zMins = [], zMaxs = [];
+            for (let fi = 0; fi < 4; fi++) {
+              let zMin = Infinity, zMax = -Infinity, cnt = 0;
+              for (const v of fingerVerts[fi]) {
+                if (Math.abs(v.x - scanX) > slabHalf) continue;
+                if (v.z < zMin) zMin = v.z;
+                if (v.z > zMax) zMax = v.z;
+                cnt++;
+              }
+              if (cnt > 0) {
+                line += fNames[fi] + '=[' + (zMin*1000).toFixed(1) + ',' + (zMax*1000).toFixed(1) +
+                  '](' + (((zMin+zMax)/2)*1000).toFixed(1) + ') ';
+                zMins.push(zMin); zMaxs.push(zMax);
+              } else {
+                line += fNames[fi] + '=NONE ';
+                zMins.push(NaN); zMaxs.push(NaN);
+              }
+            }
+            console.log(line);
+
+            // Measure gaps between adjacent finger tubes at this slab
+            let gapLine = '    gaps: ';
+            for (let gi = 0; gi < 3; gi++) {
+              if (isNaN(zMins[gi]) || isNaN(zMins[gi+1])) {
+                gapLine += fNames[gi] + '-' + fNames[gi+1] + '=N/A ';
+                continue;
+              }
+              // Gap = space between the inner edges of adjacent fingers
+              // Depends on Z ordering (which finger has higher Z)
+              let gap;
+              if (zMins[gi] > zMaxs[gi+1]) {
+                gap = zMins[gi] - zMaxs[gi+1]; // finger gi is higher-Z
+              } else if (zMins[gi+1] > zMaxs[gi]) {
+                gap = zMins[gi+1] - zMaxs[gi]; // finger gi+1 is higher-Z
+              } else {
+                gap = 0; // overlapping
+              }
+              gapLine += fNames[gi] + '-' + fNames[gi+1] + '=' + (gap*1000).toFixed(1) + 'mm ';
+            }
+            console.log(gapLine);
+          }
+
+          // Per-finger: bone Z positions at j1..j4 (skeleton reference)
+          console.log('[FBX MESH ' + side.toUpperCase() + '] Skeleton finger bone Z positions:');
+          if (!window._fbxFingerSlope) window._fbxFingerSlope = {};
+          for (let fi = 0; fi < 4; fi++) {
+            const joints = fingerBoneKeys[fi].map(k => fbxRestWorld[k]);
+            if (joints.some(v=>!v)) continue;
+            const zs = joints.map(j => (j[2]*1000).toFixed(1));
+            const zDrift = joints[3][2] - joints[0][2];
+            const xDist = Math.abs(joints[3][0] - joints[0][0]);
+            const zAngle = Math.atan2(zDrift, xDist) * 180 / Math.PI;
+            // Store FBX finger slope for use in mesh-based finger skeleton
+            if (xDist > 0.001) {
+              window._fbxFingerSlope[side + '_' + fNames[fi]] = zDrift / xDist;
+            }
+            console.log('  ' + fNames[fi] + ': j1-j4 Z=[' + zs.join(', ') +
+              ']mm zDrift=' + (zDrift*1000).toFixed(1) + 'mm zAngle=' + zAngle.toFixed(1) + '°');
+          }
+
+          // Fan ratio: knuckle spread vs tip spread (skeleton)
+          const knSpread = Math.abs(j1Pos[0][2] - j1Pos[3][2]);
+          const tipSpread = Math.abs(j4Pos[0][2] - j4Pos[3][2]);
+          console.log('[FBX MESH ' + side.toUpperCase() + '] Skeleton spread: knuckle=' +
+            (knSpread*1000).toFixed(1) + 'mm tip=' + (tipSpread*1000).toFixed(1) +
+            'mm fanRatio=' + (tipSpread/knSpread).toFixed(2));
+
+          // Fan ratio from MESH tube centers (more accurate than skeleton)
+          console.log('[FBX MESH ' + side.toUpperCase() + '] Mesh tube center Z at 50% slab:');
+          const scanX50 = knuckleX + 0.50 * midFingerLen * handSign;
+          const meshCenters50 = [];
+          for (let fi = 0; fi < 4; fi++) {
+            let zMin = Infinity, zMax = -Infinity;
+            for (const v of fingerVerts[fi]) {
+              if (Math.abs(v.x - scanX50) > 0.006) continue;
+              if (v.z < zMin) zMin = v.z;
+              if (v.z > zMax) zMax = v.z;
+            }
+            const ctr = (zMin + zMax) / 2;
+            const width = zMax - zMin;
+            meshCenters50.push(ctr);
+            console.log('  ' + fNames[fi] + ': center=' + (ctr*1000).toFixed(1) +
+              'mm width=' + (width*1000).toFixed(1) + 'mm');
+          }
+          // At knuckle level (0%)
+          const scanX0 = knuckleX;
+          const meshCenters0 = [];
+          for (let fi = 0; fi < 4; fi++) {
+            let zMin = Infinity, zMax = -Infinity;
+            for (const v of fingerVerts[fi]) {
+              if (Math.abs(v.x - scanX0) > 0.008) continue;
+              if (v.z < zMin) zMin = v.z;
+              if (v.z > zMax) zMax = v.z;
+            }
+            meshCenters0.push(isFinite(zMin) ? (zMin + zMax) / 2 : NaN);
+          }
+          if (meshCenters0.every(v => !isNaN(v)) && meshCenters50.every(v => !isNaN(v))) {
+            const meshKnSpread = Math.abs(meshCenters0[0] - meshCenters0[3]);
+            const meshTipSpread = Math.abs(meshCenters50[0] - meshCenters50[3]);
+            console.log('[FBX MESH ' + side.toUpperCase() + '] Mesh spread: knuckle=' +
+              (meshKnSpread*1000).toFixed(1) + 'mm mid=' + (meshTipSpread*1000).toFixed(1) +
+              'mm fanRatio=' + (meshTipSpread / meshKnSpread).toFixed(2));
+          }
+
+          // Compare with OUR mesh at the same locations
+          if (meshRestPos) {
+            console.log('[OUR MESH ' + side.toUpperCase() + '] Z-extents at same X slabs (for comparison):');
+            // Use same finger assignment as our detection (Z boundaries from P joints)
+            const ourJ1 = [P[pr+'index1'], P[pr+'mid_knuckle'], P[pr+'ring1'], P[pr+'pinky1']];
+            if (ourJ1.every(v=>v)) {
+              const ourKnZ = ourJ1.map(k => k[2]);
+              const ourZBounds = [];
+              for (let i = 0; i < 3; i++) ourZBounds.push((ourKnZ[i] + ourKnZ[i+1]) / 2);
+              const nM = meshRestPos.length / 3;
+
+              for (const pct of [0.0, 0.30, 0.50, 0.70]) {
+                const scanX = knuckleX + pct * midFingerLen * handSign;
+                const slabH = 0.006;
+                let line = '  X=' + (pct*100).toFixed(0) + '%: ';
+                for (let fi = 0; fi < 4; fi++) {
+                  let zMin = Infinity, zMax = -Infinity, cnt = 0;
+                  const zLo = fi < 3 ? ourZBounds[fi] : -Infinity;
+                  const zHi = fi > 0 ? ourZBounds[fi-1] : Infinity;
+                  for (let i = 0; i < nM; i++) {
+                    const vx = meshRestPos[i*3], vy = meshRestPos[i*3+1], vz = meshRestPos[i*3+2];
+                    if (Math.abs(vx - scanX) > slabH) continue;
+                    if (Math.abs(vy - knuckleY) > 0.025) continue;
+                    if (ourKnZ[0] > ourKnZ[3]) {
+                      if (vz < zLo || vz > zHi) continue;
+                    } else {
+                      if (vz > zLo || vz < zHi) continue;
+                    }
+                    if (vz < zMin) zMin = vz;
+                    if (vz > zMax) zMax = vz;
+                    cnt++;
+                  }
+                  if (cnt > 0) {
+                    line += fNames[fi] + '=[' + (zMin*1000).toFixed(1) + ',' + (zMax*1000).toFixed(1) +
+                      '](' + (((zMin+zMax)/2)*1000).toFixed(1) + ') ';
+                  } else {
+                    line += fNames[fi] + '=NONE ';
+                  }
+                }
+                console.log(line);
+              }
+            }
+          }
+        }
+        console.log('=== END FBX FINGER MESH ANALYSIS ===');
+      }
     }
 
     console.log('=== END P SYNC ===');
@@ -640,34 +902,11 @@
   let handLockCountL = 0, handLockCountR = 0;
 
   // ---------------- Utilities ----------------
-  function clamp(x,a,b){ return Math.max(a, Math.min(b,x)); }
+  const clamp = CageCore.clamp;
 
-  // Smooth a cyclic array with a 3-point weighted average [0.25, 0.5, 0.25].
-  // Wraps around at boundaries for seamless looping animations.
-  // Multiple passes approximate a Gaussian filter.
-  function smoothArray(arr, passes = 3) {
-    const n = arr.length;
-    let result = arr.slice();
-    for (let p = 0; p < passes; p++) {
-      const tmp = result.slice();
-      for (let i = 0; i < n; i++) {
-        result[i] = 0.25 * tmp[(i-1+n)%n] + 0.5 * tmp[i] + 0.25 * tmp[(i+1)%n];
-      }
-    }
-    return result;
-  }
+  const smoothArray = CageCore.smoothArray;
 
-  function rotateAroundAxis(px, py, pz, ox, oy, oz, ax, ay, az, angle) {
-    let x = px - ox, y = py - oy, z = pz - oz;
-    const c = Math.cos(angle), s = Math.sin(angle), t = 1 - c;
-    const len = Math.hypot(ax, ay, az) || 1;
-    ax/=len; ay/=len; az/=len;
-
-    const nx = (t*ax*ax + c)*x + (t*ax*ay - s*az)*y + (t*ax*az + s*ay)*z;
-    const ny = (t*ax*ay + s*az)*x + (t*ay*ay + c)*y + (t*ay*az - s*ax)*z;
-    const nz = (t*ax*az - s*ay)*x + (t*ay*az + s*ax)*y + (t*az*az + c)*z;
-    return [nx + ox, ny + oy, nz + oz];
-  }
+  const rotateAroundAxis = CageCore.rotateAroundAxis;
 
   async function loadJSON(url) {
   const res = await fetch(url, { cache: "no-store" });
@@ -689,58 +928,13 @@
     return out;
   }
 
-  // --- Vector helpers for arm split ---
-  function vsub(a,b){ return [a[0]-b[0], a[1]-b[1], a[2]-b[2]]; }
-  function vadd(a,b){ return [a[0]+b[0], a[1]+b[1], a[2]+b[2]]; }
-  function vdot(a,b){ return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
-  function vlen(a){ return Math.sqrt(vdot(a,a)); }
-  function vscale(a,s){ return [a[0]*s, a[1]*s, a[2]*s]; }
+  // --- Vector helpers (from cage-core) ---
+  const { vsub, vadd, vdot, vlen, vscale, clamp: _cc_clamp } = CageCore;
 
-  // Compute the rotation that maps fromDir→toDir, then apply it to applyToDir.
-  // Used for animation retargeting: extracts the "delta rotation" from the FBX
-  // animation and applies it to the cage rest direction, preserving cage proportions.
-  function applyDeltaRotation(fromDir, toDir, applyToDir) {
-    let ax = vcross(fromDir, toDir);
-    const axLen = vlen(ax);
-    const d = Math.max(-1, Math.min(1, vdot(fromDir, toDir)));
-    const ang = Math.acos(d);
-    if (Math.abs(ang) < 1e-4) return applyToDir; // near-identical: no rotation
-    if (axLen < 1e-6) {
-      // Near-180° rotation: cross product degenerate, pick any perpendicular axis
-      ax = Math.abs(fromDir[1]) < 0.9
-        ? vcross(fromDir, [0, 1, 0])
-        : vcross(fromDir, [1, 0, 0]);
-      if (vlen(ax) < 1e-6) return applyToDir; // extreme degenerate, bail
-    }
-    ax = vnorm(ax);
-    const r = rotateAroundAxis(applyToDir[0], applyToDir[1], applyToDir[2],
-      0, 0, 0, ax[0], ax[1], ax[2], ang);
-    return vnorm(r);
-  }
+  const applyDeltaRotation = CageCore.applyDeltaRotation;
+  const computeIKRotMatrix = CageCore.computeIKRotMatrix;
 
-  // Compute axis-angle rotation MATRIX from restDir to targetDir.
-  // Returns a 3x3 rotation matrix (flat array). Used for analytical limb composition.
-  function computeIKRotMatrix(restDir, targetDir) {
-    let ax = vcross(restDir, targetDir);
-    const axLen = vlen(ax);
-    const d = Math.max(-1, Math.min(1, vdot(restDir, targetDir)));
-    const ang = Math.acos(d);
-    if (Math.abs(ang) < 1e-4) return [1,0,0, 0,1,0, 0,0,1]; // identity
-    if (axLen < 1e-6) {
-      // Near-180° rotation: pick any perpendicular axis
-      ax = Math.abs(restDir[1]) < 0.9
-        ? vcross(restDir, [0, 1, 0])
-        : vcross(restDir, [1, 0, 0]);
-      if (vlen(ax) < 1e-6) return [1,0,0, 0,1,0, 0,0,1];
-    }
-    ax = vnorm(ax);
-    return mat3_rotAxis(ax[0], ax[1], ax[2], ang);
-  }
-
-  function vnorm(a){
-    const L = vlen(a);
-    return (L > 1e-12) ? [a[0]/L, a[1]/L, a[2]/L] : [1,0,0];
-  }
+  const vnorm = CageCore.vnorm;
 
   // Find shoulder joint center as average midpoint of K closest arm↔torso cage pairs.
   // Returns { jointCenter, armAnchor, shoulderCi } where jointCenter is the driving pivot.
@@ -1079,108 +1273,9 @@
     return Math.sqrt(cx*cx + cy*cy + cz*cz);
   }
 
-  // ---------------- Quaternion Math ([x, y, z, w] format) ----------------
-  function quat_mul(a, b) {
-    return [
-      a[3]*b[0] + a[0]*b[3] + a[1]*b[2] - a[2]*b[1],
-      a[3]*b[1] - a[0]*b[2] + a[1]*b[3] + a[2]*b[0],
-      a[3]*b[2] + a[0]*b[1] - a[1]*b[0] + a[2]*b[3],
-      a[3]*b[3] - a[0]*b[0] - a[1]*b[1] - a[2]*b[2]
-    ];
-  }
-  function quat_conjugate(q) { return [-q[0], -q[1], -q[2], q[3]]; }
-
-  function quat_slerp(a, b, t) {
-    // Shortest-path: flip b if dot < 0
-    let dot = a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3];
-    const b2 = (dot < 0) ? [-b[0], -b[1], -b[2], -b[3]] : b;
-    dot = Math.abs(dot);
-    if (dot > 0.9995) {
-      // Nearly identical — lerp + normalize
-      const r = [
-        a[0] + (b2[0] - a[0]) * t,
-        a[1] + (b2[1] - a[1]) * t,
-        a[2] + (b2[2] - a[2]) * t,
-        a[3] + (b2[3] - a[3]) * t
-      ];
-      const inv = 1 / Math.hypot(r[0], r[1], r[2], r[3]);
-      return [r[0]*inv, r[1]*inv, r[2]*inv, r[3]*inv];
-    }
-    const theta = Math.acos(dot);
-    const sinTheta = Math.sin(theta);
-    const wa = Math.sin((1 - t) * theta) / sinTheta;
-    const wb = Math.sin(t * theta) / sinTheta;
-    return [
-      wa*a[0] + wb*b2[0], wa*a[1] + wb*b2[1],
-      wa*a[2] + wb*b2[2], wa*a[3] + wb*b2[3]
-    ];
-  }
-
-  // Swing-twist decomposition: given a delta quaternion and a twist axis,
-  // extract the signed twist angle (rotation around that axis).
-  function swingTwistDecompose(qDelta, twistAxis) {
-    // Project quaternion imaginary part onto twist axis
-    const proj = qDelta[0]*twistAxis[0] + qDelta[1]*twistAxis[1] + qDelta[2]*twistAxis[2];
-    // Twist quaternion = normalize([proj*ax, proj*ay, proj*az, w])
-    let tx = proj * twistAxis[0], ty = proj * twistAxis[1], tz = proj * twistAxis[2];
-    const tw = qDelta[3];
-    const len = Math.hypot(tx, ty, tz, tw);
-    if (len < 1e-10) return 0;
-    tx /= len; ty /= len; tz /= len;
-    const twn = tw / len;
-    // Signed angle: 2 * atan2(|imaginary|, w), with sign from projection direction
-    const sinHalf = Math.hypot(tx, ty, tz);
-    let angle = 2 * Math.atan2(sinHalf, Math.abs(twn));
-    // Sign: if proj is negative, twist is in opposite direction
-    if (proj < 0) angle = -angle;
-    // Handle w < 0 (angle > 180°)
-    if (twn < 0) angle = (angle > 0) ? angle - 2*Math.PI : angle + 2*Math.PI;
-    return angle;
-  }
-
-  // Convenience: extract twist angle of a bone between rest and current quaternions
-  // along the rest-pose bone direction.
-  // Uses POSITION-SWING RESIDUAL method: removes the shortest-arc rotation that
-  // accounts for the direction change (what positions already capture), leaving
-  // only the bone-axis twist. This is CHARACTER-INDEPENDENT — different bind poses
-  // (T-pose, A-pose, etc.) produce the same twist angle for the same animation.
-  function extractQuatTwist(restQ, curQ, boneDir) {
-    let qDelta = quat_mul(curQ, quat_conjugate(restQ));
-    // Ensure shortest-path quaternion (avoid >180° wraparound like -349°)
-    if (qDelta[3] < 0) qDelta = [-qDelta[0], -qDelta[1], -qDelta[2], -qDelta[3]];
-    // Position-swing residual: remove positional swing, keep only twist
-    const d_cur = quat_rotate_vec(qDelta, boneDir);
-    const q_swing = shortest_arc_quat(boneDir, d_cur);
-    const q_residual = quat_mul(quat_conjugate(q_swing), qDelta);
-    return swingTwistDecompose(q_residual, boneDir);
-  }
-
-  // Rotate a 3D vector by a unit quaternion: q * [v,0] * conj(q)
-  function quat_rotate_vec(q, v) {
-    const qx = q[0], qy = q[1], qz = q[2], qw = q[3];
-    const vx = v[0], vy = v[1], vz = v[2];
-    const cx = qy*vz - qz*vy, cy = qz*vx - qx*vz, cz = qx*vy - qy*vx;
-    const c2x = qy*cz - qz*cy, c2y = qz*cx - qx*cz, c2z = qx*cy - qy*cx;
-    return [vx + 2*(qw*cx + c2x), vy + 2*(qw*cy + c2y), vz + 2*(qw*cz + c2z)];
-  }
-
-  // Shortest-arc unit quaternion rotating unit vector a to unit vector b.
-  // Used by position-swing residual to compute the "positional" swing.
-  function shortest_arc_quat(a, b) {
-    const d = a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
-    if (d > 0.999999) return [0, 0, 0, 1]; // Same direction
-    if (d < -0.999999) {
-      // Opposite — find any perpendicular axis
-      let perp = vcross(a, [1, 0, 0]);
-      if (vlen(perp) < 1e-6) perp = vcross(a, [0, 1, 0]);
-      perp = vnorm(perp);
-      return [perp[0], perp[1], perp[2], 0]; // 180° rotation
-    }
-    const c = vcross(a, b);
-    const w = 1 + d;
-    const inv = 1 / Math.hypot(c[0], c[1], c[2], w);
-    return [c[0]*inv, c[1]*inv, c[2]*inv, w*inv];
-  }
+  // --- Quaternion functions (from cage-core) ---
+  const { quat_mul, quat_conjugate, quat_slerp, swingTwistDecompose,
+    quat_rotate_vec, shortest_arc_quat, extractQuatTwist } = CageCore;
 
   // Extract LOCAL twist of a bone relative to its parent.
   // Unlike getJointTwistAtTime (world twist), this removes the parent chain's
@@ -1213,278 +1308,18 @@
   }
 
   // ---------------- 3x3 Matrix Math (row-major Float64Array[9]) ----------------
-  function mat3_create() { return new Float64Array(9); }
-  function mat3_identity() { const m = mat3_create(); m[0]=m[4]=m[8]=1; return m; }
+  // --- Mat3 functions (from cage-core) ---
+  const { mat3_create, mat3_identity, mat3_rotX, mat3_rotY, mat3_rotZ,
+    mat3_rotAxis, mat3_mul, mat3_transpose, mat3_det, mat3_mulVec3 } = CageCore;
 
-  function mat3_rotX(angle) {
-    const c = Math.cos(angle), s = Math.sin(angle), m = mat3_create();
-    m[0]=1; m[4]=c; m[5]=-s; m[7]=s; m[8]=c;
-    return m;
-  }
+  // --- SVD functions (from cage-core) ---
+  const { symmetricEigen3x3, svd3x3 } = CageCore;
 
-  function mat3_rotY(angle) {
-    const c = Math.cos(angle), s = Math.sin(angle), m = mat3_create();
-    m[0]=c; m[2]=s; m[4]=1; m[6]=-s; m[8]=c;
-    return m;
-  }
+  const mat3_orthonormalize = CageCore.mat3_orthonormalize;
 
-  function mat3_rotZ(angle) {
-    const c = Math.cos(angle), s = Math.sin(angle), m = mat3_create();
-    m[0]=c; m[1]=-s; m[3]=s; m[4]=c; m[8]=1;
-    return m;
-  }
-
-  // Rotation matrix around an arbitrary unit axis (Rodrigues)
-  function mat3_rotAxis(ax, ay, az, angle) {
-    const c = Math.cos(angle), s = Math.sin(angle), t = 1-c;
-    const len = Math.hypot(ax,ay,az) || 1;
-    ax/=len; ay/=len; az/=len;
-    return [
-      t*ax*ax+c,    t*ax*ay-s*az, t*ax*az+s*ay,
-      t*ax*ay+s*az, t*ay*ay+c,    t*ay*az-s*ax,
-      t*ax*az-s*ay, t*ay*az+s*ax, t*az*az+c
-    ];
-  }
-
-  function mat3_mul(A, B) {
-    const C = mat3_create();
-    for (let i = 0; i < 3; i++)
-      for (let j = 0; j < 3; j++)
-        C[i*3+j] = A[i*3]*B[j] + A[i*3+1]*B[3+j] + A[i*3+2]*B[6+j];
-    return C;
-  }
-
-  function mat3_transpose(A) {
-    const T = mat3_create();
-    for (let i = 0; i < 3; i++)
-      for (let j = 0; j < 3; j++)
-        T[i*3+j] = A[j*3+i];
-    return T;
-  }
-
-  function mat3_det(A) {
-    return A[0]*(A[4]*A[8]-A[5]*A[7])
-         - A[1]*(A[3]*A[8]-A[5]*A[6])
-         + A[2]*(A[3]*A[7]-A[4]*A[6]);
-  }
-
-  function mat3_mulVec3(M, x, y, z) {
-    return [
-      M[0]*x + M[1]*y + M[2]*z,
-      M[3]*x + M[4]*y + M[5]*z,
-      M[6]*x + M[7]*y + M[8]*z
-    ];
-  }
-
-  // Jacobi eigendecomposition for 3x3 symmetric matrix
-  // Returns {eigenvalues: [3], V: Float64Array(9)} where columns of V are eigenvectors
-  function symmetricEigen3x3(S) {
-    const A = Float64Array.from(S);
-    const V = mat3_identity();
-
-    for (let iter = 0; iter < 30; iter++) {
-      // Find largest off-diagonal element
-      let maxVal = 0, p = 0, q = 1;
-      for (let i = 0; i < 3; i++)
-        for (let j = i+1; j < 3; j++)
-          if (Math.abs(A[i*3+j]) > maxVal) { maxVal = Math.abs(A[i*3+j]); p = i; q = j; }
-
-      if (maxVal < 1e-12) break;
-
-      // Compute Jacobi rotation angle
-      const app = A[p*3+p], aqq = A[q*3+q], apq = A[p*3+q];
-      const theta = (Math.abs(app - aqq) < 1e-14)
-        ? Math.PI / 4
-        : 0.5 * Math.atan2(2 * apq, app - aqq);
-      const c = Math.cos(theta), s = Math.sin(theta);
-
-      // Right multiply: B = A * G(p,q,theta)
-      const B = Float64Array.from(A);
-      for (let i = 0; i < 3; i++) {
-        B[i*3+p] =  c*A[i*3+p] + s*A[i*3+q];
-        B[i*3+q] = -s*A[i*3+p] + c*A[i*3+q];
-      }
-      // Left multiply: A' = G^T * B
-      for (let j = 0; j < 3; j++) {
-        A[p*3+j] =  c*B[p*3+j] + s*B[q*3+j];
-        A[q*3+j] = -s*B[p*3+j] + c*B[q*3+j];
-      }
-
-      // Accumulate eigenvectors: V = V * G
-      for (let i = 0; i < 3; i++) {
-        const vip = V[i*3+p], viq = V[i*3+q];
-        V[i*3+p] =  c*vip + s*viq;
-        V[i*3+q] = -s*vip + c*viq;
-      }
-    }
-
-    return { eigenvalues: [A[0], A[4], A[8]], V };
-  }
-
-  // SVD for 3x3: H = U * diag(S) * V^T
-  function svd3x3(H) {
-    const Ht = mat3_transpose(H);
-    const HtH = mat3_mul(Ht, H);
-
-    const { eigenvalues, V } = symmetricEigen3x3(HtH);
-    const sigma = eigenvalues.map(e => Math.sqrt(Math.max(0, e)));
-
-    // U = H * V * diag(1/sigma)
-    const HV = mat3_mul(H, V);
-    const U = mat3_create();
-    for (let j = 0; j < 3; j++) {
-      const invS = sigma[j] > 1e-8 ? 1 / sigma[j] : 0;
-      for (let i = 0; i < 3; i++) {
-        U[i*3+j] = HV[i*3+j] * invS;
-      }
-    }
-
-    return { U, S: sigma, V };
-  }
-
-  // Gram-Schmidt orthonormalize a 3x3 matrix (row-major) to ensure it's a proper rotation.
-  // Returns a new Float64Array(9) with orthonormal rows forming a right-handed frame.
-  function mat3_orthonormalize(M) {
-    // Extract columns
-    let c0 = [M[0], M[3], M[6]];
-    let c1 = [M[1], M[4], M[7]];
-    let c2 = [M[2], M[5], M[8]];
-
-    // Normalize column 0
-    let len = Math.hypot(c0[0], c0[1], c0[2]);
-    if (len < 1e-12) { c0 = [1, 0, 0]; len = 1; }
-    c0 = [c0[0]/len, c0[1]/len, c0[2]/len];
-
-    // Column 1: subtract projection onto c0, normalize
-    let dot = c1[0]*c0[0] + c1[1]*c0[1] + c1[2]*c0[2];
-    c1 = [c1[0] - dot*c0[0], c1[1] - dot*c0[1], c1[2] - dot*c0[2]];
-    len = Math.hypot(c1[0], c1[1], c1[2]);
-    if (len < 1e-12) {
-      // c1 was parallel to c0, pick an arbitrary perpendicular
-      c1 = Math.abs(c0[0]) < 0.9 ? [1,0,0] : [0,1,0];
-      dot = c1[0]*c0[0] + c1[1]*c0[1] + c1[2]*c0[2];
-      c1 = [c1[0] - dot*c0[0], c1[1] - dot*c0[1], c1[2] - dot*c0[2]];
-      len = Math.hypot(c1[0], c1[1], c1[2]);
-    }
-    c1 = [c1[0]/len, c1[1]/len, c1[2]/len];
-
-    // Column 2: cross product of c0 and c1 (right-handed)
-    c2 = [
-      c0[1]*c1[2] - c0[2]*c1[1],
-      c0[2]*c1[0] - c0[0]*c1[2],
-      c0[0]*c1[1] - c0[1]*c1[0]
-    ];
-
-    const R = new Float64Array(9);
-    R[0]=c0[0]; R[1]=c1[0]; R[2]=c2[0];
-    R[3]=c0[1]; R[4]=c1[1]; R[5]=c2[1];
-    R[6]=c0[2]; R[7]=c1[2]; R[8]=c2[2];
-    return R;
-  }
-
-  // ---------------- Quaternion helpers for rotation blending ----------------
-  // q = [x, y, z, w] (Hamilton convention)
-
-  function mat3_to_quat(M) {
-    // Convert 3x3 row-major rotation matrix to unit quaternion
-    const m00=M[0], m01=M[1], m02=M[2];
-    const m10=M[3], m11=M[4], m12=M[5];
-    const m20=M[6], m21=M[7], m22=M[8];
-    const tr = m00 + m11 + m22;
-    let x, y, z, w;
-    if (tr > 0) {
-      const s = 0.5 / Math.sqrt(tr + 1.0);
-      w = 0.25 / s;
-      x = (m21 - m12) * s;
-      y = (m02 - m20) * s;
-      z = (m10 - m01) * s;
-    } else if (m00 > m11 && m00 > m22) {
-      const s = 2.0 * Math.sqrt(1.0 + m00 - m11 - m22);
-      w = (m21 - m12) / s;
-      x = 0.25 * s;
-      y = (m01 + m10) / s;
-      z = (m02 + m20) / s;
-    } else if (m11 > m22) {
-      const s = 2.0 * Math.sqrt(1.0 + m11 - m00 - m22);
-      w = (m02 - m20) / s;
-      x = (m01 + m10) / s;
-      y = 0.25 * s;
-      z = (m12 + m21) / s;
-    } else {
-      const s = 2.0 * Math.sqrt(1.0 + m22 - m00 - m11);
-      w = (m10 - m01) / s;
-      x = (m02 + m20) / s;
-      y = (m12 + m21) / s;
-      z = 0.25 * s;
-    }
-    const len = Math.hypot(x, y, z, w) || 1;
-    return [x/len, y/len, z/len, w/len];
-  }
-
-  function quat_to_mat3(q) {
-    // Convert unit quaternion [x,y,z,w] to 3x3 row-major rotation matrix
-    const x = q[0], y = q[1], z = q[2], w = q[3];
-    const x2 = x+x, y2 = y+y, z2 = z+z;
-    const xx = x*x2, xy = x*y2, xz = x*z2;
-    const yy = y*y2, yz = y*z2, zz = z*z2;
-    const wx = w*x2, wy = w*y2, wz = w*z2;
-    return new Float64Array([
-      1-(yy+zz), xy-wz,     xz+wy,
-      xy+wz,     1-(xx+zz), yz-wx,
-      xz-wy,     yz+wx,     1-(xx+yy)
-    ]);
-  }
-
-  // ---------------- Dual Quaternion Skinning (DQS) ----------------
-  // Encodes rigid transform (R, t) as dual quaternion [qr(4), qd(4)].
-  // Blends rotation + translation together — no volume loss at joints.
-
-  function rigid_to_dq(q, t) {
-    // q = rotation quaternion [x,y,z,w], t = translation [tx,ty,tz]
-    // dual part = 0.5 * (tx,ty,tz,0) * q_real (quaternion multiply)
-    const qx=q[0], qy=q[1], qz=q[2], qw=q[3];
-    const tx=t[0], ty=t[1], tz=t[2];
-    return {
-      qr: [qx, qy, qz, qw],
-      qd: [
-        0.5*( tx*qw + ty*qz - tz*qy),
-        0.5*(-tx*qz + ty*qw + tz*qx),
-        0.5*( tx*qy - ty*qx + tz*qw),
-        0.5*(-tx*qx - ty*qy - tz*qz)
-      ]
-    };
-  }
-
-  function dq_apply(qr, qd, vx, vy, vz) {
-    // Apply normalized dual quaternion to vertex.
-    // Rotation: q * v * conj(q)
-    const ax=qr[0], ay=qr[1], az=qr[2], aw=qr[3];
-    const tx2 = 2*(ay*vz - az*vy);
-    const ty2 = 2*(az*vx - ax*vz);
-    const tz2 = 2*(ax*vy - ay*vx);
-    const rx = vx + aw*tx2 + (ay*tz2 - az*ty2);
-    const ry = vy + aw*ty2 + (az*tx2 - ax*tz2);
-    const rz = vz + aw*tz2 + (ax*ty2 - ay*tx2);
-    // Translation: t = 2 * (qr.w * qd.xyz - qd.w * qr.xyz + cross(qr.xyz, qd.xyz))
-    const ttx = 2*( qd[0]*aw - qd[3]*ax + qd[2]*ay - qd[1]*az);
-    const tty = 2*( qd[1]*aw - qd[3]*ay + qd[0]*az - qd[2]*ax);
-    const ttz = 2*( qd[2]*aw - qd[3]*az + qd[1]*ax - qd[0]*ay);
-    return [rx + ttx, ry + tty, rz + ttz];
-  }
-
-  function quat_rotateVec3(q, vx, vy, vz) {
-    // Rotate vector by quaternion: q * v * q^-1
-    const qx=q[0], qy=q[1], qz=q[2], qw=q[3];
-    // t = 2 * cross(q.xyz, v)
-    const tx = 2*(qy*vz - qz*vy);
-    const ty = 2*(qz*vx - qx*vz);
-    const tz = 2*(qx*vy - qy*vx);
-    return [
-      vx + qw*tx + (qy*tz - qz*ty),
-      vy + qw*ty + (qz*tx - qx*tz),
-      vz + qw*tz + (qx*ty - qy*tx)
-    ];
-  }
+  // --- Quaternion conversion + DQ functions (from cage-core) ---
+  const { mat3_to_quat, quat_to_mat3 } = CageCore;
+  const { rigid_to_dq, dq_apply, quat_rotateVec3 } = CageCore;
 
   // Kabsch algorithm: best-fit rigid transform (R, t) mapping rest → current
   // for the cage vertices at given indices.
@@ -3151,17 +2986,22 @@
       const neckJY = P.neck[1];
       const headJY = P.head[1];
       let faceWithTorso = 0, faceTotal = 0;
-      for (let vi = 0; vi < nVerts; vi++) {
+      for (let vi = 0; vi < nMesh; vi++) {
         const vy = meshRestPos[vi*3+1];
         if (vy > neckJY && vy < headJY) {
           faceTotal++;
-          const rw = result[vi];
-          if (rw.has(0) || rw.has(14) || rw.has(15) || rw.has(16) || rw.has(17)) {
+          const e = result[vi];
+          if (!e) continue;
+          let hasTorso = false;
+          for (let j = 0; j < e.length; j += 2) {
+            if (e[j] === 0 || e[j] === 14 || e[j] === 15 || e[j] === 16 || e[j] === 17) { hasTorso = true; break; }
+          }
+          if (hasTorso) {
             faceWithTorso++;
             if (faceWithTorso <= 5) {
-              const entries = [];
-              for (const [r, w] of rw) entries.push('r' + r + ':' + (w*100).toFixed(1) + '%');
-              console.log('  FACE VERT ' + vi + ' Y=' + (vy*1000).toFixed(0) + 'mm: ' + entries.join(' '));
+              const parts = [];
+              for (let j = 0; j < e.length; j += 2) parts.push('r' + e[j] + ':' + (e[j+1]*100).toFixed(1) + '%');
+              console.log('  FACE VERT ' + vi + ' Y=' + (vy*1000).toFixed(0) + 'mm: ' + parts.join(' '));
             }
           }
         }
@@ -4777,19 +4617,7 @@
     return catmullRomVec3(positions[i0], positions[i1], positions[i2], positions[i3], frac);
   }
 
-  function catmullRomVec3(p0, p1, p2, p3, t) {
-    const t2 = t * t, t3 = t2 * t;
-    const result = [0, 0, 0];
-    for (let c = 0; c < 3; c++) {
-      result[c] = 0.5 * (
-        (2 * p1[c]) +
-        (-p0[c] + p2[c]) * t +
-        (2*p0[c] - 5*p1[c] + 4*p2[c] - p3[c]) * t2 +
-        (-p0[c] + 3*p1[c] - 3*p2[c] + p3[c]) * t3
-      );
-    }
-    return result;
-  }
+  const catmullRomVec3 = CageCore.catmullRomVec3;
 
   // Interpolate joint quaternion at time t using SLERP (cyclic)
   function getJointQuaternionAtTime(jointName, t) {
@@ -4869,14 +4697,7 @@
     ];
   }
 
-  // Helper: cross product
-  function vcross(a, b) {
-    return [
-      a[1]*b[2] - a[2]*b[1],
-      a[2]*b[0] - a[0]*b[2],
-      a[0]*b[1] - a[1]*b[0]
-    ];
-  }
+  const vcross = CageCore.vcross;
 
   // Stable bend axis: returns normalized cross product of two directions,
   // falling back to previous frame's axis when the cross product is degenerate
@@ -4904,50 +4725,13 @@
   // The bend plane normal (cross product of parent and child bone directions) encodes
   // the axial rotation that position-only retargeting misses (e.g. forearm pronation,
   // thigh internal rotation). Returns signed twist angle in radians.
-  function extractBoneTwist(restBoneDir, curBoneDir, restChildDir, curChildDir) {
-    const restCross = vcross(restBoneDir, restChildDir);
-    const curCross = vcross(curBoneDir, curChildDir);
-
-    // Need both normals to be non-degenerate (bend > ~0.3°)
-    // T-pose always has a tiny natural bend, giving a clean reference
-    if (vlen(restCross) < 0.002 || vlen(curCross) < 0.05) return 0;
-
-    const restBendN = vnorm(restCross);
-    const curBendN = vnorm(curCross);
-
-    // Expected bend normal if NO twist occurred (just swing from rest to current)
-    const expectedBendN = applyDeltaRotation(restBoneDir, curBoneDir, restBendN);
-
-    // Project both onto plane perpendicular to current bone direction
-    const projE = vsub(expectedBendN, vscale(curBoneDir, vdot(expectedBendN, curBoneDir)));
-    const projC = vsub(curBendN, vscale(curBoneDir, vdot(curBendN, curBoneDir)));
-
-    if (vlen(projE) < 1e-6 || vlen(projC) < 1e-6) return 0;
-
-    const pE = vnorm(projE), pC = vnorm(projC);
-    const dotTw = Math.max(-1, Math.min(1, vdot(pE, pC)));
-    let twist = Math.acos(dotTw);
-    const crossTw = vcross(pE, pC);
-    if (vdot(crossTw, curBoneDir) < 0) twist = -twist;
-    return twist;
-  }
+  const extractBoneTwist = CageCore.extractBoneTwist;
 
   // Position-based twist extraction from bend-axis comparison.
   // Compares actual joint bend axis (from positions, character-independent) with
   // the expected "no-twist" bend axis (swing rotation applied to a canonical reference).
   // Returns signed twist angle in radians. Returns 0 if bend is too small for stable axis.
-  function extractPositionTwist(swingR, targetBoneDir, refPerp, actualBendAxis, bendAngle) {
-    if (Math.abs(bendAngle) < 0.1) return 0; // need ~6° bend for stable axis
-    const expected = vnorm(mat3_mulVec3(swingR, refPerp[0], refPerp[1], refPerp[2]));
-    // Project both onto plane perpendicular to target bone direction (ensure orthogonality)
-    const projE = vsub(expected, vscale(targetBoneDir, vdot(expected, targetBoneDir)));
-    const projA = vsub(actualBendAxis, vscale(targetBoneDir, vdot(actualBendAxis, targetBoneDir)));
-    if (vlen(projE) < 1e-6 || vlen(projA) < 1e-6) return 0;
-    const eN = vnorm(projE), aN = vnorm(projA);
-    const cosT = Math.max(-1, Math.min(1, vdot(eN, aN)));
-    const sinT = vdot(vcross(eN, aN), targetBoneDir);
-    return Math.atan2(sinT, cosT);
-  }
+  const extractPositionTwist = CageCore.extractPositionTwist;
 
   // Compute a canonical reference perpendicular for a bone rest direction.
   // rawRef is the anatomical "natural bend" direction (e.g., [0,1,0] for elbow up).
@@ -5227,21 +5011,8 @@
   const MID_BAND_LO     = 0.40;  // 40–60% = problematic mid-segment zone
   const MID_BAND_HI     = 0.60;
 
-  // Bone segments for rigidity/bend diagnostics: [parent, child]
-  // Joint names must match FBX_BONE_MAP entries used by _boneNameToIdx
-  const BONE_SEGMENTS = [
-    ['hips', 'l_hip'], ['hips', 'r_hip'],
-    ['l_hip', 'l_knee'], ['r_hip', 'r_knee'],
-    ['l_knee', 'l_ankle'], ['r_knee', 'r_ankle'],
-    ['l_ankle', 'l_toe'], ['r_ankle', 'r_toe'],
-    ['hips', 'spine_joint'],
-    ['spine_joint', 'spine1_joint'],
-    ['spine1_joint', 'spine2_joint'],
-    ['spine2_joint', 'neck'],
-    ['neck', 'head'],
-    ['l_shoulder', 'l_elbow'], ['r_shoulder', 'r_elbow'],
-    ['l_elbow', 'l_wrist'], ['r_elbow', 'r_wrist'],
-  ];
+  // Bone segments (from cage-core)
+  const BONE_SEGMENTS = CageCore.BONE_SEGMENTS;
 
   // Primary child for each joint — the bone segment that joint CONTROLS.
   // l_hip bone controls the thigh (l_hip→l_knee), not the pelvis→l_hip gap.
@@ -5363,16 +5134,27 @@
 
     // Build per-bone transforms using rotation matrices from computeDirectFKJoints
     const boneTransforms = new Array(fbxSkinData.boneCount);
+    let _fingerDiag = !window._fingerBoneDiagDone ? [] : null;
     for (let bi = 0; bi < fbxSkinData.boneCount; bi++) {
       const jn = _boneNameToIdx[bi];
       if (!jn) continue;
       const R = _lastJointRMat[jn];
       const jRest = P[jn];
       const jFK = retargetedJoints[jn];
-      if (!R || !jRest || !jFK) continue;
+      if (!R || !jRest || !jFK) {
+        if (_fingerDiag && jn.match(/thumb|index|middle|mid_knuckle|ring|pinky/))
+          _fingerDiag.push(jn + ':MISSING(' + (!R?'R':'') + (!jRest?'P':'') + (!jFK?'FK':'') + ')');
+        continue;
+      }
       const jCurX = jFK[0], jCurY = jFK[1] + gc, jCurZ = jFK[2];
       const Rj = mat3_mulVec3(R, jRest[0], jRest[1], jRest[2]);
       boneTransforms[bi] = { R: R, t: [jCurX-Rj[0], jCurY-Rj[1], jCurZ-Rj[2]] };
+      if (_fingerDiag && jn.match(/thumb|index|middle|mid_knuckle|ring|pinky/))
+        _fingerDiag.push(jn + ':OK');
+    }
+    if (_fingerDiag) {
+      window._fingerBoneDiagDone = true;
+      console.log('[FINGER BONES] Per-bone transforms: ' + _fingerDiag.join(', '));
     }
 
     return boneTransforms;
@@ -5539,31 +5321,7 @@
       if (!window._rigidityTransformDebugDone) {
         // Build parent-of-joint map by inverting FK_CHILDREN
         const _parentOfJoint = {};
-        const _FK_CHILDREN_DBG = {
-          'hips': ['spine_joint', 'l_hip', 'r_hip'],
-          'spine_joint': ['spine1_joint'],
-          'spine1_joint': ['spine2_joint'],
-          'spine2_joint': ['neck', 'l_collar', 'r_collar'],
-          'neck': ['head'],
-          'l_collar': ['l_shoulder'], 'r_collar': ['r_shoulder'],
-          'l_hip': ['l_knee'], 'r_hip': ['r_knee'],
-          'l_knee': ['l_ankle'], 'r_knee': ['r_ankle'],
-          'l_ankle': ['l_toe'], 'r_ankle': ['r_toe'],
-          'l_shoulder': ['l_elbow'], 'r_shoulder': ['r_elbow'],
-          'l_elbow': ['l_wrist'], 'r_elbow': ['r_wrist'],
-          'l_wrist': ['l_mid_knuckle','l_thumb1','l_index1','l_ring1','l_pinky1'],
-      'r_wrist': ['r_mid_knuckle','r_thumb1','r_index1','r_ring1','r_pinky1'],
-      'l_thumb1':['l_thumb2'],'l_thumb2':['l_thumb3'],'l_thumb3':[],
-      'l_index1':['l_index2'],'l_index2':['l_index3'],'l_index3':[],
-      'l_mid_knuckle':['l_middle2'],'l_middle2':['l_middle3'],'l_middle3':[],
-      'l_ring1':['l_ring2'],'l_ring2':['l_ring3'],'l_ring3':[],
-      'l_pinky1':['l_pinky2'],'l_pinky2':['l_pinky3'],'l_pinky3':[],
-      'r_thumb1':['r_thumb2'],'r_thumb2':['r_thumb3'],'r_thumb3':[],
-      'r_index1':['r_index2'],'r_index2':['r_index3'],'r_index3':[],
-      'r_mid_knuckle':['r_middle2'],'r_middle2':['r_middle3'],'r_middle3':[],
-      'r_ring1':['r_ring2'],'r_ring2':['r_ring3'],'r_ring3':[],
-      'r_pinky1':['r_pinky2'],'r_pinky2':['r_pinky3'],'r_pinky3':[]
-        };
+        const _FK_CHILDREN_DBG = CageCore.FK_CHILDREN;
         for (const [par, children] of Object.entries(_FK_CHILDREN_DBG)) {
           for (const ch of children) _parentOfJoint[ch] = par;
         }
@@ -6761,31 +6519,7 @@
     const fkPos = {};
     fkPos['hips'] = [retargetedJoints.hips[0], retargetedJoints.hips[1] + gc, retargetedJoints.hips[2]];
 
-    const FK_CHILDREN = {
-      'hips': ['spine_joint', 'l_hip', 'r_hip'],
-      'spine_joint': ['spine1_joint'],
-      'spine1_joint': ['spine2_joint'],
-      'spine2_joint': ['neck', 'l_collar', 'r_collar'],
-      'neck': ['head'],
-      'l_collar': ['l_shoulder'], 'r_collar': ['r_shoulder'],
-      'l_hip': ['l_knee'], 'r_hip': ['r_knee'],
-      'l_knee': ['l_ankle'], 'r_knee': ['r_ankle'],
-      'l_ankle': ['l_toe'], 'r_ankle': ['r_toe'],
-      'l_shoulder': ['l_elbow'], 'r_shoulder': ['r_elbow'],
-      'l_elbow': ['l_wrist'], 'r_elbow': ['r_wrist'],
-      'l_wrist': ['l_mid_knuckle','l_thumb1','l_index1','l_ring1','l_pinky1'],
-      'r_wrist': ['r_mid_knuckle','r_thumb1','r_index1','r_ring1','r_pinky1'],
-      'l_thumb1':['l_thumb2'],'l_thumb2':['l_thumb3'],'l_thumb3':[],
-      'l_index1':['l_index2'],'l_index2':['l_index3'],'l_index3':[],
-      'l_mid_knuckle':['l_middle2'],'l_middle2':['l_middle3'],'l_middle3':[],
-      'l_ring1':['l_ring2'],'l_ring2':['l_ring3'],'l_ring3':[],
-      'l_pinky1':['l_pinky2'],'l_pinky2':['l_pinky3'],'l_pinky3':[],
-      'r_thumb1':['r_thumb2'],'r_thumb2':['r_thumb3'],'r_thumb3':[],
-      'r_index1':['r_index2'],'r_index2':['r_index3'],'r_index3':[],
-      'r_mid_knuckle':['r_middle2'],'r_middle2':['r_middle3'],'r_middle3':[],
-      'r_ring1':['r_ring2'],'r_ring2':['r_ring3'],'r_ring3':[],
-      'r_pinky1':['r_pinky2'],'r_pinky2':['r_pinky3'],'r_pinky3':[]
-    };
+    const FK_CHILDREN = CageCore.FK_CHILDREN;
 
     // BFS: childPos = parentPos + R_parentDelta * (P[child] - P[parent])
     const queue = ['hips'];
@@ -7137,31 +6871,7 @@
 
     // 3. FK chain using P bone vectors + FBX quaternion rotations
     const fkPos = { hips: pelvisW };
-    const FK_CHILDREN = {
-      'hips': ['spine_joint', 'l_hip', 'r_hip'],
-      'spine_joint': ['spine1_joint'],
-      'spine1_joint': ['spine2_joint'],
-      'spine2_joint': ['neck', 'l_collar', 'r_collar'],
-      'neck': ['head'],
-      'l_collar': ['l_shoulder'], 'r_collar': ['r_shoulder'],
-      'l_hip': ['l_knee'], 'r_hip': ['r_knee'],
-      'l_knee': ['l_ankle'], 'r_knee': ['r_ankle'],
-      'l_ankle': ['l_toe'], 'r_ankle': ['r_toe'],
-      'l_shoulder': ['l_elbow'], 'r_shoulder': ['r_elbow'],
-      'l_elbow': ['l_wrist'], 'r_elbow': ['r_wrist'],
-      'l_wrist': ['l_mid_knuckle','l_thumb1','l_index1','l_ring1','l_pinky1'],
-      'r_wrist': ['r_mid_knuckle','r_thumb1','r_index1','r_ring1','r_pinky1'],
-      'l_thumb1':['l_thumb2'],'l_thumb2':['l_thumb3'],'l_thumb3':[],
-      'l_index1':['l_index2'],'l_index2':['l_index3'],'l_index3':[],
-      'l_mid_knuckle':['l_middle2'],'l_middle2':['l_middle3'],'l_middle3':[],
-      'l_ring1':['l_ring2'],'l_ring2':['l_ring3'],'l_ring3':[],
-      'l_pinky1':['l_pinky2'],'l_pinky2':['l_pinky3'],'l_pinky3':[],
-      'r_thumb1':['r_thumb2'],'r_thumb2':['r_thumb3'],'r_thumb3':[],
-      'r_index1':['r_index2'],'r_index2':['r_index3'],'r_index3':[],
-      'r_mid_knuckle':['r_middle2'],'r_middle2':['r_middle3'],'r_middle3':[],
-      'r_ring1':['r_ring2'],'r_ring2':['r_ring3'],'r_ring3':[],
-      'r_pinky1':['r_pinky2'],'r_pinky2':['r_pinky3'],'r_pinky3':[]
-    };
+    const FK_CHILDREN = CageCore.FK_CHILDREN;
     const queue = ['hips'];
     while (queue.length > 0) {
       const parent = queue.shift();
@@ -7468,31 +7178,7 @@
     const fkPos = {};
     fkPos['hips'] = [retargetedJoints.hips[0], retargetedJoints.hips[1] + gc, retargetedJoints.hips[2]];
 
-    const FK_CHILDREN = {
-      'hips': ['spine_joint', 'l_hip', 'r_hip'],
-      'spine_joint': ['spine1_joint'],
-      'spine1_joint': ['spine2_joint'],
-      'spine2_joint': ['neck', 'l_collar', 'r_collar'],
-      'neck': ['head'],
-      'l_collar': ['l_shoulder'], 'r_collar': ['r_shoulder'],
-      'l_hip': ['l_knee'], 'r_hip': ['r_knee'],
-      'l_knee': ['l_ankle'], 'r_knee': ['r_ankle'],
-      'l_ankle': ['l_toe'], 'r_ankle': ['r_toe'],
-      'l_shoulder': ['l_elbow'], 'r_shoulder': ['r_elbow'],
-      'l_elbow': ['l_wrist'], 'r_elbow': ['r_wrist'],
-      'l_wrist': ['l_mid_knuckle','l_thumb1','l_index1','l_ring1','l_pinky1'],
-      'r_wrist': ['r_mid_knuckle','r_thumb1','r_index1','r_ring1','r_pinky1'],
-      'l_thumb1':['l_thumb2'],'l_thumb2':['l_thumb3'],'l_thumb3':[],
-      'l_index1':['l_index2'],'l_index2':['l_index3'],'l_index3':[],
-      'l_mid_knuckle':['l_middle2'],'l_middle2':['l_middle3'],'l_middle3':[],
-      'l_ring1':['l_ring2'],'l_ring2':['l_ring3'],'l_ring3':[],
-      'l_pinky1':['l_pinky2'],'l_pinky2':['l_pinky3'],'l_pinky3':[],
-      'r_thumb1':['r_thumb2'],'r_thumb2':['r_thumb3'],'r_thumb3':[],
-      'r_index1':['r_index2'],'r_index2':['r_index3'],'r_index3':[],
-      'r_mid_knuckle':['r_middle2'],'r_middle2':['r_middle3'],'r_middle3':[],
-      'r_ring1':['r_ring2'],'r_ring2':['r_ring3'],'r_ring3':[],
-      'r_pinky1':['r_pinky2'],'r_pinky2':['r_pinky3'],'r_pinky3':[]
-    };
+    const FK_CHILDREN = CageCore.FK_CHILDREN;
 
     const queue = ['hips'];
     while (queue.length > 0) {
@@ -7747,29 +7433,7 @@
       const gc = lastGroundCorrection;
       const fkPos = {};
       fkPos['hips'] = [retargetedJoints.hips[0], retargetedJoints.hips[1] + gc, retargetedJoints.hips[2]];
-      const FK_CHILDREN = {
-        'hips': ['spine_joint', 'l_hip', 'r_hip'],
-        'spine_joint': ['spine1_joint'], 'spine1_joint': ['spine2_joint'],
-        'spine2_joint': ['neck', 'l_collar', 'r_collar'],
-        'neck': ['head'], 'l_collar': ['l_shoulder'], 'r_collar': ['r_shoulder'],
-        'l_hip': ['l_knee'], 'r_hip': ['r_knee'],
-        'l_knee': ['l_ankle'], 'r_knee': ['r_ankle'],
-        'l_ankle': ['l_toe'], 'r_ankle': ['r_toe'],
-        'l_shoulder': ['l_elbow'], 'r_shoulder': ['r_elbow'],
-        'l_elbow': ['l_wrist'], 'r_elbow': ['r_wrist'],
-        'l_wrist': ['l_mid_knuckle','l_thumb1','l_index1','l_ring1','l_pinky1'],
-      'r_wrist': ['r_mid_knuckle','r_thumb1','r_index1','r_ring1','r_pinky1'],
-      'l_thumb1':['l_thumb2'],'l_thumb2':['l_thumb3'],'l_thumb3':[],
-      'l_index1':['l_index2'],'l_index2':['l_index3'],'l_index3':[],
-      'l_mid_knuckle':['l_middle2'],'l_middle2':['l_middle3'],'l_middle3':[],
-      'l_ring1':['l_ring2'],'l_ring2':['l_ring3'],'l_ring3':[],
-      'l_pinky1':['l_pinky2'],'l_pinky2':['l_pinky3'],'l_pinky3':[],
-      'r_thumb1':['r_thumb2'],'r_thumb2':['r_thumb3'],'r_thumb3':[],
-      'r_index1':['r_index2'],'r_index2':['r_index3'],'r_index3':[],
-      'r_mid_knuckle':['r_middle2'],'r_middle2':['r_middle3'],'r_middle3':[],
-      'r_ring1':['r_ring2'],'r_ring2':['r_ring3'],'r_ring3':[],
-      'r_pinky1':['r_pinky2'],'r_pinky2':['r_pinky3'],'r_pinky3':[]
-      };
+      const FK_CHILDREN = CageCore.FK_CHILDREN;
       const queue = ['hips'];
       while (queue.length > 0) {
         const parent = queue.shift();
@@ -12244,6 +11908,66 @@ function buildBindKNNRegion(meshRestPos, cageRest, regionIdInput, regionMeta, K 
   document.addEventListener('pointermove', onDocPointerMove);
   document.addEventListener('pointerup', onDocPointerUp);
 
+  // ── Click-to-inspect: click mesh surface to see exact coordinates ──
+  let _inspectMarker = null;  // Three.js sphere at click point
+  let _inspectLabel = null;   // HTML overlay showing coordinates
+  (function initInspect() {
+    // Create a small red sphere for the click point
+    const geo = new THREE.SphereBufferGeometry(0.003, 12, 8);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xff0000, depthTest: false });
+    _inspectMarker = new THREE.Mesh(geo, mat);
+    _inspectMarker.renderOrder = 1000;
+    _inspectMarker.visible = false;
+    scene.add(_inspectMarker);
+
+    // Create HTML label
+    const lbl = document.createElement('div');
+    lbl.id = 'inspectLabel';
+    lbl.style.cssText = 'position:fixed;pointer-events:none;z-index:9999;' +
+      'background:rgba(0,0,0,0.85);color:#0f0;font:12px monospace;padding:4px 8px;' +
+      'border:1px solid #0f0;border-radius:3px;display:none;white-space:pre;';
+    document.body.appendChild(lbl);
+    _inspectLabel = lbl;
+  })();
+
+  renderer.domElement.addEventListener('click', function(e) {
+    // Skip if dragging joints or if placement panel is active and a joint is selected
+    if (draggedJoint) return;
+
+    const rect = renderer.domElement.getBoundingClientRect();
+    jMouse.x =  ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    jMouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+    jRaycaster.setFromCamera(jMouse, camera);
+    const hits = meshObj ? jRaycaster.intersectObject(meshObj) : [];
+
+    if (hits.length > 0) {
+      const p = hits[0].point;
+      _inspectMarker.position.copy(p);
+      _inspectMarker.visible = true;
+
+      // Show coordinates in mm, and also in meters (raw)
+      const xmm = (p.x * 1000).toFixed(1);
+      const ymm = (p.y * 1000).toFixed(1);
+      const zmm = (p.z * 1000).toFixed(1);
+      _inspectLabel.textContent =
+        'Surface point (mm):\n' +
+        '  X: ' + xmm + '\n' +
+        '  Y: ' + ymm + '\n' +
+        '  Z: ' + zmm + '\n' +
+        'Raw: [' + p.x.toFixed(5) + ', ' + p.y.toFixed(5) + ', ' + p.z.toFixed(5) + ']';
+      _inspectLabel.style.display = '';
+      _inspectLabel.style.left = (e.clientX + 15) + 'px';
+      _inspectLabel.style.top = (e.clientY - 10) + 'px';
+
+      console.log('[INSPECT] Surface click: X=' + xmm + ' Y=' + ymm + ' Z=' + zmm +
+        '  raw=[' + p.x.toFixed(5) + ', ' + p.y.toFixed(5) + ', ' + p.z.toFixed(5) + ']');
+    } else {
+      // Clicked empty space — hide marker and label
+      _inspectMarker.visible = false;
+      _inspectLabel.style.display = 'none';
+    }
+  });
+
   // Enter placement mode
   function startPlacement() {
     placementMode = true;
@@ -12862,8 +12586,9 @@ function buildBindKNNRegion(meshRestPos, cageRest, regionIdInput, regionMeta, K 
 
     // Auto-detect neck and head joints using hourglass width profile:
     // Wide (traps) → narrow (bare neck) → widening (skull).
-    // NECK joint = trap plateau (where gradient flattens below bare neck)
-    // HEAD joint = where neck widens into skull (1.25x bare neck width above)
+    // NECK joint = "shoulder horizon" (max Y of verts at shoulder-tip X)
+    // HEAD joint = skull base (first Y above bare neck where width >= 1.15x),
+    //              straight up from neck (same X, Z)
     if (P.neck && P.l_shoulder && meshRestPos) {
       const nM = meshRestPos.length / 3;
       const shoulderY = P.l_shoulder[1];
@@ -12898,33 +12623,54 @@ function buildBindKNNRegion(meshRestPos, cageRest, regionIdInput, regionMeta, K 
       }
       const bareNeckY = widths[neckIdx].y;
 
-      // 2. NECK joint: find the biggest width drop between shoulders and
-      //    bare neck — the torso→neck transition. Place at the lower Y of
-      //    this step (collar level, where the neck column emerges from torso).
-      let neckJointIdx = Math.max(0, neckIdx - 1);
+      // 2. NECK joint: "shoulder horizon" — the highest Y where the mesh
+      //    still has vertices at shoulder-tip X positions. Above this Y,
+      //    only the neck column remains. This places the neck at the
+      //    shoulder surface line crossing through the neck.
+      let neckJointY = widths[Math.max(0, neckIdx - 1)].y; // fallback
       {
-        let maxAbsGrad = 0;
-        for (let i = 0; i < neckIdx; i++) {
-          const grad = Math.abs(widths[i + 1].w - widths[i].w);
-          if (grad > maxAbsGrad) {
-            maxAbsGrad = grad;
-            neckJointIdx = i; // lower Y side of biggest width drop
+        const shoulderTipX = Math.abs(P.l_shoulder[0]);
+        let maxYAtShoulderX = shoulderY; // start from shoulder level
+        for (let i = 0; i < nM; i++) {
+          const vx = Math.abs(meshRestPos[i*3]);
+          const vy = meshRestPos[i*3+1];
+          // Only consider verts above shoulder Y and with |X| beyond shoulder tip
+          if (vx >= shoulderTipX && vy > shoulderY && vy < bareNeckY) {
+            if (vy > maxYAtShoulderX) maxYAtShoulderX = vy;
+          }
+        }
+        neckJointY = maxYAtShoulderX;
+        console.log('[NECK GEO] shoulder horizon: max Y of verts with |X|>=' +
+          (shoulderTipX*1000).toFixed(1) + 'mm = ' + (neckJointY*1000).toFixed(1) + 'mm');
+      }
+
+      // 3. HEAD joint: fine-scan UP from bare neck to find the skull base —
+      //    where width first exceeds 1.15x bare neck width (neck widens
+      //    into the head). Head sits straight up from neck (same X, Z).
+      let headJointY = bareNeckY + 0.015; // fallback: 15mm above bare neck
+      {
+        const headWThresh = neckW * 1.15;
+        const fineBand = meshH * 0.005;
+        const fineStep = meshH * 0.002; // ~2mm steps for precision
+        for (let y = bareNeckY + fineStep; y < meshTop; y += fineStep) {
+          let minX = Infinity, maxX = -Infinity, cnt = 0;
+          for (let i = 0; i < nM; i++) {
+            if (Math.abs(meshRestPos[i*3+1] - y) < fineBand) {
+              const vx = meshRestPos[i*3];
+              if (vx < minX) minX = vx;
+              if (vx > maxX) maxX = vx;
+              cnt++;
+            }
+          }
+          if (cnt > 5 && (maxX - minX) >= headWThresh) {
+            headJointY = y;
+            console.log('[HEAD GEO] skull base: width ' + ((maxX-minX)*1000).toFixed(0) +
+              'mm >= ' + (headWThresh*1000).toFixed(0) + 'mm (1.15x bareNeck) at Y=' +
+              (y*1000).toFixed(1) + 'mm');
+            break;
           }
         }
       }
-      const neckJointY = widths[neckJointIdx].y;
-
-      // 3. HEAD joint: scan UP from bare neck to find where width >= 1.25x
-      //    bare neck width — the neck tube widening into the skull.
-      let headJointIdx = Math.min(widths.length - 1, neckIdx + 2);
-      const headWThresh = neckW * 1.25;
-      for (let i = neckIdx + 1; i < widths.length; i++) {
-        if (widths[i].w >= headWThresh) {
-          headJointIdx = i;
-          break;
-        }
-      }
-      const headJointY = widths[headJointIdx].y;
 
       // 4. NECK Z: measured at bare neck Y (cleanest cross-section for spine
       //    position), 35% from back (posterior but inside the neck).
@@ -12941,8 +12687,9 @@ function buildBindKNNRegion(meshRestPos, cageRest, regionIdInput, regionMeta, K 
         if (mnZ < Infinity) neckZ = mnZ + (mxZ - mnZ) * 0.35;
       }
 
-      // 5. HEAD Z: measured at head joint Y level, 30% from back
-      //    (posterior, "enters back of neck at head/neck interface").
+      // HEAD Z: measured at head joint Y level, 35% from back.
+      // On a straight neck this matches neck Z; on a curved neck it
+      // follows the natural forward shift of the cervical spine.
       let headZ = neckZ;
       {
         let mnZ = Infinity, mxZ = -Infinity;
@@ -12953,7 +12700,7 @@ function buildBindKNNRegion(meshRestPos, cageRest, regionIdInput, regionMeta, K 
             if (vz > mxZ) mxZ = vz;
           }
         }
-        if (mnZ < Infinity) headZ = mnZ + (mxZ - mnZ) * 0.30;
+        if (mnZ < Infinity) headZ = mnZ + (mxZ - mnZ) * 0.35;
       }
 
       // Log hourglass profile around the bare neck
@@ -12961,21 +12708,22 @@ function buildBindKNNRegion(meshRestPos, cageRest, regionIdInput, regionMeta, K 
       for (let i = Math.max(0, neckIdx - 4); i < Math.min(widths.length, neckIdx + 7); i++) {
         let marker = '';
         if (i === neckIdx) marker = ' <-BARE';
-        if (i === neckJointIdx) marker = ' <-NECK';
-        if (i === headJointIdx) marker = ' <-HEAD';
         prof.push((widths[i].y*1000).toFixed(0) + ':' + (widths[i].w*1000).toFixed(0) + marker);
       }
-      console.log('[HOURGLASS] ' + prof.join('  '));
+      console.log('[HOURGLASS] ' + prof.join('  ') +
+        ' | NECK(horizon)=' + (neckJointY*1000).toFixed(0) +
+        ' | HEAD(1.15x)=' + (headJointY*1000).toFixed(0));
       console.log('[NECK/HEAD] NECK Y=' + (neckJointY*1000).toFixed(1) +
-        'mm Z=' + (neckZ*1000).toFixed(1) + 'mm (trap plateau)' +
+        'mm Z=' + (neckZ*1000).toFixed(1) + 'mm (shoulder horizon)' +
         ' | bareNeck Y=' + (bareNeckY*1000).toFixed(1) + 'mm W=' + (neckW*1000).toFixed(0) + 'mm' +
-        ' | HEAD Y=' + (headJointY*1000).toFixed(1) + 'mm Z=' + (headZ*1000).toFixed(1) + 'mm (1.25x)');
+        ' | HEAD Y=' + (headJointY*1000).toFixed(1) + 'mm Z=' + (headZ*1000).toFixed(1) + 'mm (1.15x width, 35% from back)');
 
       P._chinY = chinY;
       P._neckTopY = headJointY; // head joint Y — used by head derivation
-      P._headZ = headZ;         // head joint Z — computed here
+      P._headZ = headZ;         // head joint Z — follows neck curvature
       P._bareNeckY = bareNeckY;
-      P.neck[1] = neckJointY;   // NECK joint at trap plateau
+      P._bareNeckW = neckW;       // bare neck width — used by collar derivation
+      P.neck[1] = neckJointY;   // NECK joint at shoulder horizon
       P.neck[2] = neckZ;
     }
 
@@ -12983,91 +12731,141 @@ function buildBindKNNRegion(meshRestPos, cageRest, regionIdInput, regionMeta, K 
     delete P.spine_joint; delete P.spine1_joint; delete P.spine2_joint;
     delete P.l_collar; delete P.r_collar;
 
-    // Derive spine sub-joints (needed for collar derivation)
-    // X,Y from linear lerp between hips and neck.
-    // Z from actual mesh cross-section at each Y level — captures natural
-    // spinal curvature (cervical lordosis: upper back is behind the neck).
+    // Derive spine sub-joints using geometric torso landmarks:
+    // Y placement: waist (narrowest) and chest (widest above waist)
+    // Z placement: STRAIGHT LINE from hips to neck (verified: FBX spine Z
+    //   is a perfect straight line from hips Z to neck Z, not curved).
     if (P.hips && P.neck) {
-      const l3 = (a,b,t) => [a[0]+t*(b[0]-a[0]), a[1]+t*(b[1]-a[1]), a[2]+t*(b[2]-a[2])];
-      const spineTs = [[0.25, 'spine_joint'], [0.50, 'spine1_joint'], [0.75, 'spine2_joint']];
-      for (const [t, name] of spineTs) {
-        const pt = l3(P.hips, P.neck, t);
-        // Z-center from mesh cross-section at this Y level
-        if (meshRestPos) {
-          const nM = meshRestPos.length / 3;
-          const band3 = meshH * 0.012;
-          let mnZ = Infinity, mxZ = -Infinity, cnt = 0;
+      const hipsY = P.hips[1], neckY = P.neck[1];
+      const straightZ = (y) => {
+        const t = (y - hipsY) / (neckY - hipsY);
+        return P.hips[2] + t * (P.neck[2] - P.hips[2]);
+      };
+      let spineSet = false;
+
+      if (meshRestPos) {
+        const nM = meshRestPos.length / 3;
+        const band = meshH * 0.010;
+        const nSteps = 40;
+        const stepSz = (neckY - hipsY) / nSteps;
+        const torsoW = [];
+        for (let s = 1; s < nSteps; s++) {
+          const y = hipsY + s * stepSz;
+          let minX = Infinity, maxX = -Infinity, cnt = 0;
           for (let i = 0; i < nM; i++) {
-            if (Math.abs(meshRestPos[i*3+1] - pt[1]) < band3) {
-              const vz = meshRestPos[i*3+2];
-              if (vz < mnZ) mnZ = vz;
-              if (vz > mxZ) mxZ = vz;
+            if (Math.abs(meshRestPos[i*3+1] - y) < band) {
+              const vx = meshRestPos[i*3];
+              if (vx < minX) minX = vx;
+              if (vx > maxX) maxX = vx;
               cnt++;
             }
           }
-          if (cnt > 5) pt[2] = (mnZ + mxZ) / 2;
+          if (cnt > 5) torsoW.push({ y, w: maxX - minX });
         }
-        P[name] = pt;
+
+        if (torsoW.length > 4) {
+          // Waist = narrowest cross-section in the torso
+          let waistIdx = 0;
+          for (let i = 1; i < torsoW.length; i++) {
+            if (torsoW[i].w < torsoW[waistIdx].w) waistIdx = i;
+          }
+          // Chest = widest cross-section ABOVE waist
+          let chestIdx = waistIdx;
+          for (let i = waistIdx + 1; i < torsoW.length; i++) {
+            if (torsoW[i].w > torsoW[chestIdx].w) chestIdx = i;
+          }
+          if (chestIdx === waistIdx) {
+            chestIdx = Math.min(torsoW.length - 1, Math.floor(torsoW.length * 0.75));
+          }
+
+          const waistY = torsoW[waistIdx].y;
+          const chestY = torsoW[chestIdx].y;
+          const midY = (waistY + chestY) / 2;
+
+          // Z: straight line from hips to neck (matches FBX exactly)
+          P.spine_joint  = [P.hips[0], waistY, straightZ(waistY)];
+          P.spine1_joint = [P.hips[0], midY,   straightZ(midY)];
+          P.spine2_joint = [P.hips[0], chestY, straightZ(chestY)];
+          spineSet = true;
+
+          console.log('[SPINE GEO] torso widths: ' + torsoW.map(w =>
+            (w.y*1000).toFixed(0) + ':' + (w.w*1000).toFixed(0)).join('  '));
+          console.log('[SPINE GEO] waist Y=' + (waistY*1000).toFixed(1) +
+            'mm W=' + (torsoW[waistIdx].w*1000).toFixed(0) +
+            'mm | chest Y=' + (chestY*1000).toFixed(1) +
+            'mm W=' + (torsoW[chestIdx].w*1000).toFixed(0) +
+            'mm | mid Y=' + (midY*1000).toFixed(1) +
+            'mm | Z straight: ' + (P.hips[2]*1000).toFixed(1) +
+            '→' + (P.neck[2]*1000).toFixed(1));
+        }
+      }
+
+      // Fallback: straight-line lerp if mesh scan failed
+      if (!spineSet) {
+        const l3 = (a,b,t) => [a[0]+t*(b[0]-a[0]), a[1]+t*(b[1]-a[1]), a[2]+t*(b[2]-a[2])];
+        P.spine_joint  = l3(P.hips, P.neck, 0.25);
+        P.spine1_joint = l3(P.hips, P.neck, 0.50);
+        P.spine2_joint = l3(P.hips, P.neck, 0.75);
       }
     }
 
-    // Derive chest (same Z-centering approach)
+    // Derive chest: use spine2 position (widest torso = chest level).
+    // Z on the straight spine line.
     if (P.hips && P.neck) {
-      const chestY = (P.hips[1] + P.neck[1]) * 0.5 + 0.03;
-      let chestZ = P.hips[2];
-      if (meshRestPos) {
-        const nM = meshRestPos.length / 3;
-        const band3 = meshH * 0.012;
-        let mnZ = Infinity, mxZ = -Infinity, cnt = 0;
-        for (let i = 0; i < nM; i++) {
-          if (Math.abs(meshRestPos[i*3+1] - chestY) < band3) {
-            const vz = meshRestPos[i*3+2];
-            if (vz < mnZ) mnZ = vz;
-            if (vz > mxZ) mxZ = vz;
-            cnt++;
-          }
-        }
-        if (cnt > 5) chestZ = (mnZ + mxZ) / 2;
+      if (P.spine2_joint) {
+        P.chest = [P.hips[0], P.spine2_joint[1], P.spine2_joint[2]];
+      } else {
+        const chestY = (P.hips[1] + P.neck[1]) * 0.5 + 0.03;
+        const t = (chestY - P.hips[1]) / (P.neck[1] - P.hips[1]);
+        P.chest = [P.hips[0], chestY, P.hips[2] + t * (P.neck[2] - P.hips[2])];
       }
-      P.chest = [P.hips[0], chestY, chestZ];
     }
 
     // Derive head position and head_top.
-    // Y and Z are pre-computed in neck detection (P._neckTopY, P._headZ).
+    // Head X = neck X. Y at skull base. Z follows neck curvature (35% from back).
     if (P.neck && P._neckTopY != null) {
       const headY = P._neckTopY;
       const headZ = P._headZ != null ? P._headZ : P.neck[2];
       P.head = [P.neck[0], headY, headZ];
 
-      // head_top: at mesh top Y. Z from mesh geometry center at crown level.
-      let headTopY = P.neck[1] + 0.12;
-      if (meshRestPos) {
-        const nMesh = meshRestPos.length / 3;
-        let maxY = -Infinity;
-        for (let i = 0; i < nMesh; i++) { if (meshRestPos[i*3+1] > maxY) maxY = meshRestPos[i*3+1]; }
-        headTopY = maxY;
-      }
+      // head_top: raycast along neck→head line to find exact skull surface exit.
+      // Shoot ray from far above (along neck→head direction) back toward head.
+      // First intersection = crown surface = head_top.
+      let headTopY = headY + 0.08;
       let topZ = headZ;
-      if (meshRestPos) {
-        const nM4 = meshRestPos.length / 3;
-        const band4 = meshH * 0.015;
-        let mnZ4 = Infinity, mxZ4 = -Infinity, cnt4 = 0;
-        for (let i = 0; i < nM4; i++) {
-          if (Math.abs(meshRestPos[i*3+1] - headTopY) < band4) {
-            const vz = meshRestPos[i*3+2];
-            if (vz < mnZ4) mnZ4 = vz;
-            if (vz > mxZ4) mxZ4 = vz;
-            cnt4++;
+      if (meshObj) {
+        const nkHdDY = headY - P.neck[1];
+        const nkHdDZ = headZ - P.neck[2];
+        const nkHdLen = Math.sqrt(nkHdDY * nkHdDY + nkHdDZ * nkHdDZ);
+        if (nkHdLen > 0.001) {
+          const dY = nkHdDY / nkHdLen;
+          const dZ = nkHdDZ / nkHdLen;
+          // Start far above head along neck→head direction (0.5m past head)
+          const farOrigin = new THREE.Vector3(
+            P.neck[0],
+            headY + dY * 0.5,
+            headZ + dZ * 0.5
+          );
+          // Ray points back toward head (reverse direction)
+          const rayDir = new THREE.Vector3(0, -dY, -dZ).normalize();
+          const rc = new THREE.Raycaster();
+          rc.set(farOrigin, rayDir);
+          const hits = rc.intersectObject(meshObj);
+          if (hits.length > 0) {
+            // First hit from above = crown surface
+            headTopY = hits[0].point.y;
+            topZ = hits[0].point.z;
+            console.log('[HEAD_TOP RAYCAST] hit at Y=' + (hits[0].point.y*1000).toFixed(1) +
+              'mm, Z=' + (hits[0].point.z*1000).toFixed(1) + 'mm (total hits: ' + hits.length + ')');
           }
         }
-        if (cnt4 > 5) topZ = (mnZ4 + mxZ4) / 2;
       }
       P.head_top = [P.neck[0], headTopY, topZ];
 
       console.log('[HEAD DERIVE] neckY=' + (P.neck[1]*1000).toFixed(1) +
-        'mm (trap plateau), headY=' + (headY*1000).toFixed(1) +
-        'mm (neck widens), headZ=' + (headZ*1000).toFixed(1) +
-        'mm, head_topY=' + (headTopY*1000).toFixed(1) +
+        'mm, headY=' + (headY*1000).toFixed(1) +
+        'mm (1.15x bareNeck), headZ=' + (headZ*1000).toFixed(1) +
+        'mm (35% from back), head_topY=' + (headTopY*1000).toFixed(1) +
         'mm, head_topZ=' + (topZ*1000).toFixed(1) + 'mm');
     }
 
@@ -13081,14 +12879,12 @@ function buildBindKNNRegion(meshRestPos, cageRest, regionIdInput, regionMeta, K 
       P.r_toe = [P.r_ankle[0], floorY, P.r_ankle[2] + 0.04];
     }
 
-    // Derive knuckles
-    if (P.l_wrist && P.l_elbow) {
-      const d = vnorm(vsub(P.l_wrist, P.l_elbow));
-      P.l_mid_knuckle = vadd(P.l_wrist, vscale(d, 0.04));
-    }
-    if (P.r_wrist && P.r_elbow) {
-      const d = vnorm(vsub(P.r_wrist, P.r_elbow));
-      P.r_mid_knuckle = vadd(P.r_wrist, vscale(d, 0.04));
+    // Knuckles: rough fallback (mesh-measured override happens in deriveMissingJoints)
+    for (const s of ['l','r']) {
+      const w = P[s+'_wrist'], e = P[s+'_elbow'];
+      if (w && e && !P[s+'_mid_knuckle']) {
+        P[s+'_mid_knuckle'] = vadd(w, vscale(vnorm(vsub(w, e)), 0.04));
+      }
     }
 
     // Derive collars (deleted above, need fresh derivation)
@@ -13099,189 +12895,1292 @@ function buildBindKNNRegion(meshRestPos, cageRest, regionIdInput, regionMeta, K 
   // Derive ALL missing joints from placed primaries + mesh geometry.
   // Called after placed_joints.json loads so P has user's placed values.
   // No FBX data used — everything comes from our mesh.
-  function deriveMissingJoints() {
+  function deriveMissingJoints(overrides) {
+    const overrideSeeds = overrides && overrides.seeds;
+    const overrideTraceR = overrides && overrides.traceR;
+    const overrideValleys = overrides && overrides.valleys;
     const derived = [];
 
-    // --- Spine sub-joints: lerp between pelvis and neck ---
+    // --- Spine sub-joints: straight-line lerp between pelvis and neck ---
     if (P.hips && P.neck) {
-      const l3 = (a,b,t) => [a[0]+t*(b[0]-a[0]), a[1]+t*(b[1]-a[1]), a[2]+t*(b[2]-a[2])];
-      if (!P.spine_joint)  { P.spine_joint  = l3(P.hips, P.neck, 0.25); derived.push('spine_joint'); }
-      if (!P.spine1_joint) { P.spine1_joint = l3(P.hips, P.neck, 0.50); derived.push('spine1_joint'); }
-      if (!P.spine2_joint) { P.spine2_joint = l3(P.hips, P.neck, 0.75); derived.push('spine2_joint'); }
+      const l3s = (a,b,t) => [a[0]+t*(b[0]-a[0]), a[1]+t*(b[1]-a[1]), a[2]+t*(b[2]-a[2])];
+      if (!P.spine_joint)  { P.spine_joint  = l3s(P.hips, P.neck, 0.25); derived.push('spine_joint'); }
+      if (!P.spine1_joint) { P.spine1_joint = l3s(P.hips, P.neck, 0.50); derived.push('spine1_joint'); }
+      if (!P.spine2_joint) { P.spine2_joint = l3s(P.hips, P.neck, 0.75); derived.push('spine2_joint'); }
     }
 
-    // --- Collar joints: sternoclavicular joint (Mixamo LeftShoulder position) ---
-    // In Mixamo, the clavicle inner end is at the sternoclavicular joint:
-    //   Y: between spine2 and neck (upper chest / collarbone level)
-    //   X: offset from center by the neck radius (where neck meets torso)
-    // Then the clavicle goes outward from there to the shoulder.
-    // A line also goes DOWN from near there to the chest (Spine2 bone).
+    // --- Collar joints from mesh geometry ---
+    // Collar Y: midpoint of the steepest width-drop step between shoulders
+    //   and bare neck (the inflection point of the shoulder→neck transition).
+    // Collar X: ±(bare neck width / 3) from midline (edge of neck column).
+    // Collar Z: center of neck column at collar Y level.
     for (const s of ['l','r']) {
       const k = s + '_collar';
       if (!P[k] && P[s+'_shoulder']) {
-        const sp2 = P.spine2_joint || P.chest;
         const nck = P.neck;
-        if (sp2 && nck) {
-          const sh = P[s+'_shoulder'];
-          // Branch point Y: 50% between spine2 and neck
-          const branchY = (sp2[1] + nck[1]) * 0.5;
+        const bnW = P._bareNeckW;
+        const bnY = P._bareNeckY;
+        const shY = P[s+'_shoulder'] ? P[s+'_shoulder'][1] : null;
+        if (nck && bnW && bnY && shY != null && meshRestPos) {
+          const nM = meshRestPos.length / 3;
+          const meshH2 = bounds ? bounds.height : 1.0;
+          const band = meshH2 * 0.008;
+          const midX = (P.l_shoulder && P.r_shoulder)
+            ? (P.l_shoulder[0] + P.r_shoulder[0]) / 2 : 0;
 
-          // Measure neck radius: scan from branch point up to head,
-          // find the narrowest cross-section (bare neck above clothing)
-          let neckHalfWidth = Math.abs(sh[0]) * 0.20; // fallback: 20% to shoulder
-          if (meshRestPos && P.head) {
-            const nM = meshRestPos.length / 3;
-            const headY = P.head[1];
-            const band = bounds ? bounds.height * 0.008 : 0.008;
-            const nSteps = 20;
-            const step = (headY - branchY) / nSteps;
-            let minW = Infinity;
-            for (let y = branchY; y < headY; y += step) {
-              let minX = Infinity, maxX = -Infinity, cnt = 0;
-              for (let i = 0; i < nM; i++) {
-                if (Math.abs(meshRestPos[i*3+1] - y) < band) {
-                  const vx = meshRestPos[i*3];
-                  if (vx < minX) minX = vx;
-                  if (vx > maxX) maxX = vx;
-                  cnt++;
-                }
+          // Scan width profile from shoulder Y to bare neck Y
+          const scanStep = meshH2 * 0.005; // fine steps (~5mm)
+          const collarWidths = [];
+          for (let y = shY; y < bnY; y += scanStep) {
+            let minX = Infinity, maxX = -Infinity, cnt = 0;
+            for (let i = 0; i < nM; i++) {
+              if (Math.abs(meshRestPos[i*3+1] - y) < band) {
+                const vx = meshRestPos[i*3];
+                if (vx < minX) minX = vx;
+                if (vx > maxX) maxX = vx;
+                cnt++;
               }
-              if (cnt > 5 && (maxX - minX) < minW) minW = maxX - minX;
             }
-            if (minW < Infinity) neckHalfWidth = minW / 2;
-            console.log('[COLLAR ' + s + '] neckWidth=' + (minW*1000).toFixed(1) +
-              'mm, halfWidth=' + (neckHalfWidth*1000).toFixed(1) + 'mm');
+            if (cnt > 5) collarWidths.push({ y, w: maxX - minX });
           }
 
-          // Direction from spine center toward shoulder (normalized in XZ only)
-          const dxToSh = sh[0] - sp2[0];
-          const dzToSh = sh[2] - sp2[2];
-          const dxzLen = Math.sqrt(dxToSh*dxToSh + dzToSh*dzToSh);
-          const dirX = dxToSh / dxzLen, dirZ = dzToSh / dxzLen;
+          // Find steepest width drop step
+          let collarY = (shY + bnY) / 2; // fallback: midpoint
+          if (collarWidths.length > 2) {
+            let maxDrop = 0, dropLowY = shY, dropHighY = bnY;
+            for (let i = 0; i < collarWidths.length - 1; i++) {
+              const drop = collarWidths[i].w - collarWidths[i + 1].w;
+              if (drop > maxDrop) {
+                maxDrop = drop;
+                dropLowY = collarWidths[i].y;
+                dropHighY = collarWidths[i + 1].y;
+              }
+            }
+            collarY = (dropLowY + dropHighY) / 2; // midpoint of steepest drop
+          }
 
-          // Collar at branch point Y, offset laterally by neck radius
-          P[k] = [
-            sp2[0] + dirX * neckHalfWidth,
-            branchY,
-            sp2[2] + dirZ * neckHalfWidth
-          ];
+          // Collar X: ±(bare neck width / 3) from midline
+          const collarXOffset = bnW / 3;
+          const sign = (s === 'l') ? -1 : 1;
+          const collarX = midX + sign * collarXOffset;
+
+          // Collar Z: center of neck column at collar Y
+          let collarZ = nck[2];
+          {
+            const neckXRadius = bnW * 0.75;
+            let mnZ = Infinity, mxZ = -Infinity, cnt = 0;
+            for (let i = 0; i < nM; i++) {
+              const vy = meshRestPos[i*3+1], vx = meshRestPos[i*3], vz = meshRestPos[i*3+2];
+              if (Math.abs(vy - collarY) < band && Math.abs(vx - midX) < neckXRadius) {
+                if (vz < mnZ) mnZ = vz;
+                if (vz > mxZ) mxZ = vz;
+                cnt++;
+              }
+            }
+            if (cnt > 3) collarZ = (mnZ + mxZ) / 2;
+          }
+
+          P[k] = [collarX, collarY, collarZ];
           derived.push(k);
+          console.log('[COLLAR ' + s + '] Y=' + (collarY*1000).toFixed(1) +
+            'mm (midpoint of steepest width drop), X=' + (collarX*1000).toFixed(1) +
+            'mm (bareNeckW/3=' + (collarXOffset*1000).toFixed(1) +
+            'mm), Z=' + (collarZ*1000).toFixed(1) + 'mm');
         }
       }
     }
 
-    // --- Finger joints from mesh scan ---
+    // --- Finger joints from mesh geometry ---
+    // Always re-derive fingers from mesh (don't use stale saved positions)
     for (const s of ['l','r']) {
-      if (P[s+'_index1']) continue; // already has finger data
       const pr = s + '_';
-      const wrist = P[pr+'wrist'], knuckle = P[pr+'mid_knuckle'], elbow = P[pr+'elbow'];
-      if (!wrist || !knuckle || !elbow) continue;
+      const wrist = P[pr+'wrist'], elbow = P[pr+'elbow'];
+      if (!wrist || !elbow) continue;
 
-      const handDir = vnorm(vsub(knuckle, wrist));
-      const handLen = vlen(vsub(knuckle, wrist));
+      const armDir = vnorm(vsub(wrist, elbow));
+      const armLen = vlen(vsub(wrist, elbow));
+      const nM = meshRestPos ? meshRestPos.length / 3 : 0;
 
-      // Build hand coordinate frame using gravity as reference
-      let spread = vcross(handDir, [0, 1, 0]);
-      if (vlen(spread) < 0.1) spread = vcross(handDir, [0, 0, 1]);
+      // --- Step 1: Measure knuckle ridge from mesh (widest cross-section past wrist) ---
+      // Build spread reference: cross(armDir, [0,-1,0]) gives consistent
+      // anterior-pointing spread for T-pose arms (index toward +Z, pinky toward -Z).
+      let spread = vcross(armDir, [0, -1, 0]);
+      if (vlen(spread) < 0.1) spread = vcross(armDir, [0, 0, 1]);
       spread = vnorm(spread);
-      let palmN = vcross(spread, handDir);
-      palmN = vnorm(palmN);
+      // palmN = dorsal direction (back of hand, upward for palm-down T-pose)
+      // cross(armDir, spread) gives consistent upward/dorsal for both hands
+      let palmN = vnorm(vcross(armDir, spread));
 
-      // Scan mesh to find hand dimensions and determine thumb side
-      let maxFingerLen = handLen * 0.7;
-      let handWidth = handLen * 0.45;
-      let thumbSpreadSign = 1; // +spread = toward thumb (default)
+      // --- Step 1: Scan along arm axis from wrist to find hand metrics ---
+      // Strategy: measure total hand extent from mesh, then find widest cross-section
+      // in the [30%-65%] range. That's the MCP (knuckle) ridge.
+      let knuckleAlong = armLen * 0.55; // fallback
+      let maxWidth = 0, fingerTipAlong = armLen * 0.9;
+      let handWidth = armLen * 0.15;
 
-      if (meshRestPos) {
-        const nM = meshRestPos.length / 3;
-        let maxAlong = handLen;
-        let minLat = Infinity, maxLat = -Infinity;
-        let latSum = 0, latCount = 0;
-        // Palm-base zone: detect thumb side from thenar eminence mass
-        // (fingertip zone fails because thumb doesn't reach that far)
-        let basePosMass = 0, baseNegMass = 0;
-
+      if (nM > 0) {
+        // First pass: measure total hand length from wrist (farthest mesh vert along armDir)
+        let maxAlong = 0;
         for (let i = 0; i < nM; i++) {
           const dx = meshRestPos[i*3]-wrist[0], dy = meshRestPos[i*3+1]-wrist[1], dz = meshRestPos[i*3+2]-wrist[2];
-          const along = dx*handDir[0]+dy*handDir[1]+dz*handDir[2];
-          if (along < -handLen * 0.1 || along > handLen * 5) continue;
-          const depth = Math.abs(dx*palmN[0]+dy*palmN[1]+dz*palmN[2]);
-          if (depth > handLen * 0.5) continue;
-          const lat = dx*spread[0]+dy*spread[1]+dz*spread[2];
+          const al = dx*armDir[0]+dy*armDir[1]+dz*armDir[2];
+          if (al < 0) continue; // behind wrist
+          const perpSq = dx*dx+dy*dy+dz*dz - al*al;
+          if (perpSq > armLen*armLen*0.25) continue; // too far from arm axis
+          if (al > maxAlong) maxAlong = al;
+        }
+        const totalHandLen = maxAlong;
+        fingerTipAlong = totalHandLen;
 
-          if (along > maxAlong) maxAlong = along;
-          // Knuckle zone for hand width
-          if (along > handLen * 0.7 && along < handLen * 1.4) {
+        // Second pass: scan cross-sections, find widest in [30%, 65%] of hand → MCP ridge
+        const nSteps = 40;
+        const bandHalf = totalHandLen * 0.025;
+        let bestWidth = 0, bestAlong = totalHandLen * 0.5;
+
+        for (let si = 0; si < nSteps; si++) {
+          const along = totalHandLen * si / (nSteps - 1);
+          const cx = wrist[0]+armDir[0]*along, cy = wrist[1]+armDir[1]*along, cz = wrist[2]+armDir[2]*along;
+
+          let minLat = Infinity, maxLat = -Infinity, count = 0;
+          for (let i = 0; i < nM; i++) {
+            const dx = meshRestPos[i*3]-cx, dy = meshRestPos[i*3+1]-cy, dz = meshRestPos[i*3+2]-cz;
+            const a = dx*armDir[0]+dy*armDir[1]+dz*armDir[2];
+            if (Math.abs(a) > bandHalf) continue;
+            const perpSq = dx*dx+dy*dy+dz*dz - a*a;
+            if (perpSq > totalHandLen*totalHandLen*0.16) continue;
+            const lat = dx*spread[0]+dy*spread[1]+dz*spread[2];
             if (lat < minLat) minLat = lat;
             if (lat > maxLat) maxLat = lat;
-            latSum += lat; latCount++;
+            count++;
           }
-          // Palm-base zone (wrist to 60% of handLen): the thumb metacarpal
-          // creates more mesh mass on its side (thenar eminence)
-          if (along >= 0 && along < handLen * 0.6) {
-            if (lat > 0) basePosMass += lat;
-            else baseNegMass += -lat;
+          if (count > 5) {
+            const w = maxLat - minLat;
+            if (w > maxWidth) maxWidth = w;
+            // Find widest in [40%, 60%] of hand length (MCP knuckle ridge)
+            const frac = along / totalHandLen;
+            if (frac >= 0.40 && frac <= 0.60 && w > bestWidth) {
+              bestWidth = w;
+              bestAlong = along;
+            }
           }
         }
-        if (maxLat > minLat) handWidth = maxLat - minLat;
-        if (maxAlong > handLen) maxFingerLen = maxAlong - handLen;
+        knuckleAlong = bestAlong;
+        handWidth = maxWidth;
 
-        // Thumb side has more lateral mass from thenar eminence
-        if (baseNegMass > basePosMass) thumbSpreadSign = -1;
-        console.log('[THUMB DETECT ' + s + '] basePosMass=' + basePosMass.toFixed(4) +
-          ' baseNegMass=' + baseNegMass.toFixed(4) + ' → thumbSign=' + thumbSpreadSign);
+        console.log('[KNUCKLE ' + s + '] totalHand=' + (totalHandLen*1000).toFixed(1) +
+          'mm, MCP at ' + (knuckleAlong*1000).toFixed(1) +
+          'mm (' + (knuckleAlong/totalHandLen*100).toFixed(0) + '%), tipAt=' +
+          (fingerTipAlong*1000).toFixed(1) + 'mm, handW=' + (maxWidth*1000).toFixed(1) + 'mm');
       }
 
-      const fsp = handWidth / 5;
-      const seg1 = Math.max(maxFingerLen * 0.45, handLen * 0.15);
-      const seg2 = Math.max(maxFingerLen * 0.32, handLen * 0.10);
+      // --- Step 2: Place knuckle and compute hand metrics ---
+      const knuckle = vadd(wrist, vscale(armDir, knuckleAlong));
+      P[pr+'mid_knuckle'] = knuckle; // override rough fallback
+      const handDir = armDir;
+      const handLen = knuckleAlong;
+      const fingerLen = Math.max(fingerTipAlong - knuckleAlong, handLen * 0.15);
+
+      // --- RAW MESH FINGERTIP DIAGNOSTIC (no seeds, no detection) ---
+      // Max-distance profile: for each Z bin, find max distance from wrist.
+      // Peaks in this profile = finger center Z positions.
+      if (nM > 0) {
+        // Z range of the hand (excluding thumb): find min/max Z of hand verts
+        let handZMin = Infinity, handZMax = -Infinity;
+        for (let i = 0; i < nM; i++) {
+          const vx = meshRestPos[i*3], vy = meshRestPos[i*3+1], vz = meshRestPos[i*3+2];
+          const dx = vx-wrist[0], dy = vy-wrist[1], dz = vz-wrist[2];
+          const al = dx*armDir[0]+dy*armDir[1]+dz*armDir[2];
+          if (al < knuckleAlong * 0.3) continue;
+          const perpSq = dx*dx+dy*dy+dz*dz - al*al;
+          if (perpSq > armLen*armLen*0.2) continue;
+          if (vz < handZMin) handZMin = vz;
+          if (vz > handZMax) handZMax = vz;
+        }
+        // Create Z bins (2mm each) and find max armDir distance in each
+        const binW = 0.002; // 2mm bins
+        const nBins = Math.ceil((handZMax - handZMin) / binW) + 1;
+        const binMaxDist = new Float32Array(nBins); // max distance per bin
+        const binCount = new Int32Array(nBins);
+        for (let i = 0; i < nM; i++) {
+          const vx = meshRestPos[i*3], vy = meshRestPos[i*3+1], vz = meshRestPos[i*3+2];
+          const dx = vx-wrist[0], dy = vy-wrist[1], dz = vz-wrist[2];
+          const al = dx*armDir[0]+dy*armDir[1]+dz*armDir[2];
+          if (al < knuckleAlong * 0.3) continue;
+          const perpSq = dx*dx+dy*dy+dz*dz - al*al;
+          if (perpSq > armLen*armLen*0.2) continue;
+          const bi = Math.min(nBins-1, Math.floor((vz - handZMin) / binW));
+          if (al > binMaxDist[bi]) binMaxDist[bi] = al;
+          binCount[bi]++;
+        }
+        // Log the profile (only bins with count > 0, every other bin to keep output manageable)
+        let profile = '';
+        for (let bi = 0; bi < nBins; bi++) {
+          if (binCount[bi] < 2) continue;
+          const z = handZMin + (bi + 0.5) * binW;
+          profile += (z*1000).toFixed(0) + ':' + (binMaxDist[bi]*1000).toFixed(0) + ' ';
+        }
+        console.log('[RAW ZPROFILE ' + s + '] Z(mm):maxDist(mm) = ' + profile.trim());
+
+        // Find peaks: bins where maxDist is a local max (higher than neighbors by >2mm)
+        const peaks = [];
+        for (let bi = 2; bi < nBins - 2; bi++) {
+          if (binCount[bi] < 2) continue;
+          const d = binMaxDist[bi];
+          // Check it's higher than neighbors within ±4 bins
+          let isPeak = true;
+          for (let k = -2; k <= 2; k++) {
+            if (k === 0) continue;
+            const ni = bi + k;
+            if (ni >= 0 && ni < nBins && binMaxDist[ni] > d) { isPeak = false; break; }
+          }
+          if (isPeak && d > knuckleAlong) {
+            const z = handZMin + (bi + 0.5) * binW;
+            peaks.push({ z: z, dist: d, bin: bi });
+          }
+        }
+        // Merge peaks within 5mm
+        const merged = [];
+        for (const p of peaks) {
+          if (merged.length > 0 && Math.abs(p.z - merged[merged.length-1].z) < 0.005) {
+            if (p.dist > merged[merged.length-1].dist) merged[merged.length-1] = p;
+          } else {
+            merged.push(p);
+          }
+        }
+        console.log('[RAW PEAKS ' + s + '] ' + merged.length + ' finger peaks: ' +
+          merged.map(p => 'Z=' + (p.z*1000).toFixed(1) + 'mm dist=' + (p.dist*1000).toFixed(1) + 'mm').join(', '));
+      }
+
+      // --- Step 3: Detect thumb side ---
+      // Thumb is ALWAYS on the anterior side (+Z). Spread direction is deterministic:
+      // left hand: spread ≈ +Z, right hand: spread ≈ -Z.
+      // So: if spread points +Z, thumb is toward +spread (ts=+1).
+      //     if spread points -Z, thumb is toward -spread (ts=-1).
+      const thumbSpreadSign = spread[2] > 0 ? 1 : -1;
+      console.log('[THUMB DETECT ' + s + '] thumbSign=' + thumbSpreadSign +
+        ' (from spread Z=' + spread[2].toFixed(3) + ') spread=[' +
+        spread.map(v=>v.toFixed(3)).join(',') + ']');
+
+      // --- Step 4: Detect finger positions from Z-profile peaks, then trace each ---
       const ts = thumbSpreadSign;
+      const fingerR = handWidth / 10;
+      const fsp = handWidth / 5;
 
-      // Index (toward thumb from mid_knuckle)
-      const i1 = vadd(knuckle, vscale(spread, ts * 1.5 * fsp));
-      P[pr+'index1'] = i1;
-      P[pr+'index2'] = vadd(i1, vscale(handDir, seg1));
-      P[pr+'index3'] = vadd(i1, vscale(handDir, seg1 + seg2));
+      const handSign = Math.sign(armDir[0]); // -1 left hand (-X), +1 right hand (+X)
+      const knuckleX = knuckle[0];
+      const knuckleY = knuckle[1];
+      const knuckleZ = knuckle[2];
 
-      // Middle (extends from mid_knuckle)
-      P[pr+'middle2'] = vadd(knuckle, vscale(handDir, seg1));
-      P[pr+'middle3'] = vadd(knuckle, vscale(handDir, seg1 + seg2));
+      const fingerNames = ['index', 'middle', 'ring', 'pinky'];
+      const fingerLens = [];
 
-      // Ring (toward pinky)
-      const r1 = vadd(knuckle, vscale(spread, ts * -1.0 * fsp));
-      P[pr+'ring1'] = r1;
-      P[pr+'ring2'] = vadd(r1, vscale(handDir, seg1 * 0.95));
-      P[pr+'ring3'] = vadd(r1, vscale(handDir, seg1 * 0.95 + seg2 * 0.9));
+      // --- Z-profile peak detection: find finger centers from max-distance profile ---
+      // For each Z bin, find how far the mesh reaches from wrist (max armDir dist).
+      // Peaks = finger centers. Valleys between peaks = inter-finger boundaries.
+      const profileBinW = 0.002; // 2mm bins
+      let profileZMin = Infinity, profileZMax = -Infinity;
+      // First pass: find Z range of hand verts past knuckle
+      for (let i = 0; i < nM; i++) {
+        const vx = meshRestPos[i*3], vy = meshRestPos[i*3+1], vz = meshRestPos[i*3+2];
+        const dx = vx-wrist[0], dy = vy-wrist[1], dz = vz-wrist[2];
+        const al = dx*armDir[0]+dy*armDir[1]+dz*armDir[2];
+        if (al < knuckleAlong * 0.3) continue;
+        const perpSq = dx*dx+dy*dy+dz*dz - al*al;
+        if (perpSq > armLen*armLen*0.2) continue;
+        if (vz < profileZMin) profileZMin = vz;
+        if (vz > profileZMax) profileZMax = vz;
+      }
+      const profileNBins = Math.ceil((profileZMax - profileZMin) / profileBinW) + 1;
+      const profileMaxDist = new Float32Array(profileNBins);
+      const profileBinCnt = new Int32Array(profileNBins);
+      for (let i = 0; i < nM; i++) {
+        const vx = meshRestPos[i*3], vy = meshRestPos[i*3+1], vz = meshRestPos[i*3+2];
+        const dx = vx-wrist[0], dy = vy-wrist[1], dz = vz-wrist[2];
+        const al = dx*armDir[0]+dy*armDir[1]+dz*armDir[2];
+        if (al < knuckleAlong * 0.3) continue;
+        const perpSq = dx*dx+dy*dy+dz*dz - al*al;
+        if (perpSq > armLen*armLen*0.2) continue;
+        const bi = Math.min(profileNBins-1, Math.floor((vz - profileZMin) / profileBinW));
+        if (al > profileMaxDist[bi]) profileMaxDist[bi] = al;
+        profileBinCnt[bi]++;
+      }
 
-      // Pinky (further from mid_knuckle, shorter)
-      const pk = vadd(knuckle, vscale(spread, ts * -2.3 * fsp));
-      P[pr+'pinky1'] = pk;
-      P[pr+'pinky2'] = vadd(pk, vscale(handDir, seg1 * 0.75));
-      P[pr+'pinky3'] = vadd(pk, vscale(handDir, seg1 * 0.75 + seg2 * 0.65));
+      // Smooth the profile (5-bin moving average) to reduce noise
+      const profileSmooth = new Float32Array(profileNBins);
+      for (let bi = 0; bi < profileNBins; bi++) {
+        let sum = 0, cnt = 0;
+        for (let k = -2; k <= 2; k++) {
+          const ni = bi + k;
+          if (ni >= 0 && ni < profileNBins && profileBinCnt[ni] >= 2) {
+            sum += profileMaxDist[ni]; cnt++;
+          }
+        }
+        profileSmooth[bi] = cnt > 0 ? sum / cnt : 0;
+      }
 
-      // Thumb (offset backward toward wrist + toward thumb side + toward palm)
+      // Find peaks from RAW (unsmoothed) profile — smoothing kills the weak pinky peak.
+      // A peak = bin whose raw maxDist > both neighbors within ±3 bins.
+      const rawPeaks = [];
+      for (let bi = 3; bi < profileNBins - 3; bi++) {
+        if (profileBinCnt[bi] < 2) continue;
+        const d = profileMaxDist[bi];
+        if (d <= knuckleAlong) continue;
+        let isPeak = true;
+        for (let k = -3; k <= 3; k++) {
+          if (k === 0) continue;
+          const ni = bi + k;
+          if (ni >= 0 && ni < profileNBins && profileMaxDist[ni] > d) { isPeak = false; break; }
+        }
+        if (isPeak) {
+          rawPeaks.push({ z: profileZMin + (bi + 0.5) * profileBinW, dist: d, bin: bi });
+        }
+      }
+      // Merge peaks within 10mm
+      const fingerPeaks = [];
+      for (const p of rawPeaks) {
+        if (fingerPeaks.length > 0 && Math.abs(p.z - fingerPeaks[fingerPeaks.length-1].z) < 0.010) {
+          if (p.dist > fingerPeaks[fingerPeaks.length-1].dist) fingerPeaks[fingerPeaks.length-1] = p;
+        } else {
+          fingerPeaks.push(p);
+        }
+      }
+
+      // Separate thumb from fingers by pure T-pose ordering.
+      // In T-pose, digits are always spatially ordered: thumb at one end,
+      // pinky at the other. The thumb direction in world Z is ts * spread[2],
+      // which accounts for the spread vector flipping between L/R hands.
+      fingerPeaks.sort((a, b) => b.z - a.z); // most positive Z first
+      // ts * spread[2] gives the actual world-Z direction toward thumb.
+      // Positive → thumb at most positive Z (index 0).
+      // Negative → thumb at most negative Z (last index).
+      const thumbWorldZDir = ts * spread[2];
+      const thumbIdx = thumbWorldZDir > 0 ? 0 : fingerPeaks.length - 1;
+      const nonThumbPeaks = fingerPeaks.filter((_, i) => i !== thumbIdx);
+      // Sort remaining by Z: index (most positive) to pinky (most negative)
+      nonThumbPeaks.sort((a, b) => b.z - a.z);
+
+      // Take exactly 4 peaks for the 4 fingers
+      let seedWorldZ;
+      if (overrideSeeds && overrideSeeds[s]) {
+        // Use pre-computed seeds (e.g., first-pass seeds + splay offsets)
+        seedWorldZ = overrideSeeds[s];
+        console.log('[ZPROFILE SEEDS ' + s + '] USING OVERRIDE seeds=[' +
+          seedWorldZ.map(z => (z*1000).toFixed(1)).join(',') + ']mm');
+      } else if (nonThumbPeaks.length >= 4) {
+        seedWorldZ = nonThumbPeaks.slice(0, 4).map(p => p.z);
+      } else if (nonThumbPeaks.length === 3) {
+        // Missing one peak (likely pinky merged with ring). Extrapolate.
+        const gap01 = nonThumbPeaks[0].z - nonThumbPeaks[1].z;
+        const gap12 = nonThumbPeaks[1].z - nonThumbPeaks[2].z;
+        const avgGap = (gap01 + gap12) / 2;
+        seedWorldZ = [nonThumbPeaks[0].z, nonThumbPeaks[1].z, nonThumbPeaks[2].z,
+                       nonThumbPeaks[2].z - avgGap];
+      } else {
+        // Fallback: even spacing
+        const mid = (profileZMin + profileZMax) / 2;
+        const sp = handWidth / 5;
+        seedWorldZ = [mid + 1.5*sp, mid + 0.5*sp, mid - 0.5*sp, mid - 1.5*sp];
+      }
+
+      console.log('[ZPROFILE SEEDS ' + s + '] allPeaks=' + fingerPeaks.length +
+        ':[' + fingerPeaks.map(p=>(p.z*1000).toFixed(1)+'@'+(p.dist*1000).toFixed(0)).join(',') +
+        '] nonThumb=' + nonThumbPeaks.length +
+        ' fingerZ=[' + seedWorldZ.map(z=>(z*1000).toFixed(1)).join(',') + ']mm');
+
+      console.log('[FINGER SEEDS ' + s + '] tipZ=[' + seedWorldZ.map(z=>(z*1000).toFixed(1)).join(',') + ']mm');
+
+      // --- Valley boundaries: find minima between adjacent finger peaks ---
+      const valleyZ = []; // 3 boundaries: index-middle, middle-ring, ring-pinky
+      for (let vi = 0; vi < 3; vi++) {
+        const z0 = seedWorldZ[vi], z1 = seedWorldZ[vi+1];
+        const bi0 = Math.floor((Math.min(z0,z1) - profileZMin) / profileBinW);
+        const bi1 = Math.ceil((Math.max(z0,z1) - profileZMin) / profileBinW);
+        let minDist = Infinity, minZ = (z0+z1)/2;
+        for (let bi = bi0; bi <= bi1 && bi < profileNBins; bi++) {
+          if (bi < 0) continue;
+          if (profileSmooth[bi] < minDist) {
+            minDist = profileSmooth[bi];
+            minZ = profileZMin + (bi + 0.5) * profileBinW;
+          }
+        }
+        valleyZ.push(minZ);
+      }
+
+      // Compute traceR from finger spacing (or use override from first pass)
+      let traceR;
+      if (overrideTraceR && overrideTraceR[s] !== undefined) {
+        traceR = overrideTraceR[s];
+      } else {
+        let minGapBetween = Infinity;
+        for (let i = 1; i < seedWorldZ.length; i++) {
+          const g = Math.abs(seedWorldZ[i] - seedWorldZ[i-1]);
+          if (g < minGapBetween) minGapBetween = g;
+        }
+        traceR = Math.max(minGapBetween * 0.3, 0.004);
+      }
+
+      // Override valleys if provided (first-pass valleys + splay offsets)
+      if (overrideValleys && overrideValleys[s]) {
+        valleyZ.length = 0;
+        overrideValleys[s].forEach(v => valleyZ.push(v));
+      }
+
+      // Save valley data for splayFingers() — 3 inter-finger valleys + 4 seed centers
+      P['_' + s + '_valleyZ'] = valleyZ.slice();
+      P['_' + s + '_seedWorldZ'] = seedWorldZ.slice();
+      P['_' + s + '_traceR'] = traceR;
+
+      console.log('[FINGERS ' + s + '] seedZ=[' + seedWorldZ.map(z=>(z*1000).toFixed(1)).join(',') +
+        ']mm valleyZ=[' + valleyZ.map(z=>(z*1000).toFixed(1)).join(',') +
+        ']mm traceR=' + (traceR*1000).toFixed(1) + 'mm');
+
+      // --- Knuckle Z: trace gaps between fingers from tip toward knuckle ---
+      // For each inter-finger pair, scan X slabs from tip toward hand.
+      // At each level, find the gap in Z between the two finger clusters.
+      // Track the gap Z as it moves. When the gap closes (fingers merge
+      // into palm), record the last-known gap Z = boundary at the crotch.
+      // Then each finger center = midpoint between its two crotch boundaries.
+
+      // Pre-collect all hand verts (filtered by Y and thumb exclusion)
+      const handVerts = []; // [{x, y, z}]
+      for (let i = 0; i < nM; i++) {
+        const vx = meshRestPos[i*3], vy = meshRestPos[i*3+1], vz = meshRestPos[i*3+2];
+        if (Math.abs(vy - knuckleY) > 0.025) continue;
+        const lat = (vx-wrist[0])*spread[0]+(vy-wrist[1])*spread[1]+(vz-wrist[2])*spread[2];
+        if (ts * lat > handWidth * 0.30) continue;
+        if (ts * lat < -handWidth * 0.55) continue;
+        handVerts.push({x: vx, y: vy, z: vz});
+      }
+
+      // Scan for each of the 3 inter-finger gaps
+      const crotchZ = []; // 3 boundary Z values at the crotch level
+      const crotchX = []; // X position where each gap closed
+      for (let pi = 0; pi < 3; pi++) {
+        const zA = seedWorldZ[pi], zB = seedWorldZ[pi+1];
+        const zMid = (zA + zB) / 2;
+        const zRange = Math.abs(zB - zA);
+        const zLo = Math.min(zA, zB) - zRange * 0.2;
+        const zHi = Math.max(zA, zB) + zRange * 0.2;
+
+        let lastGapZ = zMid; // fallback: midpoint of seeds
+        let lastGapX = knuckleX + fingerLen * 0.80 * handSign;
+        let gapEverFound = false;
+        let closedRun = 0; // consecutive steps with no gap
+        const slabHalf = 0.008; // ±8mm X slab
+
+        // Scan from 80% of fingerLen toward 0% (knuckle)
+        for (let pct = 0.80; pct >= 0.02; pct -= 0.004 / fingerLen) {
+          const scanX = knuckleX + pct * fingerLen * handSign;
+
+          // Build Z histogram (1mm bins for finer resolution)
+          const binW = 0.001;
+          const nBins = Math.ceil((zHi - zLo) / binW) + 1;
+          const bins = new Int32Array(nBins);
+          let slabCount = 0;
+          for (const v of handVerts) {
+            if (Math.abs(v.x - scanX) > slabHalf) continue;
+            if (v.z < zLo || v.z > zHi) continue;
+            const bi = Math.floor((v.z - zLo) / binW);
+            if (bi >= 0 && bi < nBins) bins[bi]++;
+            slabCount++;
+          }
+          if (slabCount < 3) continue;
+
+          // Search between the two seed Z for empty bins
+          const sBi0 = Math.max(0, Math.floor((Math.min(zA,zB) - zLo) / binW));
+          const sBi1 = Math.min(nBins - 1, Math.ceil((Math.max(zA,zB) - zLo) / binW));
+
+          // Find longest empty run between the seeds
+          let bestRunStart = -1, bestRunLen = 0;
+          let curRunStart = -1, curRunLen = 0;
+          for (let bi = sBi0; bi <= sBi1; bi++) {
+            if (bins[bi] === 0) {
+              if (curRunStart < 0) curRunStart = bi;
+              curRunLen++;
+              if (curRunLen > bestRunLen) { bestRunLen = curRunLen; bestRunStart = curRunStart; }
+            } else {
+              curRunStart = -1; curRunLen = 0;
+            }
+          }
+
+          if (bestRunLen >= 2) {
+            // Clear gap: ≥2 consecutive empty 1mm bins (≥2mm physical gap)
+            lastGapZ = zLo + (bestRunStart + bestRunLen / 2) * binW;
+            lastGapX = scanX;
+            gapEverFound = true;
+            closedRun = 0;
+
+          } else {
+            closedRun++;
+            // Require 3 consecutive "no gap" steps to confirm closure
+            if (gapEverFound && closedRun >= 3) break;
+          }
+        }
+        crotchZ.push(lastGapZ);
+        crotchX.push(lastGapX);
+      }
+
+      // Get hand Z edges for outer finger boundaries
+      // When using override seeds (second pass with splay), scan at 50% where splay is active.
+      // Otherwise scan at 15% near knuckle level.
+      let knZMin = Infinity, knZMax = -Infinity;
+      const edgePct = (overrideSeeds && overrideSeeds[s]) ? 0.50 : 0.15;
+      const edgeX = knuckleX + fingerLen * edgePct * handSign;
+      for (const v of handVerts) {
+        if (Math.abs(v.x - edgeX) > 0.015) continue;
+        if (v.z < knZMin) knZMin = v.z;
+        if (v.z > knZMax) knZMax = v.z;
+      }
+
+      // Each finger's knuckle Z = center between its two crotch boundaries.
+      const knuckleFingerZ = [];
+      for (let fi = 0; fi < 4; fi++) {
+        let loEdge, hiEdge;
+        if (fi === 0) {
+          hiEdge = knZMax;         // hand outer edge (index side)
+          loEdge = crotchZ[0];     // index-middle crotch
+        } else if (fi === 3) {
+          hiEdge = crotchZ[2];     // ring-pinky crotch
+          loEdge = knZMin;         // hand outer edge (pinky side)
+        } else {
+          hiEdge = crotchZ[fi-1];  // gap on the index side
+          loEdge = crotchZ[fi];    // gap on the pinky side
+        }
+        knuckleFingerZ.push((loEdge + hiEdge) / 2);
+      }
+
+      // Save crotch data for splayFingers()
+      P['_' + s + '_crotchZ'] = crotchZ.slice();
+      P['_' + s + '_crotchX'] = crotchX.slice();
+      P['_' + s + '_knZMin'] = knZMin;
+      P['_' + s + '_knZMax'] = knZMax;
+
+      console.log('[KNUCKLE GAPS ' + s + '] crotchZ=[' +
+        crotchZ.map(z=>(z*1000).toFixed(1)).join(',') +
+        ']mm crotchDist=[' +
+        crotchX.map(cx => ((Math.abs(cx - knuckleX) / fingerLen) * 100).toFixed(0) + '%').join(',') +
+        '] edges=[' + (knZMax*1000).toFixed(1) + ',' + (knZMin*1000).toFixed(1) +
+        ']mm knuckleZ=[' + knuckleFingerZ.map(z=>(z*1000).toFixed(1)).join(',') +
+        ']mm seedZ=[' + seedWorldZ.map(z=>(z*1000).toFixed(1)).join(',') + ']mm');
+
+      // Equal-territory model: at the knuckle level, finger positions are
+      // more evenly distributed across the palm than at the tip (where they
+      // splay outward). Divide the hand width into 4 equal territories.
+      const handSpan = knZMax - knZMin;
+      const equalTerritoryZ = [];
+      for (let fi = 0; fi < 4; fi++) {
+        // fi=0 = index (near knZMax), fi=3 = pinky (near knZMin)
+        equalTerritoryZ.push(knZMax - (fi + 0.5) * handSpan / 4);
+      }
+
+      // Blend weight per finger: how much to trust equalTerritoryZ vs march.
+      // Based on average crotch depth of the finger's two boundaries.
+      // Deep crotch = short isolated tube = less reliable march Z data
+      // = more reliance on the equal-territory model.
+      const crotchBlendWeight = [];
+      for (let fi = 0; fi < 4; fi++) {
+        let depthA, depthB; // crotch depth as fraction of fingerLen (0=knuckle, 1=tip)
+        if (fi === 0) {
+          depthA = 0; // hand edge is always defined at knuckle level
+          depthB = Math.abs(crotchX[0] - knuckleX) / fingerLen;
+        } else if (fi === 3) {
+          depthA = Math.abs(crotchX[2] - knuckleX) / fingerLen;
+          depthB = 0;
+        } else {
+          depthA = Math.abs(crotchX[fi-1] - knuckleX) / fingerLen;
+          depthB = Math.abs(crotchX[fi] - knuckleX) / fingerLen;
+        }
+        crotchBlendWeight.push(Math.min(1.0, (depthA + depthB) / 2));
+      }
+
+      console.log('[KNUCKLE BLEND ' + s + '] equalZ=[' +
+        equalTerritoryZ.map(z=>(z*1000).toFixed(1)).join(',') +
+        ']mm blendW=[' + crotchBlendWeight.map(w=>w.toFixed(2)).join(',') + ']');
+
+      // Anatomy-based expected finger lengths (ratio of middle finger)
+      const fingerRatios = [0.85, 1.0, 0.92, 0.72]; // index, middle, ring, pinky
+
+      // Save original peak-detected seeds before correction (used for palm-region Z lock)
+      const originalSeedZ = seedWorldZ.slice();
+
+      // === Correct seed Z: iterative mean-shift to find true finger center ===
+      // Z-profile peaks land at the finger's OUTER EDGE, not center. Use a narrow
+      // fixed-width window (±fingerHalfWidth) and scan at 55-85% of each finger's
+      // length where fingers are isolated tubes. Two-pass refinement shifts the
+      // window toward the actual center even if the seed starts at the edge.
+      // No dependency on crotch Z boundaries → symmetric between hands.
+      for (let fi = 0; fi < 4; fi++) {
+        const fExpLen = fingerLen * fingerRatios[fi];
+        const halfW = traceR * 1.5; // ~7mm half-width ≈ finger diameter
+        let curZ = seedWorldZ[fi];
+
+        // Clamp Z window by crotch boundaries to prevent neighbor contamination.
+        // Without this, the iterative mean-shift drifts toward neighbors
+        // (especially pinky → ring where the scan is below the crotch level).
+        // For outer fingers (index/pinky) with override seeds: don't clamp by hand edge
+        // because splay may have shifted the tube past the measured edge.
+        const hasOverride = overrideSeeds && overrideSeeds[s];
+        const zClampLo = fi === 3 ? (hasOverride ? curZ - halfW * 2 : knZMin) : crotchZ[fi];
+        const zClampHi = fi === 0 ? (hasOverride ? curZ + halfW * 2 : knZMax) : crotchZ[fi - 1];
+
+        for (let pass = 0; pass < 2; pass++) {
+          let sumCenter = 0, nLevels = 0;
+          for (let pct = 0.55; pct <= 0.85; pct += 0.015) {
+            const scanX = knuckleX + pct * fExpLen * handSign;
+            const wLo = Math.max(curZ - halfW, zClampLo);
+            const wHi = Math.min(curZ + halfW, zClampHi);
+            let fZMin = Infinity, fZMax = -Infinity, nv = 0;
+            for (const v of handVerts) {
+              if (Math.abs(v.x - scanX) > 0.010) continue;
+              if (v.z < wLo || v.z > wHi) continue;
+              if (v.z < fZMin) fZMin = v.z;
+              if (v.z > fZMax) fZMax = v.z;
+              nv++;
+            }
+            if (nv >= 3) {
+              sumCenter += (fZMin + fZMax) / 2;
+              nLevels++;
+            }
+          }
+          if (nLevels >= 2) curZ = sumCenter / nLevels;
+        }
+
+        if (Math.abs(curZ - seedWorldZ[fi]) > 0.0005) {
+          console.log('[SEED CORRECT ' + s + ' ' + fingerNames[fi] + '] old=' +
+            (seedWorldZ[fi]*1000).toFixed(1) + ' new=' + (curZ*1000).toFixed(1) +
+            ' delta=' + ((curZ - seedWorldZ[fi])*1000).toFixed(1) + 'mm');
+          seedWorldZ[fi] = curZ;
+        }
+      }
+
+      // Re-save corrected seeds (correction step above may have shifted them)
+      P['_' + s + '_seedWorldZ'] = seedWorldZ.slice();
+
+      // === Build per-finger vert sets (isolated finger tubes) ===
+      // Past each crotch X, the fingers are physically separated tubes.
+      // Assign mesh verts to individual fingers using crotch boundaries.
+      // This prevents any cross-finger contamination in tip detection.
+      const fingerVerts = [[], [], [], []]; // index [fi] = [{x,y,z,idx}]
+      for (let fi = 0; fi < 4; fi++) {
+        // Z boundaries: seed midpoint with adjacent fingers (or hand edges)
+        const zLo = fi < 3 ? (seedWorldZ[fi] + seedWorldZ[fi + 1]) / 2 : knZMin;
+        const zHi = fi > 0 ? (seedWorldZ[fi] + seedWorldZ[fi - 1]) / 2 : knZMax;
+        // X boundary: past the deepest crotch of the two adjacent boundaries
+        let minCrotchDist = 0;
+        if (fi > 0) minCrotchDist = Math.max(minCrotchDist,
+          Math.abs(crotchX[fi - 1] - knuckleX));
+        if (fi < 3) minCrotchDist = Math.max(minCrotchDist,
+          Math.abs(crotchX[fi] - knuckleX));
+        for (let i = 0; i < nM; i++) {
+          const vx = meshRestPos[i * 3], vy = meshRestPos[i * 3 + 1],
+                vz = meshRestPos[i * 3 + 2];
+          if (vz < zLo || vz > zHi) continue;
+          if (Math.abs(vy - knuckleY) > 0.025) continue;
+          const dx = (vx - knuckleX) * handSign;
+          if (dx < minCrotchDist) continue; // must be past crotch
+          fingerVerts[fi].push({x: vx, y: vy, z: vz, idx: i});
+        }
+      }
+      console.log('[FINGER VERTS ' + s + '] ' +
+        fingerNames.map((n, fi) => n + '=' + fingerVerts[fi].length).join(' '));
+
+      // Cross-section helper (from cage-core)
+      const sliceMeshAtX = CageCore.sliceMeshAtX;
+
+      // Pre-filter triangles in hand region for sliceMeshAtX
+      const handTris = [];
+      if (meshGeo && meshGeo.index) {
+        const triIdx = meshGeo.index.array;
+        const nTri = triIdx.length / 3;
+        const handSpanZ = knZMax - knZMin;
+        const handZLo = knZMin - handSpanZ * 0.15;
+        const handZHi = knZMax + handSpanZ * 0.15;
+        for (let t = 0; t < nTri; t++) {
+          const ai = triIdx[t*3], bi = triIdx[t*3+1], ci = triIdx[t*3+2];
+          const a3 = ai*3, b3 = bi*3, c3 = ci*3;
+          const ax = meshRestPos[a3], bx = meshRestPos[b3], cx = meshRestPos[c3];
+          const ay = meshRestPos[a3+1], by = meshRestPos[b3+1], cy = meshRestPos[c3+1];
+          const az = meshRestPos[a3+2], bz = meshRestPos[b3+2], cz = meshRestPos[c3+2];
+          // At least one vert past knuckleX in finger direction
+          const dxa = (ax - knuckleX) * handSign;
+          const dxb = (bx - knuckleX) * handSign;
+          const dxc = (cx - knuckleX) * handSign;
+          if (dxa < -0.005 && dxb < -0.005 && dxc < -0.005) continue;
+          // At least one vert within Y range of hand
+          if (Math.abs(ay - knuckleY) > 0.040 &&
+              Math.abs(by - knuckleY) > 0.040 &&
+              Math.abs(cy - knuckleY) > 0.040) continue;
+          // At least one vert within Z range of hand
+          const zMin3 = Math.min(az, bz, cz), zMax3 = Math.max(az, bz, cz);
+          if (zMax3 < handZLo || zMin3 > handZHi) continue;
+          handTris.push({a3, b3, c3});
+        }
+      }
+      console.log('[HAND TRIS ' + s + '] ' + handTris.length + ' triangles in hand region');
+
+      // === Detect finger separation via cross-section gap scan ===
+      // For each inter-finger boundary, scan X outward from knuckleX in 2mm
+      // steps. At each X, take an exact cross-section and count intersection
+      // points within ±3mm Z of the boundary (using crotchZ for accurate
+      // boundary positions). Separation X = first X where count drops to 0.
+      // Falls back to crotchX if cross-section scan doesn't find the gap.
+      const gapSepDist = [0, 0, 0]; // 3 inter-finger boundaries
+      for (let bi = 0; bi < 3; bi++) {
+        const boundaryZ = crotchZ[bi]; // use crotchZ for accurate boundary
+        const scanStep = 0.002; // 2mm
+        const maxScan = fingerLen * 0.6;
+        let found = false;
+        for (let d = 0; d <= maxScan; d += scanStep) {
+          const xPos = knuckleX + d * handSign;
+          const pts = sliceMeshAtX(xPos, handTris, meshRestPos);
+          let nearCount = 0;
+          for (let pi = 0; pi < pts.length; pi++) {
+            if (Math.abs(pts[pi].z - boundaryZ) <= 0.003 &&
+                Math.abs(pts[pi].y - knuckleY) <= 0.035) nearCount++;
+          }
+          if (nearCount === 0 && d > scanStep * 2) {
+            gapSepDist[bi] = d;
+            found = true;
+            break;
+          }
+        }
+        // Fallback: use already-computed crotchX distance
+        if (!found) {
+          gapSepDist[bi] = Math.abs(crotchX[bi] - knuckleX);
+        }
+      }
+      console.log('[GAP SCAN ' + s + '] idx-mid=' + (gapSepDist[0]*1000).toFixed(1) +
+        'mm mid-ring=' + (gapSepDist[1]*1000).toFixed(1) +
+        'mm ring-pinky=' + (gapSepDist[2]*1000).toFixed(1) + 'mm');
+
+      // Per-finger start distance from knuckleX.
+      // Cap at 25% of each finger's expected length — gap detection for
+      // closely spaced fingers (ring-pinky) returns unreasonably deep values
+      // because the Z gap never fully opens, not because of actual webbing.
+      const fingerStartDist = [];
+      for (let fi = 0; fi < 4; fi++) {
+        const maxStart = fingerLen * fingerRatios[fi] * 0.25;
+        let raw;
+        if (fi === 0) raw = gapSepDist[0];
+        else if (fi === 1) raw = Math.max(gapSepDist[0], gapSepDist[1]);
+        else if (fi === 2) raw = Math.max(gapSepDist[1], gapSepDist[2]);
+        else raw = gapSepDist[2];
+        fingerStartDist.push(Math.min(raw, maxStart));
+      }
+      console.log('[FINGER START ' + s + '] ' +
+        fingerNames.map((n, fi) => n + '=' + (fingerStartDist[fi]*1000).toFixed(1) + 'mm').join(' '));
+
+      // --- Measure dorsal Y profile across Z to find finger widths ---
+      // These valleys are the PRIMARY inter-finger Z boundaries used for centering.
+      let dorsalFingerZLo = [], dorsalFingerZHi = [], dorsalFingerCenterZ = [];
+      let dorsalValleysOK = false;
+      {
+        const expectedMidLen = fingerLen * fingerRatios[1];
+        const measX = knuckleX + expectedMidLen * 0.5 * handSign;
+        // Bin dorsal verts by Z (2mm bins), record max Y per bin
+        const binSize = 0.002; // 2mm
+        const zRange = 0.10; // ±100mm from hand center should cover all fingers
+        const handCenterZ = (knZMin + knZMax) / 2;
+        const bins = {};
+        for (let i = 0; i < nM; i++) {
+          const vx = meshRestPos[i * 3];
+          if (Math.abs(vx - measX) > 0.008) continue;
+          const vy = meshRestPos[i * 3 + 1];
+          if (Math.abs(vy - knuckleY) > 0.04) continue;
+          const vz = meshRestPos[i * 3 + 2];
+          if (Math.abs(vz - handCenterZ) > zRange) continue;
+          const bi = Math.round(vz / binSize);
+          if (!bins[bi] || vy > bins[bi].maxY) {
+            bins[bi] = { maxY: vy, z: bi * binSize };
+          }
+        }
+        // Convert to sorted array
+        const profile = Object.values(bins).sort((a, b) => a.z - b.z);
+        // Smooth with 5-point moving average to eliminate vertex noise
+        const smooth = [];
+        for (let k = 0; k < profile.length; k++) {
+          let sy = 0, sn = 0;
+          for (let j = Math.max(0, k-2); j <= Math.min(profile.length-1, k+2); j++) {
+            sy += profile[j].maxY; sn++;
+          }
+          smooth.push({ z: profile[k].z, y: sy / sn });
+        }
+        // Log smoothed Y profile
+        const profileStr = smooth.map(p =>
+          (p.z * 1000).toFixed(0) + ':' + (p.y * 1000).toFixed(1)).join(', ');
+        console.log('[DORSAL YPROFILE ' + s + '] X=' + (expectedMidLen*0.5*1000).toFixed(0) +
+          'mm Z(mm):smoothY(mm) = ' + profileStr);
+        // Find valleys (local Y minima in smoothed data)
+        const valleys = [];
+        for (let k = 1; k < smooth.length - 1; k++) {
+          if (smooth[k].y < smooth[k-1].y && smooth[k].y < smooth[k+1].y) {
+            valleys.push({ z: smooth[k].z, y: smooth[k].y });
+          }
+        }
+        console.log('[DORSAL VALLEYS ' + s + '] ' +
+          valleys.map(v => 'Z=' + (v.z*1000).toFixed(0) + ' Y=' + (v.y*1000).toFixed(1)).join(', '));
+        // Find the 3 inter-finger valleys: near expected boundaries from valleyZ
+        // valleyZ has 3 values from the zprofile detection
+        const interValleys = [];
+        for (let vi = 0; vi < valleyZ.length; vi++) {
+          const expectedZ = valleyZ[vi];
+          let best = null, bestDist = Infinity;
+          for (const v of valleys) {
+            const d = Math.abs(v.z - expectedZ);
+            if (d < bestDist && d < 0.015) { bestDist = d; best = v; }
+          }
+          if (best) interValleys.push(best);
+        }
+        interValleys.sort((a, b) => a.z - b.z);
+        if (interValleys.length === 3) {
+          const outerLo = smooth[0].z;  // hand edge (pinky side)
+          const outerHi = smooth[smooth.length - 1].z; // hand edge (index side)
+          const zoneEdges = [outerLo, ...interValleys.map(v => v.z), outerHi];
+          const fNames = ['pinky','ring','middle','index'];
+          const widths = [];
+          for (let f = 0; f < 4; f++) {
+            const lo = zoneEdges[f], hi = zoneEdges[f + 1];
+            const w = hi - lo;
+            const ctr = (lo + hi) / 2;
+            widths.push(fNames[f] + '=' + (w*1000).toFixed(1) + 'mm(ctr=' + (ctr*1000).toFixed(1) + ')');
+          }
+          console.log('[DORSAL FINGER WIDTH ' + s + '] ' + widths.join(' ') +
+            ' valleys=[' + interValleys.map(v => (v.z*1000).toFixed(1) + '@Y=' +
+            (v.y*1000).toFixed(1)).join(', ') + ']');
+          // Store finger Z boundaries from dorsal valleys for use in march
+          const vz = interValleys.map(v => v.z).sort((a, b) => a - b);
+          // vz sorted low→high: [pinky-ring, ring-middle, middle-index]
+          // Edge fingers (index, pinky) use knuckle-detected hand edges, not
+          // full dorsal profile extent, to avoid including non-finger hand surface.
+          dorsalFingerZLo = [vz[2], vz[1], vz[0], knZMin]; // idx, mid, ring, pink
+          dorsalFingerZHi = [knZMax, vz[2], vz[1], vz[0]];
+          dorsalFingerCenterZ = dorsalFingerZLo.map((lo, i) => (lo + dorsalFingerZHi[i]) / 2);
+          dorsalValleysOK = true;
+          console.log('[DORSAL CENTERS ' + s + '] ' +
+            fingerNames.map((n, i) => n + '=' + (dorsalFingerCenterZ[i]*1000).toFixed(1) + 'mm').join(' ') +
+            ' boundaries=[' + vz.map(v => (v*1000).toFixed(1)).join(', ') + ']');
+        } else {
+          console.log('[DORSAL FINGER WIDTH ' + s + '] only found ' +
+            interValleys.length + '/3 inter-finger valleys');
+        }
+      }
+
+      // --- Gap boundary extrapolation ---
+      // Phase 1: Scan outward, find inter-finger gaps on dorsal surface where
+      //   fingers are clearly separated. Track gap Z positions vs X distance.
+      // Phase 2: Fit lines to each boundary (Z = slope*d + intercept).
+      // Phase 3: Extrapolate boundaries to ALL X positions. Z center at any X
+      //   = midpoint of the two boundary lines for that finger. Y center comes
+      //   from cross-section points within the boundary-defined Z territory.
+
+      const scanStep = 0.002; // 2mm
+      const maxScanDist = fingerLen * 1.15;
+      const scanStartDist = 0.005; // 5mm past knuckle
+      const binW = 0.001; // 1mm Z bins
+
+      // Phase 1: Collect gap boundary data from separated cross-sections.
+      // 5 boundaries define 4 finger corridors:
+      //   bnd[0] = outer low-Z edge (pinky side)
+      //   bnd[1] = gap between lowest and 2nd-lowest Z finger
+      //   bnd[2] = gap between 2nd and 3rd Z finger
+      //   bnd[3] = gap between 3rd and highest Z finger
+      //   bnd[4] = outer high-Z edge (index side)
+      const bndPts = [[], [], [], [], []]; // [{d, z}]
+      let fiByZ = null; // finger order by Z (low→high), set on first 4-region slice
+
+      // Cache all cross-section data for Phase 3
+      const sliceCache = []; // [{d, xPos, rawPts}]
+
+      for (let d = scanStartDist; d <= maxScanDist; d += scanStep) {
+        const xPos = knuckleX + d * handSign;
+        const pts = sliceMeshAtX(xPos, handTris, meshRestPos);
+
+        // Collect hand-level points
+        const rawPts = [];
+        for (let pi = 0; pi < pts.length; pi++) {
+          if (Math.abs(pts[pi].y - knuckleY) <= 0.035) rawPts.push(pts[pi]);
+        }
+        if (rawPts.length < 4) continue;
+        sliceCache.push({d, xPos, rawPts});
+
+        // Filter to DORSAL points only (Y > median)
+        rawPts.sort((a, b) => a.y - b.y);
+        const medianY = rawPts[Math.floor(rawPts.length / 2)].y;
+        const dorsalPts = [];
+        for (let pi = 0; pi < rawPts.length; pi++) {
+          if (rawPts[pi].y >= medianY) dorsalPts.push(rawPts[pi]);
+        }
+        if (dorsalPts.length < 2) continue;
+
+        // Bin dorsal points by Z
+        let zMin = Infinity, zMax = -Infinity;
+        for (let pi = 0; pi < dorsalPts.length; pi++) {
+          if (dorsalPts[pi].z < zMin) zMin = dorsalPts[pi].z;
+          if (dorsalPts[pi].z > zMax) zMax = dorsalPts[pi].z;
+        }
+        const nBins = Math.ceil((zMax - zMin) / binW) + 1;
+        if (nBins < 2 || nBins > 500) continue;
+        const occupied = new Uint8Array(nBins);
+        for (let pi = 0; pi < dorsalPts.length; pi++) {
+          const bi = Math.min(nBins - 1, Math.floor((dorsalPts[pi].z - zMin) / binW));
+          occupied[bi] = 1;
+        }
+
+        // Find contiguous filled regions (sorted low→high Z by construction)
+        const regions = [];
+        let regStart = -1;
+        for (let bi = 0; bi <= nBins; bi++) {
+          if (bi < nBins && occupied[bi]) {
+            if (regStart < 0) regStart = bi;
+          } else {
+            if (regStart >= 0) {
+              regions.push({
+                zLo: zMin + regStart * binW,
+                zHi: zMin + bi * binW
+              });
+              regStart = -1;
+            }
+          }
+        }
+        if (regions.length < 4) continue;
+
+        // Match regions to fingers by nearest seed Z
+        const fingerRI = [-1, -1, -1, -1];
+        const fingerRD = [Infinity, Infinity, Infinity, Infinity];
+        for (let ri = 0; ri < regions.length; ri++) {
+          const rc = (regions[ri].zLo + regions[ri].zHi) / 2;
+          let bestFi = 0, bestD = Math.abs(rc - seedWorldZ[0]);
+          for (let fi = 1; fi < 4; fi++) {
+            const dd = Math.abs(rc - seedWorldZ[fi]);
+            if (dd < bestD) { bestD = dd; bestFi = fi; }
+          }
+          if (bestD < fingerRD[bestFi]) {
+            fingerRD[bestFi] = bestD;
+            fingerRI[bestFi] = ri;
+          }
+        }
+        if (fingerRI[0] < 0 || fingerRI[1] < 0 || fingerRI[2] < 0 || fingerRI[3] < 0) continue;
+
+        // Establish Z ordering of fingers (set once, keep consistent)
+        const curOrder = [0, 1, 2, 3].sort((a, b) =>
+          (regions[fingerRI[a]].zLo + regions[fingerRI[a]].zHi) -
+          (regions[fingerRI[b]].zLo + regions[fingerRI[b]].zHi));
+        if (!fiByZ) fiByZ = curOrder.slice();
+
+        // Record boundary data points
+        bndPts[0].push({d, z: regions[fingerRI[fiByZ[0]]].zLo}); // outer low
+        bndPts[4].push({d, z: regions[fingerRI[fiByZ[3]]].zHi}); // outer high
+        for (let gi = 0; gi < 3; gi++) {
+          const gapZ = (regions[fingerRI[fiByZ[gi]]].zHi +
+                        regions[fingerRI[fiByZ[gi + 1]]].zLo) / 2;
+          bndPts[gi + 1].push({d, z: gapZ});
+        }
+      }
+
+      // Line fitting (from cage-core)
+      const fitLineZD = CageCore.fitLineZD;
+      const bndLines = bndPts.map(fitLineZD);
+      const bndOK = fiByZ && bndLines.every(function(l) { return l !== null; });
+
+      // Map each finger to its lo/hi boundary indices
+      const fingerBndLo = [0, 0, 0, 0], fingerBndHi = [0, 0, 0, 0];
+      if (fiByZ) {
+        for (let k = 0; k < 4; k++) {
+          fingerBndLo[fiByZ[k]] = k;
+          fingerBndHi[fiByZ[k]] = k + 1;
+        }
+      }
+
+      // Evaluate boundary line at distance d
+      function evalBnd(bi, d) {
+        return bndLines[bi].slope * d + bndLines[bi].intercept;
+      }
+
+      // Log boundary extrapolation results
+      if (bndOK) {
+        const extrapLog = [];
+        for (let fi = 0; fi < 4; fi++) {
+          const lo0 = evalBnd(fingerBndLo[fi], 0);
+          const hi0 = evalBnd(fingerBndHi[fi], 0);
+          extrapLog.push(fingerNames[fi] + ':Z=' + ((lo0 + hi0) / 2 * 1000).toFixed(1) +
+            'mm(w=' + ((hi0 - lo0) * 1000).toFixed(1) + ')');
+        }
+        console.log('[EXTRAP ' + s + '] knuckle centers: ' + extrapLog.join(' ') +
+          ' pts=' + bndPts[1].length);
+      } else {
+        console.log('[EXTRAP ' + s + '] FAILED — only ' +
+          (bndPts[1] ? bndPts[1].length : 0) + ' separated slices');
+      }
+
+      // Phase 3: Build fingerScan using extrapolated boundaries for Z
+      const fingerScan = [[], [], [], []];
+
+      if (bndOK) {
+        for (let ci = 0; ci < sliceCache.length; ci++) {
+          const sc = sliceCache[ci];
+          for (let fi = 0; fi < 4; fi++) {
+            const zLo = evalBnd(fingerBndLo[fi], sc.d);
+            const zHi = evalBnd(fingerBndHi[fi], sc.d);
+            const zCenter = (zLo + zHi) / 2;
+            if (zHi <= zLo) continue; // boundaries crossed
+
+            // Collect all cross-section points within this Z territory
+            const margin = (zHi - zLo) * 0.15;
+            let fyMin = Infinity, fyMax = -Infinity;
+            let fzMin = Infinity, fzMax = -Infinity;
+            let fCount = 0;
+            for (let pi = 0; pi < sc.rawPts.length; pi++) {
+              const pz = sc.rawPts[pi].z;
+              if (pz >= zLo - margin && pz <= zHi + margin) {
+                if (sc.rawPts[pi].y < fyMin) fyMin = sc.rawPts[pi].y;
+                if (sc.rawPts[pi].y > fyMax) fyMax = sc.rawPts[pi].y;
+                if (pz < fzMin) fzMin = pz;
+                if (pz > fzMax) fzMax = pz;
+                fCount++;
+              }
+            }
+            if (fCount < 2) continue;
+            fingerScan[fi].push({
+              x: sc.xPos, d: sc.d,
+              yCenter: (fyMin + fyMax) / 2,
+              zCenter: zCenter, // from extrapolated boundaries
+              zWidth: zHi - zLo, // boundary corridor width
+              meshZWidth: fzMax - fzMin, // actual mesh extent (for tip detection)
+              yWidth: fyMax - fyMin,
+              count: fCount
+            });
+          }
+        }
+      }
+
+      for (let fi = 0; fi < 4; fi++) {
+        const name = fingerNames[fi];
+        const isMiddle = (name === 'middle');
+        const expectedLen = fingerLen * fingerRatios[fi];
+        const scanEntries = fingerScan[fi];
+
+        // Determine reference width from actual mesh extent at 40-60% of expected length
+        let refWidth = 0, refN = 0;
+        const refLo = expectedLen * 0.4;
+        const refHi = expectedLen * 0.6;
+        for (let si = 0; si < scanEntries.length; si++) {
+          if (scanEntries[si].d >= refLo && scanEntries[si].d <= refHi) {
+            refWidth += scanEntries[si].meshZWidth;
+            refN++;
+          }
+        }
+        refWidth = refN > 0 ? refWidth / refN : 0.012; // fallback 12mm
+
+        // Tip X: last step where actual mesh extent >= refWidth * 0.45 AND count >= 2
+        let tipIdx = scanEntries.length - 1;
+        for (let si = scanEntries.length - 1; si >= 0; si--) {
+          if (scanEntries[si].meshZWidth >= refWidth * 0.45 && scanEntries[si].count >= 2) {
+            tipIdx = si;
+            break;
+          }
+        }
+
+        console.log('[TUBE SCAN ' + s + ' ' + name + '] steps=' + scanEntries.length +
+          ' tip=' + (scanEntries.length > 0 ? (scanEntries[tipIdx].d*1000).toFixed(1) : '?') + 'mm' +
+          ' refWidth=' + (refWidth*1000).toFixed(1) + 'mm');
+
+        // === Place joints from scan data ===
+        let j0, j1, j2, j3;
+        let fLen = expectedLen;
+        let tipMethod;
+
+        if (scanEntries.length >= 4 && tipIdx >= 3) {
+          // Tip inset: pull tip joint inward by refWidth * 0.25
+          const tipInset = refWidth * 0.25;
+          const tipD = scanEntries[tipIdx].d - tipInset;
+
+          // Find scan entry closest to tipD
+          let tipEntry = scanEntries[tipIdx];
+          for (let si = tipIdx; si >= 0; si--) {
+            if (scanEntries[si].d <= tipD) { tipEntry = scanEntries[si]; break; }
+          }
+
+          // j0 = first scan entry
+          const startEntry = scanEntries[0];
+          const startD = startEntry.d, endD = tipEntry.d;
+          const d1 = startD + (endD - startD) * 0.38;
+          const d2 = startD + (endD - startD) * 0.61;
+
+          // Find closest scan entries to d1 and d2
+          let entry1 = startEntry, entry2 = tipEntry;
+          let best1 = Infinity, best2 = Infinity;
+          for (let si = 0; si < scanEntries.length; si++) {
+            const dd1 = Math.abs(scanEntries[si].d - d1);
+            const dd2 = Math.abs(scanEntries[si].d - d2);
+            if (dd1 < best1) { best1 = dd1; entry1 = scanEntries[si]; }
+            if (dd2 < best2) { best2 = dd2; entry2 = scanEntries[si]; }
+          }
+
+          j0 = [startEntry.x, startEntry.yCenter, startEntry.zCenter];
+          j1 = [entry1.x, entry1.yCenter, entry1.zCenter];
+          j2 = [entry2.x, entry2.yCenter, entry2.zCenter];
+          j3 = [tipEntry.x, tipEntry.yCenter, tipEntry.zCenter];
+
+          fLen = vlen(vsub(j3, j0));
+          tipMethod = 'start-end-line';
+
+          console.log('[FINGER LINE ' + s + ' ' + name + '] start=[' +
+            j0.map(v => (v * 1000).toFixed(1)).join(',') + '] end=[' +
+            j3.map(v => (v * 1000).toFixed(1)).join(',') + '] len=' +
+            (fLen * 1000).toFixed(1) + 'mm refW=' + (refWidth * 1000).toFixed(1) + 'mm');
+        } else {
+          // Fallback: straight line using seed Z and knuckle Y
+          const fbEndD = Math.min(maxScanDist, expectedLen * 0.95);
+          const fbStartX = knuckleX + scanStartDist * handSign;
+          const fbEndX = knuckleX + fbEndD * handSign;
+          j0 = [fbStartX, knuckleY, originalSeedZ[fi]];
+          j3 = [fbEndX, knuckleY, originalSeedZ[fi]];
+          j1 = vadd(j0, vscale(vsub(j3, j0), 0.38));
+          j2 = vadd(j0, vscale(vsub(j3, j0), 0.61));
+          fLen = vlen(vsub(j3, j0));
+          tipMethod = 'fallback(steps=' + scanEntries.length + ',tipIdx=' + tipIdx + ')';
+          console.log('[FINGER LINE ' + s + ' ' + name + '] FALLBACK steps=' +
+            scanEntries.length + ' tipIdx=' + tipIdx);
+        }
+
+        // === CENTER verification via independent exact cross-sections ===
+        // Uses boundary-extrapolated Z territories for point selection.
+        {
+          const joints = [j0, j1, j2, j3];
+          const jNames = ['j0', 'j1', 'j2', 'j3'];
+          const centerCheck = [];
+          for (let ji = 0; ji < 4; ji++) {
+            const jx = joints[ji][0], jy = joints[ji][1], jz = joints[ji][2];
+            // Compute distance d from knuckle for this joint
+            const jd = Math.abs(jx - knuckleX);
+            // Take independent cross-section at this joint's X
+            const pts = sliceMeshAtX(jx, handTris, meshRestPos);
+            const nearby = [];
+            for (let pi = 0; pi < pts.length; pi++) {
+              if (Math.abs(pts[pi].y - knuckleY) <= 0.035) nearby.push(pts[pi]);
+            }
+            if (nearby.length < 2) {
+              centerCheck.push(jNames[ji] + ':noPts(' + nearby.length + ')');
+              continue;
+            }
+            // Use boundary-defined Z territory for this finger at this d
+            const sel = [];
+            if (bndOK) {
+              const zLo = evalBnd(fingerBndLo[fi], jd);
+              const zHi = evalBnd(fingerBndHi[fi], jd);
+              const margin = (zHi - zLo) * 0.15;
+              for (let pi = 0; pi < nearby.length; pi++) {
+                if (nearby[pi].z >= zLo - margin && nearby[pi].z <= zHi + margin)
+                  sel.push(nearby[pi]);
+              }
+            } else {
+              // Fallback: nearest-seed assignment
+              for (let pi = 0; pi < nearby.length; pi++) {
+                const pz = nearby[pi].z;
+                let bestFi = fi, bestDist = Math.abs(pz - jz);
+                for (let other = 0; other < 4; other++) {
+                  if (other === fi) continue;
+                  const dd = Math.abs(pz - seedWorldZ[other]);
+                  if (dd < bestDist) { bestFi = other; bestDist = dd; }
+                }
+                if (bestFi === fi) sel.push(nearby[pi]);
+              }
+            }
+            if (sel.length < 2) {
+              centerCheck.push(jNames[ji] + ':noSel(' + sel.length + ')');
+              continue;
+            }
+            let czMin = Infinity, czMax = -Infinity;
+            let tyMin = Infinity, tyMax = -Infinity;
+            for (let pi = 0; pi < sel.length; pi++) {
+              if (sel[pi].z < czMin) czMin = sel[pi].z;
+              if (sel[pi].z > czMax) czMax = sel[pi].z;
+              if (sel[pi].y < tyMin) tyMin = sel[pi].y;
+              if (sel[pi].y > tyMax) tyMax = sel[pi].y;
+            }
+            const tubeCZ = (czMin + czMax) / 2;
+            const tubeCY = (tyMin + tyMax) / 2;
+            centerCheck.push(jNames[ji] + ':dY=' + ((jy - tubeCY) * 1000).toFixed(1) +
+              ',dZ=' + ((jz - tubeCZ) * 1000).toFixed(1));
+          }
+          console.log('[CENTER ' + s + ' ' + name + '] ' + centerCheck.join(' '));
+        }
+
+        fingerLens.push(fLen);
+
+        if (isMiddle) {
+          P[pr + 'mid_knuckle'] = j0;
+          P[pr + 'middle2'] = j1;
+          P[pr + 'middle3'] = j2;
+          P[pr + 'middle4'] = j3;
+        } else {
+          P[pr + name + '1'] = j0;
+          P[pr + name + '2'] = j1;
+          P[pr + name + '3'] = j2;
+          P[pr + name + '4'] = j3;
+        }
+
+        console.log('[FINGER ' + s + ' ' + name + '] j0=[' +
+          j0.map(v => (v * 1000).toFixed(1)).join(',') + '] j1=[' +
+          j1.map(v => (v * 1000).toFixed(1)).join(',') + '] j2=[' +
+          j2.map(v => (v * 1000).toFixed(1)).join(',') + '] j3=[' +
+          j3.map(v => (v * 1000).toFixed(1)).join(',') + '] len=' +
+          (fLen * 1000).toFixed(1) + 'mm ' + tipMethod);
+      }
+
+      // D) Thumb: find base and tip from mesh on the thumb side of the hand.
+      // Thumb is on the side where ts*spread points, extending palmward (-palmN).
+      // Thumb base (CMC joint): ~25% along hand from wrist, on thumb side, slightly palmar
       const tb = vadd(wrist, vadd(
-        vscale(handDir, handLen * 0.35),
-        vadd(vscale(spread, ts * 2.0 * fsp), vscale(palmN, -handLen * 0.25))
+        vscale(handDir, handLen * 0.25),
+        vadd(vscale(spread, ts * 1.5 * fsp), vscale(palmN, -handLen * 0.12))
       ));
+      // Thumb direction: outward + palmar + slightly distal
       const thumbDir = vnorm(vadd(
-        vscale(handDir, 0.4),
-        vadd(vscale(spread, ts * 0.5), vscale(palmN, -0.7))
+        vscale(handDir, 0.3),
+        vadd(vscale(spread, ts * 0.6), vscale(palmN, -0.5))
       ));
-      const tsl = handLen * 0.3;
+      // Find thumb tip: farthest mesh vert along thumbDir from thumb base,
+      // within a cylinder around the thumb axis
+      const thumbCylR = fingerR * 2.5;
+      let maxThumbAlong = 0;
+      for (let i = 0; i < nM; i++) {
+        const dx=meshRestPos[i*3]-tb[0], dy=meshRestPos[i*3+1]-tb[1], dz=meshRestPos[i*3+2]-tb[2];
+        const al = dx*thumbDir[0]+dy*thumbDir[1]+dz*thumbDir[2];
+        if (al < 0) continue;
+        const perpSq = dx*dx+dy*dy+dz*dz - al*al;
+        if (perpSq > thumbCylR*thumbCylR) continue;
+        if (al > maxThumbAlong) maxThumbAlong = al;
+      }
+      // Centroid of verts in the last 15% of thumb
+      const thumbTipBand = maxThumbAlong * 0.15;
+      let ttx=0, tty=0, ttz=0, ttcnt=0;
+      for (let i = 0; i < nM; i++) {
+        const dx=meshRestPos[i*3]-tb[0], dy=meshRestPos[i*3+1]-tb[1], dz=meshRestPos[i*3+2]-tb[2];
+        const al = dx*thumbDir[0]+dy*thumbDir[1]+dz*thumbDir[2];
+        if (al < maxThumbAlong - thumbTipBand) continue;
+        const perpSq = dx*dx+dy*dy+dz*dz - al*al;
+        if (perpSq > thumbCylR*thumbCylR) continue;
+        ttx+=meshRestPos[i*3]; tty+=meshRestPos[i*3+1]; ttz+=meshRestPos[i*3+2]; ttcnt++;
+      }
+      const thumbTip = ttcnt >= 2 ? [ttx/ttcnt, tty/ttcnt, ttz/ttcnt]
+        : vadd(tb, vscale(thumbDir, handLen * 0.5));
+      const thumbLen = vlen(vsub(thumbTip, tb));
       P[pr+'thumb1'] = tb;
-      P[pr+'thumb2'] = vadd(tb, vscale(thumbDir, tsl));
-      P[pr+'thumb3'] = vadd(tb, vscale(thumbDir, tsl * 1.8));
+      P[pr+'thumb2'] = vadd(tb, vscale(vsub(thumbTip, tb), 0.33));
+      P[pr+'thumb3'] = vadd(tb, vscale(vsub(thumbTip, tb), 0.65));
+      P[pr+'thumb4'] = thumbTip;
 
-      derived.push(s+'_thumb1',s+'_thumb2',s+'_thumb3',
-        s+'_index1',s+'_index2',s+'_index3',
-        s+'_middle2',s+'_middle3',
-        s+'_ring1',s+'_ring2',s+'_ring3',
-        s+'_pinky1',s+'_pinky2',s+'_pinky3');
+      derived.push(s+'_thumb1',s+'_thumb2',s+'_thumb3',s+'_thumb4',
+        s+'_index1',s+'_index2',s+'_index3',s+'_index4',
+        s+'_middle2',s+'_middle3',s+'_middle4',
+        s+'_ring1',s+'_ring2',s+'_ring3',s+'_ring4',
+        s+'_pinky1',s+'_pinky2',s+'_pinky3',s+'_pinky4');
 
-      console.log('[DERIVE FINGERS ' + s + '] handLen=' + (handLen*1000).toFixed(1) +
-        'mm fingerLen=' + (maxFingerLen*1000).toFixed(1) + 'mm width=' + (handWidth*1000).toFixed(1) +
-        'mm thumbSign=' + ts);
+      console.log('[DERIVE FINGERS ' + s + '] knuckle=' + (knuckleAlong*1000).toFixed(1) +
+        'mm fingerLens=[' + fingerLens.map(l=>(l*1000).toFixed(0)).join(',') + ']mm' +
+        ' thumbLen=' + (thumbLen*1000).toFixed(0) + 'mm' +
+        ' width=' + (handWidth*1000).toFixed(1) + 'mm ts=' + ts);
     }
 
     if (derived.length > 0) {
@@ -13340,12 +14239,13 @@ function buildBindKNNRegion(meshRestPos, cageRest, regionIdInput, regionMeta, K 
             'mm at t=' + minT.toFixed(2) + ', old forearm=' + (oldDist*1000).toFixed(1) +
             'mm, new forearm=' + (newDist*1000).toFixed(1) + 'mm, shift=' + (shift*1000).toFixed(1) + 'mm');
           P[pr+'wrist'] = newWrist;
-          // Re-derive knuckle from new wrist
-          const handD = vnorm(vsub(newWrist, elbow));
-          P[pr+'mid_knuckle'] = vadd(newWrist, vscale(handD, 0.04));
-          // Clear finger data so it's re-derived with new wrist position
-          const fingerKeys = ['thumb1','thumb2','thumb3','index1','index2','index3',
-            'middle2','middle3','ring1','ring2','ring3','pinky1','pinky2','pinky3'];
+          // Clear knuckle + finger data so they're re-derived from mesh with new wrist
+          delete P[pr+'mid_knuckle'];
+          const fingerKeys = ['thumb1','thumb2','thumb3','thumb4',
+            'index1','index2','index3','index4',
+            'middle2','middle3','middle4',
+            'ring1','ring2','ring3','ring4',
+            'pinky1','pinky2','pinky3','pinky4'];
           for (const fk of fingerKeys) delete P[pr+fk];
           derived.push(pr+'wrist (auto-corrected)');
         } else {
@@ -13353,76 +14253,252 @@ function buildBindKNNRegion(meshRestPos, cageRest, regionIdInput, regionMeta, K 
         }
       }
 
-      // Re-derive fingers if wrist was corrected (cleared above)
+      // Re-derive fingers if wrist was corrected: clear finger keys, then
+      // re-run the main finger derivation loop by recursing into deriveMissingJoints.
+      let needsRederive = false;
       for (const s of ['l','r']) {
-        if (!P[s+'_index1'] && P[s+'_wrist'] && P[s+'_mid_knuckle'] && P[s+'_elbow']) {
-          // Trigger finger derivation by re-running the finger block
-          // (loop above already cleared finger keys, so the main finger derivation above won't help
-          // since we already passed it. Add inline re-derivation here.)
-          const pr = s + '_';
-          const wrist = P[pr+'wrist'], knuckle = P[pr+'mid_knuckle'], elbow = P[pr+'elbow'];
-          const handDir = vnorm(vsub(knuckle, wrist));
-          const handLen = vlen(vsub(knuckle, wrist));
-
-          let spread = vcross(handDir, [0, 1, 0]);
-          if (vlen(spread) < 0.1) spread = vcross(handDir, [0, 0, 1]);
-          spread = vnorm(spread);
-          let palmN = vcross(spread, handDir);
-          palmN = vnorm(palmN);
-
-          let maxFingerLen = handLen * 0.7, handWidth = handLen * 0.45, thumbSpreadSign = 1;
-          const nM = meshRestPos.length / 3;
-          let maxAlong = handLen, minLat = Infinity, maxLat = -Infinity;
-          let latSum = 0, latCount = 0;
-          let basePosMass = 0, baseNegMass = 0;
-          for (let i = 0; i < nM; i++) {
-            const dx = meshRestPos[i*3]-wrist[0], dy = meshRestPos[i*3+1]-wrist[1], dz = meshRestPos[i*3+2]-wrist[2];
-            const along = dx*handDir[0]+dy*handDir[1]+dz*handDir[2];
-            if (along < -handLen * 0.1 || along > handLen * 5) continue;
-            const depth = Math.abs(dx*palmN[0]+dy*palmN[1]+dz*palmN[2]);
-            if (depth > handLen * 0.5) continue;
-            const lat = dx*spread[0]+dy*spread[1]+dz*spread[2];
-            if (along > maxAlong) maxAlong = along;
-            if (along > handLen*0.7 && along < handLen*1.4) {
-              if (lat < minLat) minLat = lat; if (lat > maxLat) maxLat = lat;
-              latSum += lat; latCount++;
-            }
-            if (along >= 0 && along < handLen * 0.6) {
-              if (lat > 0) basePosMass += lat; else baseNegMass += -lat;
-            }
-          }
-          if (maxLat > minLat) handWidth = maxLat - minLat;
-          if (maxAlong > handLen) maxFingerLen = maxAlong - handLen;
-          if (baseNegMass > basePosMass) thumbSpreadSign = -1;
-
-          const fsp = handWidth / 5;
-          const seg1 = Math.max(maxFingerLen * 0.45, handLen * 0.15);
-          const seg2 = Math.max(maxFingerLen * 0.32, handLen * 0.10);
-          const ts = thumbSpreadSign;
-
-          const i1 = vadd(knuckle, vscale(spread, ts * 1.5 * fsp));
-          P[pr+'index1'] = i1; P[pr+'index2'] = vadd(i1, vscale(handDir, seg1));
-          P[pr+'index3'] = vadd(i1, vscale(handDir, seg1 + seg2));
-          P[pr+'middle2'] = vadd(knuckle, vscale(handDir, seg1));
-          P[pr+'middle3'] = vadd(knuckle, vscale(handDir, seg1 + seg2));
-          const r1 = vadd(knuckle, vscale(spread, ts * -1.0 * fsp));
-          P[pr+'ring1'] = r1; P[pr+'ring2'] = vadd(r1, vscale(handDir, seg1 * 0.95));
-          P[pr+'ring3'] = vadd(r1, vscale(handDir, seg1 * 0.95 + seg2 * 0.9));
-          const pk = vadd(knuckle, vscale(spread, ts * -2.3 * fsp));
-          P[pr+'pinky1'] = pk; P[pr+'pinky2'] = vadd(pk, vscale(handDir, seg1 * 0.75));
-          P[pr+'pinky3'] = vadd(pk, vscale(handDir, seg1 * 0.75 + seg2 * 0.65));
-          const tb = vadd(wrist, vadd(vscale(handDir, handLen * 0.35),
-            vadd(vscale(spread, ts * 2.0 * fsp), vscale(palmN, -handLen * 0.25))));
-          const thumbDir = vnorm(vadd(vscale(handDir, 0.4),
-            vadd(vscale(spread, ts * 0.5), vscale(palmN, -0.7))));
-          const tsl = handLen * 0.3;
-          P[pr+'thumb1'] = tb; P[pr+'thumb2'] = vadd(tb, vscale(thumbDir, tsl));
-          P[pr+'thumb3'] = vadd(tb, vscale(thumbDir, tsl * 1.8));
-
-          console.log('[WRIST AUTO-CORRECT ' + s + '] re-derived fingers from corrected wrist');
+        if (!P[s+'_index1'] && P[s+'_wrist'] && P[s+'_elbow']) {
+          needsRederive = true;
+          console.log('[WRIST AUTO-CORRECT ' + s + '] finger keys cleared, will re-derive');
         }
       }
+      if (needsRederive) deriveMissingJoints();
     }
+  }
+
+  // Splay rest-pose mesh fingers (Z-axis only) — blended correction field.
+  //
+  // Uses BLENDED corrections instead of hard per-finger assignment.
+  // Each vert gets a weighted average of all nearby finger corrections,
+  // based on Z-proximity to each finger center. This creates a smooth,
+  // continuous displacement field: tube interiors move rigidly, web skin
+  // between fingers stretches naturally (like spreading real fingers).
+  // No hard discontinuities → no mesh tearing.
+  function straightenFingers() {
+    if (!meshRestPos || !meshGeo) return false;
+    const nM = meshRestPos.length / 3;
+    if (nM === 0) return false;
+
+    const ss01 = (t) => t * t * (3 - 2 * t); // smoothstep 0-1
+
+    // Save original rest positions for shape-preservation diagnostics
+    const origRestPos = new Float32Array(meshRestPos);
+
+    let anyApplied = false;
+    // Taper: zero before TAPER_START (palm = no correction), ramp to 1 at TAPER_END.
+    // Fingers separate from palm at ~15-25% progress (crotch). Start correction after.
+    const TAPER_START = 0.20;
+    const TAPER_END = 0.50;
+
+    for (const s of ['l', 'r']) {
+      const pr = s + '_';
+      const wrist = P[pr + 'wrist'], elbow = P[pr + 'elbow'];
+      if (!wrist || !elbow) continue;
+
+      const fingerNames = ['index', 'middle', 'ring', 'pinky'];
+
+      // Read knuckle + tip from first-pass joints
+      const knuckles = [P[pr+'index1'], P[pr+'mid_knuckle'], P[pr+'ring1'], P[pr+'pinky1']];
+      const tips = [P[pr+'index4'], P[pr+'middle4'], P[pr+'ring4'], P[pr+'pinky4']];
+      if (knuckles.some(k => !k) || tips.some(t => !t)) continue;
+
+      const handSign = Math.sign(wrist[0] - elbow[0]);
+      const knuckleY = (knuckles[0][1]+knuckles[1][1]+knuckles[2][1]+knuckles[3][1]) / 4;
+      const knuckleX = knuckles[1][0]; // middle knuckle X (gap detection only)
+      const fingerKnX = knuckles.map(k => k[0]); // per-finger knuckle X
+      const digitZ = knuckles.map(k => k[2]); // knuckle Z per finger (vert assignment ref)
+      const fingerXExtent = tips.map((t, fi) => Math.abs(t[0] - knuckles[fi][0]));
+      const midFingerLen = fingerXExtent[1];
+      const indexDir = Math.sign(digitZ[0] - digitZ[1]);
+
+      // --- Gap detection — skip if mesh already spread ---
+      const gapBnd = [
+        (digitZ[0] + digitZ[1]) / 2,
+        (digitZ[1] + digitZ[2]) / 2,
+        (digitZ[2] + digitZ[3]) / 2
+      ];
+      let minGap = Infinity;
+      for (let pi = 0; pi < 3; pi++) {
+        const zB = gapBnd[pi];
+        for (let pct = 0.30; pct <= 0.60; pct += 0.10) {
+          const scanX = knuckleX + pct * midFingerLen * handSign;
+          let maxLo = -Infinity, minHi = Infinity;
+          for (let i = 0; i < nM; i++) {
+            const vx = meshRestPos[i*3], vy = meshRestPos[i*3+1], vz = meshRestPos[i*3+2];
+            if (Math.abs(vx - scanX) > 0.008 || Math.abs(vy - knuckleY) > 0.025) continue;
+            if (indexDir > 0) {
+              if (vz > zB && vz < minHi) minHi = vz;
+              else if (vz <= zB && vz > maxLo) maxLo = vz;
+            } else {
+              if (vz < zB && vz > maxLo) maxLo = vz;
+              else if (vz >= zB && vz < minHi) minHi = vz;
+            }
+          }
+          if (minHi < Infinity && maxLo > -Infinity) {
+            const gap = Math.abs(minHi - maxLo);
+            if (gap < minGap) minGap = gap;
+          }
+        }
+      }
+      if (minGap > 0.0015) {
+        console.log('[STRAIGHTEN ' + s + '] SKIPPED - already spread (minGap=' +
+          (minGap * 1000).toFixed(2) + 'mm)');
+        continue;
+      }
+
+      // === SPLAY OFFSETS ===
+      // Equal-gap splay: redistribute fingers so all 3 inter-finger gaps are equal.
+      // Ring-pinky are naturally much closer (16mm) than index-middle (30mm).
+      // Uniform splay wastes budget on already-separated pairs.
+      // This computes offsets so final spacing is equal + adds expansion.
+      const originalSpan = Math.abs(digitZ[0] - digitZ[3]);
+      const expansion = 0.020; // 20mm total hand expansion
+      const targetSpacing = (originalSpan + expansion) / 3;
+      const handCenter = (digitZ[0] + digitZ[3]) / 2;
+      const targetZ = [
+        handCenter + 1.5 * targetSpacing * indexDir,
+        handCenter + 0.5 * targetSpacing * indexDir,
+        handCenter - 0.5 * targetSpacing * indexDir,
+        handCenter - 1.5 * targetSpacing * indexDir
+      ];
+      const splayOffset = targetZ.map((tz, fi) => tz - digitZ[fi]);
+
+      // Save splay offsets for second-pass seed override
+      P['_' + s + '_splayOffset'] = splayOffset.slice();
+
+      console.log('[STRAIGHTEN ' + s + '] splay offsets: ' +
+        fingerNames.map((n, fi) => n + '=' + (splayOffset[fi]*1000).toFixed(1) + 'mm').join(' '));
+
+      // === APPLY: hard-assign + web blend ===
+      // Tube interior verts get their finger's offset rigidly (preserves tube shape).
+      // Web verts (near the midpoint between two fingers) get a smooth blend.
+      let vertCount = 0;
+
+      // Precompute midpoints between adjacent finger centers
+      const midpoints = []; // 3 midpoints: index-middle, middle-ring, ring-pinky
+      for (let fi = 0; fi < 3; fi++) midpoints.push((digitZ[fi] + digitZ[fi+1]) / 2);
+
+      for (let i = 0; i < nM; i++) {
+        const vx = meshRestPos[i*3], vy = meshRestPos[i*3+1], vz = meshRestPos[i*3+2];
+
+        if (Math.abs(vy - knuckleY) > 0.030) continue;
+
+        // X distance from middle knuckle (use as reference for progress)
+        const dxMid = (vx - knuckleX) * handSign;
+        if (dxMid < -0.0015) continue; // behind knuckles
+
+        // Knuckle taper: 4.5mm zone at palm→finger transition
+        const knuckleTaper = dxMid >= 0.003 ? 1.0 : ss01(Math.max(0, (dxMid + 0.0015) / 0.0045));
+        if (knuckleTaper < 0.001) continue;
+
+        // Progress along mid finger (0 at knuckle, 1 at tip)
+        let progress = midFingerLen > 0 ? dxMid / midFingerLen : 0;
+        progress = Math.max(0, Math.min(1, progress));
+
+        // Progress taper: 0 before TAPER_START (palm), ramp to 1 at TAPER_END
+        const taper = progress < TAPER_START ? 0 :
+          progress < TAPER_END ? ss01((progress - TAPER_START) / (TAPER_END - TAPER_START)) : 1.0;
+        if (taper < 0.001) continue;
+
+        // Find nearest and second-nearest finger by Z distance
+        let nearest = -1, nearestDist = Infinity;
+        let second = -1, secondDist = Infinity;
+        for (let fi = 0; fi < 4; fi++) {
+          const dz = Math.abs(vz - digitZ[fi]);
+          if (dz < nearestDist) {
+            second = nearest; secondDist = nearestDist;
+            nearest = fi; nearestDist = dz;
+          } else if (dz < secondDist) {
+            second = fi; secondDist = dz;
+          }
+        }
+
+        // Physical-distance blend: rigid inside tubes, smooth 4mm transition at web
+        // margin = how much closer to nearest vs second-nearest (0 at midpoint)
+        const margin = secondDist - nearestDist;
+        const halfBlend = 0.004; // 4mm half-width of blend zone
+        const t = Math.min(1, margin / (2 * halfBlend)); // 0 at midpoint, 1 at 8mm from midpoint
+        const blend = 0.5 * (1 - ss01(t)); // 0.5 at midpoint, 0 beyond blend zone
+        const correction = splayOffset[nearest] * (1 - blend) + splayOffset[second] * blend;
+
+        let finalCorr = correction * taper * knuckleTaper;
+        if (Math.abs(finalCorr) < 1e-7) continue;
+
+        meshRestPos[i*3+2] += finalCorr;
+        meshGeo.attributes.position.array[i*3+2] += finalCorr;
+        vertCount++;
+      }
+
+      meshGeo.attributes.position.needsUpdate = true;
+      if (vertCount > 0) anyApplied = true;
+
+      // === DIAGNOSTICS ===
+
+      // Total displacement from original
+      let maxDisp = 0, totalDisp = 0, dispCount = 0;
+      for (let i = 0; i < nM; i++) {
+        const d = Math.abs(meshRestPos[i*3+2] - origRestPos[i*3+2]);
+        if (d > 1e-7) {
+          if (d > maxDisp) maxDisp = d;
+          totalDisp += d;
+          dispCount++;
+        }
+      }
+      console.log('[STRAIGHTEN ' + s + '] displacement: max=' +
+        (maxDisp*1000).toFixed(2) + 'mm avg=' +
+        (dispCount > 0 ? (totalDisp/dispCount*1000).toFixed(2) : '0') +
+        'mm (' + vertCount + ' verts moved)');
+
+      // Triangle edge stretch diagnostic
+      if (meshGeo.index) {
+        const idx = meshGeo.index.array;
+        let maxEdgeStretch = 0, stretchCount = 0;
+        for (let ti = 0; ti < idx.length; ti += 3) {
+          const triVerts = [idx[ti], idx[ti+1], idx[ti+2]];
+          for (let ei = 0; ei < 3; ei++) {
+            const a = triVerts[ei], b = triVerts[(ei+1) % 3];
+            const da = meshRestPos[a*3+2] - origRestPos[a*3+2];
+            const db = meshRestPos[b*3+2] - origRestPos[b*3+2];
+            const edgeStretch = Math.abs(da - db);
+            if (edgeStretch > maxEdgeStretch) maxEdgeStretch = edgeStretch;
+            if (edgeStretch > 0.0005) stretchCount++;
+          }
+        }
+        console.log('[STRAIGHTEN ' + s + '] triangle edge stretch: max=' +
+          (maxEdgeStretch*1000).toFixed(3) + 'mm, edges>0.5mm=' + stretchCount);
+
+        // Stretch warning (no auto-revert — let user judge visually)
+        if (maxEdgeStretch > 0.002) {
+          console.warn('[STRAIGHTEN ' + s + '] WARNING: max edge stretch=' +
+            (maxEdgeStretch*1000).toFixed(1) + 'mm (web region only, tube interiors rigid)');
+        }
+      }
+
+      // Post-correction inter-finger gaps
+      const measX = knuckleX + midFingerLen * 0.40 * handSign;
+      const gapReport = [];
+      for (let vi = 0; vi < 3; vi++) {
+        const bndZ = (digitZ[vi] + digitZ[vi+1]) / 2;
+        let maxLo = -Infinity, minHi = Infinity;
+        for (let i = 0; i < nM; i++) {
+          const vx = meshRestPos[i*3], vy = meshRestPos[i*3+1], vz = meshRestPos[i*3+2];
+          if (Math.abs(vx - measX) > 0.008 || Math.abs(vy - knuckleY) > 0.025) continue;
+          if (indexDir > 0) {
+            if (vz > bndZ + splayOffset[vi] && vz < minHi) minHi = vz;
+            else if (vz <= bndZ + splayOffset[vi] && vz > maxLo) maxLo = vz;
+          } else {
+            if (vz < bndZ + splayOffset[vi] && vz > maxLo) maxLo = vz;
+            else if (vz >= bndZ + splayOffset[vi] && vz < minHi) minHi = vz;
+          }
+        }
+        const gap = (minHi < Infinity && maxLo > -Infinity) ? Math.abs(minHi - maxLo) : NaN;
+        const pairNames = [['index','middle'], ['middle','ring'], ['ring','pinky']];
+        gapReport.push(pairNames[vi].join('-') + '=' + (isNaN(gap) ? 'N/A' : (gap*1000).toFixed(1)+'mm'));
+      }
+      console.log('[STRAIGHTEN ' + s + '] post-splay gaps at 40%: ' + gapReport.join(' | '));
+    }
+
+    return anyApplied;
   }
 
   // Rescale cage rest positions to match FBX skeleton proportions.
@@ -13938,13 +15014,14 @@ console.log("region meta =", regions.meta);
 
     // Derive ALL missing joints from mesh geometry (spine, collars, fingers).
     // Uses user's placed P values — NO FBX data.
-    deriveMissingJoints();
+    deriveMissingJoints();          // Detect joints on original mesh
 
     // Diagnostic: log all P joints and bone lengths
     {
       console.log('=== JOINT POSITIONS (P) ===');
       for (const k of Object.keys(P)) {
-        if (P[k]) console.log('  P.' + k + ' = [' + P[k].map(v => v.toFixed(4)).join(', ') + ']');
+        if (P[k] && Array.isArray(P[k])) console.log('  P.' + k + ' = [' + P[k].map(v => v.toFixed(4)).join(', ') + ']');
+        else if (P[k]) console.log('  P.' + k + ' = NON-ARRAY: ' + typeof P[k] + ' = ' + JSON.stringify(P[k]));
       }
       const boneLens = [];
       if (P.l_hip && P.l_knee) boneLens.push('l_thigh=' + vlen(vsub(P.l_knee, P.l_hip)).toFixed(4));
@@ -13955,7 +15032,7 @@ console.log("region meta =", regions.meta);
     }
     // Initialize retargetedJoints from rest-pose P (so skeleton overlay works before animation)
     for (const k of Object.keys(P)) {
-      if (P[k]) retargetedJoints[k] = P[k].slice();
+      if (P[k] && Array.isArray(P[k])) retargetedJoints[k] = P[k].slice();
     }
 
     // ── SPINE SUB-REGION SPLIT ──
@@ -14385,6 +15462,18 @@ console.log("region meta =", regions.meta);
       new THREE.MeshBasicMaterial({color:0x4ecdc4, wireframe:true, transparent:true, opacity:0.5})
     );
     scene.add(cageMesh);
+
+    // Expose key data for external tools (Selenium scan, pipeline bridge, etc.)
+    window._meshRestPos = meshRestPos;
+    window._meshObj = meshObj;
+    window._meshGeo = meshGeo;
+    window._meshAdjacency = meshAdjacency;
+    window._meshBoneWeights = meshBoneWeights;
+    window._P = P;
+    window._cageRest = cageRest;
+    window._camera = camera;
+    window._controls = controls;
+    window._initDone = true;
 
     statusEl.textContent = "Ready.";
   })().catch(err=>{
@@ -15646,6 +16735,157 @@ console.log("region meta =", regions.meta);
       for (const s of skeletonJointSpheres) s.visible = false;
     }
 
+    // 3D coordinate grid — graph paper with colored axes and tick labels
+    const show3DGrid = $('show3DGrid') && $('show3DGrid').checked;
+    if (show3DGrid && !gridGroup) {
+      gridGroup = new THREE.Group();
+      gridGroup.renderOrder = 900;
+      const sp = 0.01; // 10mm grid spacing
+      const spMajor = 0.05; // 50mm major grid lines (labeled)
+      const yMin = bounds ? Math.floor(bounds.min[1] / spMajor) * spMajor : -0.55;
+      const yMax = bounds ? Math.ceil(bounds.max[1] / spMajor) * spMajor : 0.55;
+      const xMin = -0.5, xMax = 0.5;
+      const zMin = -0.15, zMax = 0.15;
+
+      // Helper: create a text sprite label
+      function makeLabel(text, pos, color, scale) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 180; canvas.height = 48;
+        const ctx = canvas.getContext('2d');
+        ctx.font = 'bold 22px monospace';
+        ctx.fillStyle = color || '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, 90, 30);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.minFilter = THREE.LinearFilter;
+        const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
+        const spr = new THREE.Sprite(mat);
+        spr.scale.set(scale || 0.045, 0.012, 1);
+        spr.position.set(pos[0], pos[1], pos[2]);
+        spr.renderOrder = 901;
+        return spr;
+      }
+
+      // gridMat replaced by gridMatFine and gridMatMajor below
+
+      // --- Thick colored axis lines (X=red, Y=green, Z=blue) ---
+      const axisPts = [];
+      const axisColors = [];
+      // X axis (red)
+      axisPts.push(xMin, 0, 0, xMax, 0, 0);
+      axisColors.push(1,0.3,0.3, 1,0.3,0.3);
+      // Y axis (green)
+      axisPts.push(0, yMin, 0, 0, yMax, 0);
+      axisColors.push(0.3,1,0.3, 0.3,1,0.3);
+      // Z axis (blue)
+      axisPts.push(0, 0, zMin, 0, 0, zMax);
+      axisColors.push(0.3,0.5,1, 0.3,0.5,1);
+      const axisGeo = new THREE.BufferGeometry();
+      axisGeo.setAttribute('position', new THREE.Float32BufferAttribute(axisPts, 3));
+      axisGeo.setAttribute('color', new THREE.Float32BufferAttribute(axisColors, 3));
+      const axisLine = new THREE.LineSegments(axisGeo,
+        new THREE.LineBasicMaterial({ vertexColors: true, depthTest: false, linewidth: 2 }));
+      axisLine.renderOrder = 902;
+      gridGroup.add(axisLine);
+
+      // Axis name labels at the positive ends
+      gridGroup.add(makeLabel('X (red)', [xMax + 0.02, 0, 0], '#ff5555', 0.055));
+      gridGroup.add(makeLabel('Y (green)', [0, yMax + 0.015, 0], '#55ff55', 0.055));
+      gridGroup.add(makeLabel('Z (blue)', [0, 0, zMax + 0.02], '#5588ff', 0.055));
+
+      const gridMatFine = new THREE.LineBasicMaterial({ color: 0x222244, depthTest: false, transparent: true, opacity: 0.25 });
+      const gridMatMajor = new THREE.LineBasicMaterial({ color: 0x444477, depthTest: false, transparent: true, opacity: 0.5 });
+
+      // --- YZ grid at X=0 (sagittal plane) ---
+      const yzFine = [], yzMajor = [];
+      for (let y = Math.ceil(yMin / sp) * sp; y <= yMax + 0.0001; y += sp) {
+        const ymm = Math.round(y * 1000);
+        const isMajor = Math.abs(ymm % 50) < 1;
+        (isMajor ? yzMajor : yzFine).push(0, y, zMin, 0, y, zMax);
+        if (isMajor) {
+          gridGroup.add(makeLabel(ymm + '', [0, y, zMin - 0.012], '#55ff55', 0.035));
+        }
+      }
+      for (let z = Math.ceil(zMin / sp) * sp; z <= zMax + 0.0001; z += sp) {
+        const zmm = Math.round(z * 1000);
+        const isMajor = Math.abs(zmm % 50) < 1;
+        (isMajor ? yzMajor : yzFine).push(0, yMin, z, 0, yMax, z);
+        // Z labels repeated at every major Y level so they're visible wherever you look
+        if (isMajor || Math.abs(zmm % 10) < 1) {
+          for (let y = Math.ceil(yMin / spMajor) * spMajor; y <= yMax + 0.0001; y += spMajor) {
+            gridGroup.add(makeLabel(zmm + '', [0.006, y, z], '#5588ff', isMajor ? 0.03 : 0.02));
+          }
+        }
+      }
+      if (yzFine.length) {
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(yzFine, 3));
+        gridGroup.add(new THREE.LineSegments(g, gridMatFine));
+      }
+      if (yzMajor.length) {
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(yzMajor, 3));
+        gridGroup.add(new THREE.LineSegments(g, gridMatMajor));
+      }
+
+      // --- XY grid at Z=0 (frontal plane) ---
+      const xyFine = [], xyMajor = [];
+      for (let y = Math.ceil(yMin / sp) * sp; y <= yMax + 0.0001; y += sp) {
+        const ymm = Math.round(y * 1000);
+        const isMajor = Math.abs(ymm % 50) < 1;
+        (isMajor ? xyMajor : xyFine).push(xMin, y, 0, xMax, y, 0);
+      }
+      for (let x = Math.ceil(xMin / sp) * sp; x <= xMax + 0.0001; x += sp) {
+        const xmm = Math.round(x * 1000);
+        const isMajor = Math.abs(xmm % 50) < 1;
+        (isMajor ? xyMajor : xyFine).push(x, yMin, 0, x, yMax, 0);
+        // X labels repeated at every major Y level so they're visible wherever you look
+        if (isMajor || Math.abs(xmm % 10) < 1) {
+          if (Math.abs(xmm) > 1) {
+            for (let y = Math.ceil(yMin / spMajor) * spMajor; y <= yMax + 0.0001; y += spMajor) {
+              gridGroup.add(makeLabel(xmm + '', [x, y, 0.006], '#ff5555', isMajor ? 0.03 : 0.02));
+            }
+          }
+        }
+      }
+      if (xyFine.length) {
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(xyFine, 3));
+        gridGroup.add(new THREE.LineSegments(g, gridMatFine));
+      }
+      if (xyMajor.length) {
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(xyMajor, 3));
+        gridGroup.add(new THREE.LineSegments(g, gridMatMajor));
+      }
+
+      // --- XZ grid at Y=0 (horizontal floor plane) ---
+      const xzFine = [], xzMajor = [];
+      for (let x = Math.ceil(xMin / sp) * sp; x <= xMax + 0.0001; x += sp) {
+        const xmm = Math.round(x * 1000);
+        const isMajor = Math.abs(xmm % 50) < 1;
+        (isMajor ? xzMajor : xzFine).push(x, 0, zMin, x, 0, zMax);
+      }
+      for (let z = Math.ceil(zMin / sp) * sp; z <= zMax + 0.0001; z += sp) {
+        const zmm = Math.round(z * 1000);
+        const isMajor = Math.abs(zmm % 50) < 1;
+        (isMajor ? xzMajor : xzFine).push(xMin, 0, z, xMax, 0, z);
+      }
+      if (xzFine.length) {
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(xzFine, 3));
+        gridGroup.add(new THREE.LineSegments(g, gridMatFine));
+      }
+      if (xzMajor.length) {
+        const g = new THREE.BufferGeometry();
+        g.setAttribute('position', new THREE.Float32BufferAttribute(xzMajor, 3));
+        gridGroup.add(new THREE.LineSegments(g, gridMatMajor));
+      }
+
+      scene.add(gridGroup);
+    }
+    if (gridGroup) gridGroup.visible = show3DGrid;
+
     // FBX rest-pose skeleton overlay (red) — shows FBX joint positions for comparison
     if ($('showFBXSkeleton').checked && fbxRestWorld && fbxRestWorld.hips) {
       if (!fbxSkeletonLine) {
@@ -15710,103 +16950,10 @@ console.log("region meta =", regions.meta);
   // FBX DRAG-DROP: extract joint positions in-memory from Mixamo FBX
   // ═══════════════════════════════════════════════════════════
 
-  const FBX_BONE_MAP = [
-    // Spine / head
-    { suffix: 'Hips',          name: 'hips' },
-    { suffix: 'Spine',         name: 'spine_joint' },
-    { suffix: 'Spine1',        name: 'spine1_joint' },
-    { suffix: 'Spine2',        name: 'spine2_joint' },
-    { suffix: 'Neck',          name: 'neck' },
-    { suffix: 'Head',          name: 'head' },
-    // Collars
-    { suffix: 'LeftShoulder',  name: 'l_collar' },
-    { suffix: 'RightShoulder', name: 'r_collar' },
-    // Left arm
-    { suffix: 'LeftArm',       name: 'l_shoulder' },
-    { suffix: 'LeftForeArm',   name: 'l_elbow' },
-    { suffix: 'LeftHand',      name: 'l_wrist' },
-    // Left fingers
-    { suffix: 'LeftHandThumb1',  name: 'l_thumb1' },
-    { suffix: 'LeftHandThumb2',  name: 'l_thumb2' },
-    { suffix: 'LeftHandThumb3',  name: 'l_thumb3' },
-    { suffix: 'LeftHandThumb4',  name: 'l_thumb3' },  // end bone → parent
-    { suffix: 'LeftHandIndex1',  name: 'l_index1' },
-    { suffix: 'LeftHandIndex2',  name: 'l_index2' },
-    { suffix: 'LeftHandIndex3',  name: 'l_index3' },
-    { suffix: 'LeftHandIndex4',  name: 'l_index3' },  // end bone → parent
-    { suffix: 'LeftHandMiddle1', name: 'l_mid_knuckle' },
-    { suffix: 'LeftHandMiddle2', name: 'l_middle2' },
-    { suffix: 'LeftHandMiddle3', name: 'l_middle3' },
-    { suffix: 'LeftHandMiddle4', name: 'l_middle3' },  // end bone → parent
-    { suffix: 'LeftHandRing1',   name: 'l_ring1' },
-    { suffix: 'LeftHandRing2',   name: 'l_ring2' },
-    { suffix: 'LeftHandRing3',   name: 'l_ring3' },
-    { suffix: 'LeftHandRing4',   name: 'l_ring3' },   // end bone → parent
-    { suffix: 'LeftHandPinky1',  name: 'l_pinky1' },
-    { suffix: 'LeftHandPinky2',  name: 'l_pinky2' },
-    { suffix: 'LeftHandPinky3',  name: 'l_pinky3' },
-    { suffix: 'LeftHandPinky4',  name: 'l_pinky3' },  // end bone → parent
-    // Left leg
-    { suffix: 'LeftUpLeg',     name: 'l_hip' },
-    { suffix: 'LeftLeg',       name: 'l_knee' },
-    { suffix: 'LeftFoot',      name: 'l_ankle' },
-    { suffix: 'LeftToeBase',   name: 'l_toe' },
-    // Right arm
-    { suffix: 'RightArm',      name: 'r_shoulder' },
-    { suffix: 'RightForeArm',  name: 'r_elbow' },
-    { suffix: 'RightHand',     name: 'r_wrist' },
-    // Right fingers
-    { suffix: 'RightHandThumb1',  name: 'r_thumb1' },
-    { suffix: 'RightHandThumb2',  name: 'r_thumb2' },
-    { suffix: 'RightHandThumb3',  name: 'r_thumb3' },
-    { suffix: 'RightHandThumb4',  name: 'r_thumb3' },  // end bone → parent
-    { suffix: 'RightHandIndex1',  name: 'r_index1' },
-    { suffix: 'RightHandIndex2',  name: 'r_index2' },
-    { suffix: 'RightHandIndex3',  name: 'r_index3' },
-    { suffix: 'RightHandIndex4',  name: 'r_index3' },  // end bone → parent
-    { suffix: 'RightHandMiddle1', name: 'r_mid_knuckle' },
-    { suffix: 'RightHandMiddle2', name: 'r_middle2' },
-    { suffix: 'RightHandMiddle3', name: 'r_middle3' },
-    { suffix: 'RightHandMiddle4', name: 'r_middle3' },  // end bone → parent
-    { suffix: 'RightHandRing1',   name: 'r_ring1' },
-    { suffix: 'RightHandRing2',   name: 'r_ring2' },
-    { suffix: 'RightHandRing3',   name: 'r_ring3' },
-    { suffix: 'RightHandRing4',   name: 'r_ring3' },   // end bone → parent
-    { suffix: 'RightHandPinky1',  name: 'r_pinky1' },
-    { suffix: 'RightHandPinky2',  name: 'r_pinky2' },
-    { suffix: 'RightHandPinky3',  name: 'r_pinky3' },
-    { suffix: 'RightHandPinky4',  name: 'r_pinky3' },  // end bone → parent
-    // Right leg
-    { suffix: 'RightUpLeg',    name: 'r_hip' },
-    { suffix: 'RightLeg',      name: 'r_knee' },
-    { suffix: 'RightFoot',     name: 'r_ankle' },
-    { suffix: 'RightToeBase',  name: 'r_toe' },
-  ];
-
-  function matchFBXBone(boneName) {
-    const lower = boneName.toLowerCase();
-    const sorted = FBX_BONE_MAP.slice().sort((a, b) => b.suffix.length - a.suffix.length);
-    for (const entry of sorted) {
-      if (lower.endsWith(entry.suffix.toLowerCase())) return entry.name;
-      if (entry.alt && lower.endsWith(entry.alt.toLowerCase())) return entry.name;
-    }
-    return null;
-  }
-
-  // Map FBX bone name to region ID for skin weight purposes only.
-  // Unlike matchFBXBone (used for skeleton extraction where each joint must be unique),
-  // this maps ALL bones including fingers to their controlling region.
-  function matchFBXBoneToRegion(boneName) {
-    // First try the standard mapping
-    const mapped = matchFBXBone(boneName);
-    if (mapped) return mapped;
-    // Map finger bones to wrist (hand region) — Mixamo names like
-    // LeftHandIndex1, LeftHandThumb2, RightHandRing3, etc.
-    const lower = boneName.toLowerCase();
-    if (lower.includes('lefthand')) return 'l_wrist';
-    if (lower.includes('righthand')) return 'r_wrist';
-    return null;
-  }
+  // --- FBX bone mapping (from cage-core) ---
+  const FBX_BONE_MAP = CageCore.FBX_BONE_MAP;
+  const matchFBXBone = CageCore.matchFBXBone;
+  const matchFBXBoneToRegion = CageCore.matchFBXBoneToRegion;
 
   function extractPositionsFromFBX(arrayBuffer, filename) {
     statusEl.textContent = 'Parsing FBX...';
@@ -16497,6 +17644,16 @@ console.log("region meta =", regions.meta);
 
     // Apply to app
     jointPosData = result;
+
+    // Reset per-bone data BEFORE overridePFromFBX (which recomputes meshBoneWeights)
+    meshBoneWeights = null;
+    meshTriMapTri = null;
+    meshTriMapBary = null;
+    _boneNameToIdx = null;
+    _jointToBoneIdx = null;
+    _lastJointRMat = null;
+    window._fingerBoneDiagDone = false;
+
     overridePFromFBX(true);
 
     // Compute proportion ratios: our mesh P (placed joints) vs FBX skeleton.
@@ -16537,12 +17694,8 @@ console.log("region meta =", regions.meta);
 
     cycleDuration = result.duration;
     time = 0;
-    meshBoneWeights = null;       // reset per-bone weights for new FBX
-    meshTriMapTri = null;         // reset triangle mapping for new FBX
-    meshTriMapBary = null;
-    _boneNameToIdx = null;        // reset bone name mapping for new FBX
-    _jointToBoneIdx = null;
-    _lastJointRMat = null;
+    // NOTE: meshBoneWeights, meshTriMapTri/Bary, _boneNameToIdx, _jointToBoneIdx,
+    // _lastJointRMat are reset BEFORE overridePFromFBX above (which recomputes them).
     window._posDiagDone = false;  // reset diagnostic for fresh output
     window._kabschDiagDone = false;
     window._armAnalyticalDiagDone = false;

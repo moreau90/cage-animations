@@ -1,0 +1,45 @@
+{
+  "name": "cage-pipeline",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "worker:skeleton": "tsx src/workers/skeleton-qa.worker.ts",
+    "worker:deformation": "tsx src/workers/deformation-qa.worker.ts",
+    "worker:finger": "tsx src/workers/finger-alignment.worker.ts",
+    "worker:centering": "tsx src/workers/joint-centering.worker.ts",
+    "worker:render": "tsx src/workers/render-preview.worker.ts",
+    "worker:processing": "tsx src/workers/processing.worker.ts",
+    "worker:generation": "tsx src/workers/generation.worker.ts",
+    "worker:patterns": "tsx src/workers/pattern-analysis.worker.ts",
+    "worker:orchestrator": "tsx src/workers/orchestrator.worker.ts",
+    "worker:loop": "tsx src/workers/loop-controller.worker.ts",
+    "bridge": "tsx src/lib/bridge-server.ts",
+    "submit": "tsx src/cli/submit-run.ts",
+    "search": "tsx src/cli/submit-search.ts",
+    "convert:keyframes": "tsx src/lib/keyframe-converter.ts",
+    "fix:centering": "tsx src/cli/fix-centering.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "bullmq": "^5.34.8",
+    "cage-core": "file:../cage-core",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "pino": "^9.6.0",
+    "playwright": "^1.58.2",
+    "postgres": "^3.4.8",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.13.10",
+    "pg": "^8.20.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

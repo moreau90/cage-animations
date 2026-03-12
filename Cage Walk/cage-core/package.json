@@ -1,0 +1,53 @@
+{
+  "name": "cage-core",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./math/*": {
+      "import": "./dist/math/*.js",
+      "require": "./dist/math/*.cjs"
+    },
+    "./types": {
+      "import": "./dist/types/index.js",
+      "require": "./dist/types/index.cjs"
+    },
+    "./skeleton/*": {
+      "import": "./dist/skeleton/*.js",
+      "require": "./dist/skeleton/*.cjs"
+    },
+    "./animation/*": {
+      "import": "./dist/animation/*.js",
+      "require": "./dist/animation/*.cjs"
+    },
+    "./geometry/*": {
+      "import": "./dist/geometry/*.js",
+      "require": "./dist/geometry/*.cjs"
+    },
+    "./weights/*": {
+      "import": "./dist/weights/*.js",
+      "require": "./dist/weights/*.cjs"
+    },
+    "./qa/*": {
+      "import": "./dist/qa/*.js",
+      "require": "./dist/qa/*.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Finger Region Editor</title>
+<style>
+body { margin: 0; overflow: hidden; background: #1a1a2e; font-family: monospace; color: #eee; }
+#toolbar {
+    position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.9);
+    padding: 12px; border-radius: 8px; z-index: 10; font-size: 12px; width: 260px;
+}
+#toolbar h2 { margin: 0 0 8px; color: #ffcc00; font-size: 14px; }
+#toolbar h3 { margin: 8px 0 4px; color: #88ccff; font-size: 12px; }
+.finger-btn {
+    display: inline-block; padding: 6px 12px; margin: 2px; border: 2px solid transparent;
+    border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; color: #fff;
+    min-width: 60px; text-align: center;
+}
+.finger-btn.active { border-color: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.5); }
+.finger-btn:hover { opacity: 0.8; }
+#info { margin-top: 8px; font-size: 11px; color: #aaa; }
+#counts { margin-top: 6px; font-size: 11px; }
+#status { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8);
+    padding: 8px 12px; border-radius: 6px; z-index: 10; font-size: 11px; }
+#controls {
+    position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.9);
+    padding: 12px; border-radius: 8px; z-index: 10; font-size: 12px; width: 220px;
+}
+button { padding: 4px 10px; margin: 2px; cursor: pointer; background: #333; color: #eee;
+    border: 1px solid #555; border-radius: 3px; font-size: 11px; }
+button:hover { background: #555; }
+label { display: block; margin: 4px 0; }
+input[type="range"] { width: 100%; }
+#brush-circle {
+    position: absolute; pointer-events: none; border: 2px solid rgba(255,255,255,0.5);
+    border-radius: 50%; z-index: 5; display: none;
+}
+</style>
+</head>
+<body>
+<div id="toolbar">
+    <h2>Finger Region Editor</h2>
+    <h3>Paint Finger (or press 1-5)</h3>
+    <div id="finger-buttons"></div>
+    <h3>Brush Size (scroll to adjust)</h3>
+    <input type="range" id="brush-size" min="5" max="100" value="25">
+    <span id="brush-val">25px</span>
+    <div id="counts"></div>
+    <div id="info">
+        Left-click+drag = paint vertices<br>
+        Right-click+drag = orbit/rotate 3D<br>
+        Middle-click = zoom<br>
+        Scroll wheel = brush size<br>
+        Ctrl+Z to undo
+    </div>
+</div>
+<div id="controls">
+    <h3>View (right-click drag to orbit)</h3>
+    <button onclick="setView('top')">Top</button>
+    <button onclick="setView('bottom')">Palm Up</button>
+    <button onclick="setView('front')">Front</button>
+    <button onclick="setView('back')">Back</button>
+    <br>
+    <button onclick="setView('side')">Side</button>
+    <button onclick="setView('fingertips')">Fingertips</button>
+    <br>
+    <button onclick="focusHand('left')">Left Hand</button>
+    <button onclick="focusHand('right')">Right Hand</button>
+    <h3>FBX Reference Skeleton</h3>
+    <button onclick="loadFBXReference()">Load FBX Skeleton</button>
+    <button onclick="autoAssignFromFBX()">Auto-assign from FBX</button>
+    <button onclick="toggleFBXSkeleton()">Toggle FBX Skeleton</button>
+    <h3>Actions</h3>
+    <button onclick="doUndo()">Undo (Ctrl+Z)</button>
+    <button onclick="exportAssignment()">Export Assignment</button>
+    <button onclick="exportAndRunPlacement()">Export & Recompute Joints</button>
+</div>
+<div id="status">Loading mesh.glb...</div>
+<div id="brush-circle"></div>
+
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+// ─── Config ───
+const FINGERS = ['pinky', 'ring', 'middle', 'index', 'thumb'];
+const COLORS = {
+    pinky:  new THREE.Color(0xcc00cc),
+    ring:   new THREE.Color(0x0066ff),
+    middle: new THREE.Color(0x00cc00),
+    index:  new THREE.Color(0xff6600),
+    thumb:  new THREE.Color(0xff0000),
+    palm:   new THREE.Color(0x666666),
+    unassigned: new THREE.Color(0x444444),
+};
+const COLOR_HEX = {
+    pinky: '#cc00cc', ring: '#0066ff', middle: '#00cc00',
+    index: '#ff6600', thumb: '#ff0000', palm: '#666666',
+};
+
+// ─── State ───
+let activeFinger = 'pinky';
+let brushRadius = 25; // pixels
+let painting = false;
+let undoStack = [];
+const MAX_UNDO = 50;
+
+// Per-hand data: { vi, pos: Vector3, finger: string }[]
+let leftVerts = [], rightVerts = [];
+let allEditableVerts = []; // combined
+let pointsGeometry, pointsMesh;
+let fbxGroup = null;
+let fbxFingerBones = {}; // { finger_name: [Vector3, Vector3, Vector3] }
+
+// ─── Three.js Setup ───
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2e);
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.001, 10);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.1;
+// Right-click = orbit rotate, middle = zoom (left is reserved for painting)
+controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+controls.enablePan = true; // Shift+right-click to pan
+
+scene.add(new THREE.AmbientLight(0xffffff, 1));
+
+// ─── Load mesh + assignment ───
+async function init() {
+    // Load mesh.glb
+    const gltf = await new GLTFLoader().loadAsync('mesh.glb');
+    let meshGeo = null;
+    gltf.scene.traverse(obj => {
+        if (obj.isMesh && obj.geometry && !meshGeo) {
+            meshGeo = obj.geometry;
+        }
+    });
+    if (!meshGeo) {
+        setStatus('ERROR: No mesh found in mesh.glb');
+        return;
+    }
+    const posAttr = meshGeo.getAttribute('position');
+    const vertexCount = posAttr.count;
+    console.log(`Mesh loaded: ${vertexCount} vertices`);
+
+    // Load assignment data
+    let assignData;
+    try {
+        const resp = await fetch('finger_assignment_gt.json');
+        assignData = await resp.json();
+    } catch {
+        setStatus('finger_assignment_gt.json not found. Run finger_placement.js first.');
+        return;
+    }
+
+    // Build vertex arrays
+    function loadHand(data) {
+        return data.map(v => ({
+            vi: v.vi,
+            pos: new THREE.Vector3(v.x, v.y, v.z),
+            finger: v.finger,
+        }));
+    }
+    leftVerts = loadHand(assignData.left);
+    rightVerts = loadHand(assignData.right);
+    allEditableVerts = [...leftVerts, ...rightVerts];
+
+    // Build point cloud
+    buildPointCloud();
+    updateCounts();
+
+    // Camera
+    camera.position.set(-0.42, 0.35, -0.05);
+    controls.target.set(-0.42, 0.206, -0.05);
+    controls.update();
+
+    setStatus(`Loaded ${allEditableVerts.length} hand vertices. Select a finger color and paint!`);
+}
+
+function buildPointCloud() {
+    if (pointsMesh) scene.remove(pointsMesh);
+
+    const positions = new Float32Array(allEditableVerts.length * 3);
+    const colors = new Float32Array(allEditableVerts.length * 3);
+
+    for (let i = 0; i < allEditableVerts.length; i++) {
+        const v = allEditableVerts[i];
+        positions[i * 3] = v.pos.x;
+        positions[i * 3 + 1] = v.pos.y;
+        positions[i * 3 + 2] = v.pos.z;
+        const c = COLORS[v.finger] || COLORS.unassigned;
+        colors[i * 3] = c.r;
+        colors[i * 3 + 1] = c.g;
+        colors[i * 3 + 2] = c.b;
+    }
+
+    pointsGeometry = new THREE.BufferGeometry();
+    pointsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    pointsGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    pointsMesh = new THREE.Points(pointsGeometry, new THREE.PointsMaterial({
+        size: 0.0018,
+        vertexColors: true,
+        sizeAttenuation: true,
+    }));
+    scene.add(pointsMesh);
+}
+
+function updateVertexColors() {
+    const colorAttr = pointsGeometry.getAttribute('color');
+    for (let i = 0; i < allEditableVerts.length; i++) {
+        const c = COLORS[allEditableVerts[i].finger] || COLORS.unassigned;
+        colorAttr.setXYZ(i, c.r, c.g, c.b);
+    }
+    colorAttr.needsUpdate = true;
+}
+
+// ─── Brush Painting ───
+function getVertsInBrush(mx, my) {
+    const hits = [];
+    const halfW = renderer.domElement.width / 2;
+    const halfH = renderer.domElement.height / 2;
+
+    for (let i = 0; i < allEditableVerts.length; i++) {
+        const v = allEditableVerts[i];
+        const projected = v.pos.clone().project(camera);
+        const sx = (projected.x * halfW) + halfW;
+        const sy = -(projected.y * halfH) + halfH;
+        const dx = sx - mx * window.devicePixelRatio;
+        const dy = sy - my * window.devicePixelRatio;
+        if (dx * dx + dy * dy < brushRadius * brushRadius * window.devicePixelRatio * window.devicePixelRatio) {
+            if (projected.z > 0 && projected.z < 1) {
+                hits.push(i);
+            }
+        }
+    }
+    return hits;
+}
+
+function paintVerts(indices, finger) {
+    if (indices.length === 0) return;
+
+    // Save undo state
+    const undoEntry = indices.map(i => ({ idx: i, oldFinger: allEditableVerts[i].finger }));
+    undoStack.push(undoEntry);
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+
+    // Apply
+    for (const i of indices) {
+        allEditableVerts[i].finger = finger;
+    }
+    updateVertexColors();
+    updateCounts();
+}
+
+function doUndo() {
+    if (undoStack.length === 0) return;
+    const entry = undoStack.pop();
+    for (const { idx, oldFinger } of entry) {
+        allEditableVerts[idx].finger = oldFinger;
+    }
+    updateVertexColors();
+    updateCounts();
+    setStatus('Undo applied');
+}
+
+// ─── FBX Reference (pre-computed, loaded from JSON) ───
+// Positions already mapped to our mesh coordinate system by extract_fbx_fingers.html + Python.
+
+window.loadFBXReference = async function() {
+    setStatus('Loading FBX reference skeleton...');
+    try {
+        const resp = await fetch('fbx_mapped_fingers.json');
+        const data = await resp.json();
+
+        if (fbxGroup) scene.remove(fbxGroup);
+        fbxGroup = new THREE.Group();
+        fbxFingerBones = {};
+
+        // Parse: keys like "l_pinky1", "l_pinky2", etc. → group by finger
+        for (const [key, pos] of Object.entries(data)) {
+            const match = key.match(/^([lr])_(\w+?)(\d)$/);
+            if (!match) continue;
+            const [, side, finger, numStr] = match;
+            const chainKey = `${side}_${finger}`;
+            if (!fbxFingerBones[chainKey]) fbxFingerBones[chainKey] = [];
+            fbxFingerBones[chainKey][parseInt(numStr) - 1] = new THREE.Vector3(pos[0], pos[1], pos[2]);
+        }
+
+        // Visualize
+        for (const [key, joints] of Object.entries(fbxFingerBones)) {
+            const finger = key.split('_')[1];
+            const color = COLORS[finger] || COLORS.unassigned;
+
+            for (const pos of joints) {
+                if (!pos) continue;
+                const sphere = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.002, 8, 8),
+                    new THREE.MeshBasicMaterial({ color: color.clone().multiplyScalar(1.5) })
+                );
+                sphere.position.copy(pos);
+                fbxGroup.add(sphere);
+            }
+
+            const validJoints = joints.filter(j => j);
+            if (validJoints.length >= 2) {
+                const lineGeo = new THREE.BufferGeometry().setFromPoints(validJoints);
+                fbxGroup.add(new THREE.Line(lineGeo, new THREE.LineBasicMaterial({
+                    color: color.clone().multiplyScalar(1.5), linewidth: 2,
+                })));
+            }
+        }
+
+        scene.add(fbxGroup);
+        setStatus(`FBX skeleton loaded: ${Object.keys(fbxFingerBones).length} finger chains`);
+    } catch (err) {
+        setStatus(`Error loading fbx_mapped_fingers.json: ${err.message}`);
+    }
+};
+
+window.toggleFBXSkeleton = function() {
+    if (fbxGroup) fbxGroup.visible = !fbxGroup.visible;
+};
+
+window.autoAssignFromFBX = function() {
+    if (Object.keys(fbxFingerBones).length === 0) {
+        // Auto-load if not loaded yet
+        loadFBXReference().then(() => {
+            if (Object.keys(fbxFingerBones).length > 0) doAutoAssign();
+        });
+        return;
+    }
+    doAutoAssign();
+};
+
+function doAutoAssign() {
+    const undoEntry = [];
+    const fingerOnly = ['pinky', 'ring', 'middle', 'index'];
+    const MAX_FINGER_DIST = 0.025; // 25mm — matches finger_placement.js
+
+    // Compute knuckle line X threshold per side (same logic as finger_placement.js)
+    const knuckleX = { l: -Infinity, r: Infinity };
+    for (const side of ['l', 'r']) {
+        for (const fname of fingerOnly) {
+            const key = `${side}_${fname}`;
+            const joints = fbxFingerBones[key];
+            if (!joints || !joints[0]) continue;
+            const baseX = joints[0].x;
+            if (side === 'l') {
+                if (baseX > knuckleX.l) knuckleX.l = baseX;
+            } else {
+                if (baseX < knuckleX.r) knuckleX.r = baseX;
+            }
+        }
+        // 20mm palm-ward padding
+        if (side === 'l') knuckleX.l += 0.020;
+        else knuckleX.r -= 0.020;
+    }
+
+    for (let i = 0; i < allEditableVerts.length; i++) {
+        const v = allEditableVerts[i];
+        const isLeft = v.pos.x < 0;
+        const side = isLeft ? 'l' : 'r';
+
+        const isFingerZone = v.pos.y >= 0.185;
+        const isPastKnuckle = isLeft ? (v.pos.x < knuckleX.l) : (v.pos.x > knuckleX.r);
+
+        // Finger zone verts before knuckle → palm
+        if (isFingerZone && !isPastKnuckle) {
+            if (v.finger !== 'palm') {
+                undoEntry.push({ idx: i, oldFinger: v.finger });
+                v.finger = 'palm';
+            }
+            continue;
+        }
+
+        const candidates = isFingerZone ? fingerOnly : FINGERS;
+
+        // Compute distance to all candidates
+        const dists = [];
+        for (const fingerName of candidates) {
+            const key = `${side}_${fingerName}`;
+            const joints = fbxFingerBones[key];
+            if (!joints || joints.length < 2) continue;
+            dists.push({ name: fingerName, dist: distToPolyline(v.pos, joints.filter(j => j)), key });
+        }
+        dists.sort((a, b) => a.dist - b.dist);
+
+        let bestFinger;
+        if (dists.length === 0 || dists[0].dist > MAX_FINGER_DIST) {
+            bestFinger = 'palm';
+        } else {
+            bestFinger = dists[0].name;
+            // Z-midpoint tie-breaking for adjacent fingers within 5mm
+            if (dists.length >= 2 && dists[1].dist - dists[0].dist < 0.005) {
+                const j1 = fbxFingerBones[dists[0].key], j2 = fbxFingerBones[dists[1].key];
+                if (j1?.[0] && j2?.[0]) {
+                    const d1z = Math.abs(v.pos.z - j1[0].z);
+                    const d2z = Math.abs(v.pos.z - j2[0].z);
+                    bestFinger = d1z <= d2z ? dists[0].name : dists[1].name;
+                }
+            }
+        }
+
+        if (bestFinger !== v.finger) {
+            undoEntry.push({ idx: i, oldFinger: v.finger });
+            v.finger = bestFinger;
+        }
+    }
+
+    if (undoEntry.length > 0) {
+        undoStack.push(undoEntry);
+    }
+
+    updateVertexColors();
+    updateCounts();
+    setStatus(`Auto-assigned ${undoEntry.length} vertices from FBX reference`);
+};
+
+function distToPolyline(point, polyline) {
+    let minDist = Infinity;
+    for (let i = 0; i < polyline.length - 1; i++) {
+        const d = distToSegment(point, polyline[i], polyline[i + 1]);
+        if (d < minDist) minDist = d;
+    }
+    // Also check distance to individual points
+    for (const p of polyline) {
+        const d = point.distanceTo(p);
+        if (d < minDist) minDist = d;
+    }
+    return minDist;
+}
+
+function distToSegment(point, a, b) {
+    const ab = b.clone().sub(a);
+    const ap = point.clone().sub(a);
+    const t = Math.max(0, Math.min(1, ap.dot(ab) / ab.dot(ab)));
+    const closest = a.clone().add(ab.multiplyScalar(t));
+    return point.distanceTo(closest);
+}
+
+// ─── Export ───
+window.exportAssignment = function() {
+    const data = {
+        left: leftVerts.map(v => ({
+            vi: v.vi, x: v.pos.x, y: v.pos.y, z: v.pos.z, finger: v.finger
+        })),
+        right: rightVerts.map(v => ({
+            vi: v.vi, x: v.pos.x, y: v.pos.y, z: v.pos.z, finger: v.finger
+        })),
+    };
+
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'finger_assignment_gt.json';
+    a.click();
+    setStatus('Exported finger_assignment_gt.json');
+};
+
+window.exportAndRunPlacement = function() {
+    // Export as download
+    window.exportAssignment();
+    setStatus('Exported. Replace finger_assignment_gt.json in Cage Walk dir, then run finger_placement.js');
+};
+
+// ─── UI ───
+function buildFingerButtons() {
+    const container = document.getElementById('finger-buttons');
+    for (const f of FINGERS) {
+        const btn = document.createElement('div');
+        btn.className = 'finger-btn' + (f === activeFinger ? ' active' : '');
+        btn.style.background = COLOR_HEX[f];
+        btn.textContent = f;
+        btn.dataset.finger = f;
+        btn.onclick = () => {
+            activeFinger = f;
+            document.querySelectorAll('.finger-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        };
+        container.appendChild(btn);
+    }
+}
+
+function updateCounts() {
+    const counts = {};
+    for (const f of FINGERS) counts[f] = { left: 0, right: 0 };
+
+    for (const v of leftVerts) {
+        if (counts[v.finger]) counts[v.finger].left++;
+    }
+    for (const v of rightVerts) {
+        if (counts[v.finger]) counts[v.finger].right++;
+    }
+
+    let html = '<table style="width:100%">';
+    html += '<tr><td></td><td style="color:#88ccff">Left</td><td style="color:#88ccff">Right</td></tr>';
+    for (const f of FINGERS) {
+        html += `<tr><td><span style="color:${COLOR_HEX[f]}">${f}</span></td>`;
+        html += `<td>${counts[f].left}</td><td>${counts[f].right}</td></tr>`;
+    }
+    html += '</table>';
+    document.getElementById('counts').innerHTML = html;
+}
+
+function setStatus(msg) {
+    document.getElementById('status').textContent = msg;
+}
+
+// ─── View Controls ───
+window.setView = function(t) {
+    const c = controls.target.clone();
+    if (t === 'top') camera.position.set(c.x, c.y + 0.15, c.z);
+    else if (t === 'bottom') camera.position.set(c.x, c.y - 0.15, c.z); // palm up
+    else if (t === 'front') camera.position.set(c.x, c.y, c.z + 0.15);
+    else if (t === 'back') camera.position.set(c.x, c.y, c.z - 0.15);
+    else if (t === 'fingertips') camera.position.set(c.x - 0.15, c.y, c.z); // looking from fingertip side
+    else camera.position.set(c.x + 0.15, c.y, c.z); // side
+    controls.update();
+};
+
+window.focusHand = function(h) {
+    const cx = h === 'left' ? -0.44 : 0.44;
+    controls.target.set(cx, 0.206, -0.05);
+    camera.position.set(cx, 0.36, -0.05);
+    controls.update();
+};
+
+// ─── Mouse Events ───
+const brushCircle = document.getElementById('brush-circle');
+const brushSlider = document.getElementById('brush-size');
+const brushValSpan = document.getElementById('brush-val');
+
+brushSlider.oninput = function() {
+    brushRadius = parseInt(this.value);
+    brushValSpan.textContent = brushRadius + 'px';
+};
+
+renderer.domElement.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return; // left click only
+    if (e.target !== renderer.domElement) return;
+
+    // Don't paint if orbit-controlling (middle click or right click)
+    painting = true;
+    controls.enabled = false; // disable orbit while painting
+
+    const hits = getVertsInBrush(e.clientX, e.clientY);
+    if (hits.length > 0) {
+        paintVerts(hits, activeFinger);
+        setStatus(`Painted ${hits.length} verts → ${activeFinger}`);
+    }
+});
+
+renderer.domElement.addEventListener('mousemove', (e) => {
+    // Update brush circle
+    brushCircle.style.display = 'block';
+    brushCircle.style.left = (e.clientX - brushRadius) + 'px';
+    brushCircle.style.top = (e.clientY - brushRadius) + 'px';
+    brushCircle.style.width = (brushRadius * 2) + 'px';
+    brushCircle.style.height = (brushRadius * 2) + 'px';
+
+    if (painting) {
+        const hits = getVertsInBrush(e.clientX, e.clientY);
+        if (hits.length > 0) {
+            // Don't create new undo entries while dragging - merge into last
+            for (const i of hits) {
+                if (allEditableVerts[i].finger !== activeFinger) {
+                    if (undoStack.length > 0) {
+                        const last = undoStack[undoStack.length - 1];
+                        const existing = last.find(e => e.idx === i);
+                        if (!existing) {
+                            last.push({ idx: i, oldFinger: allEditableVerts[i].finger });
+                        }
+                    }
+                    allEditableVerts[i].finger = activeFinger;
+                }
+            }
+            updateVertexColors();
+            updateCounts();
+        }
+    }
+});
+
+renderer.domElement.addEventListener('mouseup', () => {
+    painting = false;
+    controls.enabled = true;
+});
+
+renderer.domElement.addEventListener('mouseleave', () => {
+    brushCircle.style.display = 'none';
+    painting = false;
+    controls.enabled = true;
+});
+
+// Scroll to adjust brush size
+renderer.domElement.addEventListener('wheel', (e) => {
+    if (e.ctrlKey) return; // don't interfere with zoom
+    e.preventDefault();
+    brushRadius = Math.max(5, Math.min(100, brushRadius + (e.deltaY > 0 ? -3 : 3)));
+    brushSlider.value = brushRadius;
+    brushValSpan.textContent = brushRadius + 'px';
+}, { passive: false });
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    if (e.key >= '1' && e.key <= '5') {
+        const idx = parseInt(e.key) - 1;
+        activeFinger = FINGERS[idx];
+        document.querySelectorAll('.finger-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.finger === activeFinger);
+        });
+    }
+    if (e.ctrlKey && e.key === 'z') {
+        e.preventDefault();
+        doUndo();
+    }
+});
+
+// Prevent context menu on right-click (used for orbit)
+renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+
+// ─── Render Loop ───
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+}
+
+// ─── Init ───
+buildFingerButtons();
+init().then(() => animate());
+
+window.addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
