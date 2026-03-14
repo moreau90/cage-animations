@@ -607,53 +607,99 @@ const FINGER_NAMES = ['pinky', 'ring', 'middle', 'index'];
 // ═══════════════════════════════════════════════════════════════════
 
 function computeCenterline(positions, assignment, clusterIdx, isLeft, xClipMin, xClipMax, useYAxis) {
-    // Gather vertices assigned to this cluster, optionally clipped to X range
-    const verts = [];
+    // Gather all vertices assigned to this cluster
+    const allVerts = [];
     for (const [vi, ci] of assignment) {
         if (ci !== clusterIdx) continue;
-        const x = positions[vi * 3];
-        if (xClipMin !== undefined && x < xClipMin) continue;
-        if (xClipMax !== undefined && x > xClipMax) continue;
-        verts.push(vi);
+        allVerts.push(vi);
+    }
+    if (allVerts.length === 0) return null;
+
+    // Clip along primary axis for centerline computation
+    // For fingers: clip along X. For thumb: clip along Y.
+    const clipAxis = useYAxis ? 1 : 0;
+    let verts = allVerts;
+    if (xClipMin !== undefined || xClipMax !== undefined) {
+        verts = allVerts.filter(vi => {
+            const v = positions[vi * 3 + clipAxis];
+            if (xClipMin !== undefined && v < xClipMin) return false;
+            if (xClipMax !== undefined && v > xClipMax) return false;
+            return true;
+        });
     }
     if (verts.length === 0) return null;
 
     // For thumb, slice along Y axis (thumb extends down -Y)
     // For fingers, slice along X axis (fingers extend along arm axis)
-    const axisIdx = useYAxis ? 1 : 0; // 0=X, 1=Y
+    const axisIdx = useYAxis ? 1 : 0;
     const axisVals = verts.map(v => positions[v * 3 + axisIdx]);
     const axisMin = Math.min(...axisVals);
     const axisMax = Math.max(...axisVals);
 
     // Cross-sections every 2mm along the primary axis
-    // Uses blend weights to downweight overlap verts in centroid computation
+    // Use bounding-box center (not centroid) to avoid bias from uneven vertex density
+    //
+    // For thumb with thenar (>500 verts): tube-tracking from tip.
+    // The thenar muscle verts outnumber tube verts 2:1 and skew the bbox center
+    // toward the palm. Tube-tracking from the tip (where there's no thenar)
+    // keeps only verts within 15mm of the previous slice's center, following the
+    // actual digit tube. All verts still display as thumb (red).
     const centerline = [];
-    for (let a = axisMin + 0.001; a < axisMax - 0.001; a += 0.002) {
-        const sliceVerts = verts.filter(v => Math.abs(positions[v * 3 + axisIdx] - a) < 0.003);
+    const needsTracking = useYAxis && verts.length > 500;
+    let prevCX = null, prevCZ = null;
+    const trackRadius = 0.015; // 15mm
+    let tubeKnuckle = null;
+    for (let a = axisMin; a <= axisMax; a += 0.002) {
+        const rawSlice = verts.filter(v => Math.abs(positions[v * 3 + axisIdx] - a) < 0.003);
+        let sliceVerts = rawSlice;
         if (sliceVerts.length < 2) continue;
-        let cx = 0, cy = 0, cz = 0, wSum = 0;
-        for (const v of sliceVerts) {
-            const w = vertBlendWeight.get(v) || 1.0;
-            cx += positions[v * 3] * w;
-            cy += positions[v * 3 + 1] * w;
-            cz += positions[v * 3 + 2] * w;
-            wSum += w;
+
+        if (needsTracking && prevCX !== null) {
+            const filtered = sliceVerts.filter(v => {
+                const vx = positions[v * 3], vz = positions[v * 3 + 2];
+                return Math.abs(vx - prevCX) < trackRadius && Math.abs(vz - prevCZ) < trackRadius;
+            });
+            if (filtered.length >= 2) sliceVerts = filtered;
+
+            // Detect knuckle: where raw/tube ratio first exceeds 2.0
+            if (!tubeKnuckle && rawSlice.length > sliceVerts.length * 2) {
+                if (centerline.length > 0) {
+                    tubeKnuckle = { bboxCenter: [...centerline[centerline.length - 1]] };
+                    console.log(`    [THUMB KNUCKLE] detected at Y=${(a*1000).toFixed(1)}mm (raw=${rawSlice.length} vs tube=${sliceVerts.length}), knuckle bbox=[${tubeKnuckle.bboxCenter.map(v=>(v*1000).toFixed(1))}]`);
+                }
+            }
         }
-        if (wSum > 0) centerline.push([cx / wSum, cy / wSum, cz / wSum]);
+
+        let xMin = Infinity, xMax = -Infinity;
+        let yMin = Infinity, yMax = -Infinity;
+        let zMin = Infinity, zMax = -Infinity;
+        for (const v of sliceVerts) {
+            const vx = positions[v * 3], vy = positions[v * 3 + 1], vz = positions[v * 3 + 2];
+            if (vx < xMin) xMin = vx; if (vx > xMax) xMax = vx;
+            if (vy < yMin) yMin = vy; if (vy > yMax) yMax = vy;
+            if (vz < zMin) zMin = vz; if (vz > zMax) zMax = vz;
+        }
+        const cx = (xMin + xMax) / 2, cy = (yMin + yMax) / 2, cz = (zMin + zMax) / 2;
+        centerline.push([cx, cy, cz]);
+        if (needsTracking) { prevCX = cx; prevCZ = cz; }
     }
 
     if (centerline.length < 3) return { centerline, length: 0 };
 
-    // 3-point moving average
-    const smoothed = [centerline[0]];
-    for (let i = 1; i < centerline.length - 1; i++) {
-        smoothed.push([
-            (centerline[i - 1][0] + centerline[i][0] + centerline[i + 1][0]) / 3,
-            (centerline[i - 1][1] + centerline[i][1] + centerline[i + 1][1]) / 3,
-            (centerline[i - 1][2] + centerline[i][2] + centerline[i + 1][2]) / 3,
-        ]);
+    // Multiple passes of 3-point moving average smoothing
+    let smoothed = [...centerline.map(p => [...p])];
+    for (let pass = 0; pass < 5; pass++) {
+        const next = [smoothed[0]];
+        for (let i = 1; i < smoothed.length - 1; i++) {
+            next.push([
+                (smoothed[i - 1][0] + smoothed[i][0] + smoothed[i + 1][0]) / 3,
+                (smoothed[i - 1][1] + smoothed[i][1] + smoothed[i + 1][1]) / 3,
+                (smoothed[i - 1][2] + smoothed[i][2] + smoothed[i + 1][2]) / 3,
+            ]);
+        }
+        next.push(smoothed[smoothed.length - 1]);
+        smoothed = next;
     }
-    smoothed.push(centerline[centerline.length - 1]);
 
     let totalLen = 0;
     for (let i = 1; i < smoothed.length; i++) {
@@ -663,7 +709,7 @@ function computeCenterline(positions, assignment, clusterIdx, isLeft, xClipMin, 
         totalLen += Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
-    return { centerline: smoothed, length: totalLen };
+    return { centerline: smoothed, length: totalLen, clippedVerts: allVerts, tubeKnuckle };
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -782,6 +828,11 @@ function processHand(positions, indices, handVerts, isLeft) {
     const names = ['pinky', 'ring', 'middle', 'index', 'thumb', 'palm'];
     for (let i = 0; i < 6; i++) clusterToName.set(i, names[i]);
 
+    // Add unassigned hand verts as palm (index 5) so they appear in the editor
+    for (const vi of handVerts) {
+        if (!assignment.has(vi)) assignment.set(vi, 5); // 5 = palm
+    }
+
     // Count per finger
     const counts = [0, 0, 0, 0, 0, 0];
     for (const [, fi] of assignment) counts[fi]++;
@@ -799,8 +850,12 @@ function processHand(positions, indices, handVerts, isLeft) {
 
         let xClipMin, xClipMax;
         if (name === 'thumb') {
+            // Clip thumb at wrist Y — thumb can't extend past wrist
+            const wristKey = side + '_wrist';
+            const pjData = JSON.parse(fs.readFileSync(JOINTS_PATH, 'utf8'));
+            const wristY = pjData.P[wristKey] ? pjData.P[wristKey][1] : undefined;
             xClipMin = undefined;
-            xClipMax = undefined;
+            xClipMax = wristY; // applied to Y axis via clipAxis in computeCenterline
         } else {
             xClipMin = isLeft ? undefined : fingerXClipThresh;
             xClipMax = isLeft ? -fingerXClipThresh : undefined;
